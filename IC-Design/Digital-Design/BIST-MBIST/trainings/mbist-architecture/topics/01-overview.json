@@ -1,0 +1,312 @@
+{
+  "id": "overview",
+  "title": "MBIST in a chip",
+  "duration": "30 min",
+  "summary": "The previous training wrote March tests on paper. This one builds the **hardware** that runs them inside the chip: controllers, collars around the memories, and the connection to the test access port. This topic gives the big picture.",
+  "objectives": [
+    "Name the parts of a memory BIST system and what each does.",
+    "Follow one MBIST run from start to pass/fail.",
+    "Compare the main design choices: dedicated or shared controllers, serial or parallel testing."
+  ],
+  "subsections": [
+    {
+      "id": "big-picture",
+      "title": "The big picture",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "A large chip has hundreds or thousands of memories. Each one needs a March test at full speed, and the results must reach the tester. Memory BIST solves this with a few kinds of blocks:"
+        },
+        {
+          "type": "reveal",
+          "src": "assets/soc-mbist.svg",
+          "hint": "Click the blocks.",
+          "caption": "Memory BIST in a system on chip",
+          "spots": [
+            {
+              "x": 3.3,
+              "y": 38.5,
+              "w": 13.3,
+              "h": 19.2,
+              "label": "1",
+              "title": "Test access (TAP / IJTAG)",
+              "md": "The tester — or software inside the chip — starts the tests and reads the results through the **JTAG test access port** and an on-chip network of test registers (**IJTAG**). This is the subject of the next training."
+            },
+            {
+              "x": 24.4,
+              "y": 21.2,
+              "w": 18.9,
+              "h": 17.3,
+              "label": "2",
+              "title": "MBIST controller",
+              "md": "Runs the March algorithm: generates addresses, data and read/write commands, and collects pass/fail. One controller usually serves **several memories**."
+            },
+            {
+              "x": 51.1,
+              "y": 11.5,
+              "w": 21.1,
+              "h": 15.4,
+              "label": "3",
+              "title": "Collar (wrapper)",
+              "md": "A thin layer of logic around each memory: muxes that switch the memory between **functional** and **test** use, and often the comparator."
+            },
+            {
+              "x": 51.1,
+              "y": 78.8,
+              "w": 21.1,
+              "h": 15.4,
+              "label": "4",
+              "title": "Different memory types",
+              "md": "SRAMs, register files and ROMs are all tested by MBIST — with different algorithms. A ROM is only read, and its data is compacted into a signature."
+            },
+            {
+              "x": 80.0,
+              "y": 11.5,
+              "w": 16.7,
+              "h": 82.7,
+              "label": "5",
+              "title": "Functional logic",
+              "md": "In normal operation the memories belong to the CPU, buses and accelerators. During MBIST the collar disconnects them."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "parts",
+      "title": "What each part does",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": [
+            "Part",
+            "Contains",
+            "Job"
+          ],
+          "rows": [
+            [
+              "**Controller**",
+              "state machine or small program, address generator, data generator",
+              "steps through the March elements, addresses and operations"
+            ],
+            [
+              "**Collar**",
+              "input muxes, output mux / bypass, comparator, pipeline registers",
+              "connects one memory to the controller during test, compares read data"
+            ],
+            [
+              "**Result registers**",
+              "pass/fail flags, done flag, diagnosis registers",
+              "keep the result until the tester reads it"
+            ],
+            [
+              "**Test access**",
+              "TAP controller, IJTAG network",
+              "start, configure and read every controller from outside"
+            ]
+          ],
+          "caption": "The parts of a memory BIST system"
+        },
+        {
+          "type": "callout",
+          "kind": "info",
+          "title": "You have met all of this before",
+          "md": "The controller is the *BIST controller* of *BIST Foundations* (IDLE → RUN → DONE). The address and data generators are the hardware form of ⇑ / ⇓ and of the data backgrounds from *March Tests*. Only the comparator replaces the MISR: memory read data is **predictable**, so it is compared directly."
+        }
+      ]
+    },
+    {
+      "id": "test-run",
+      "title": "One test run, end to end",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "1. **Configure** — through TAP/IJTAG the tester selects the controller, the memories, the algorithm and the options (backgrounds, diagnosis on/off).\n2. **Start** — the controller switches the collars to test mode.\n3. **Run** — at the memory's own clock speed, the controller executes the March test on one or several memories.\n4. **Compare** — every read is compared with the expected data; a mismatch sets a **fail flag**.\n5. **Done** — the controller raises *done*, switches the collars back to functional mode.\n6. **Read out** — the tester reads *done* and *pass/fail* (and diagnosis data if any) through TAP/IJTAG."
+        },
+        {
+          "type": "stepper",
+          "src": "assets/run-timeline.svg",
+          "interval": 2600,
+          "steps": [
+            {
+              "title": "Configure",
+              "md": "Through the slow **JTAG clock** the tester selects controller, memories, algorithm and options."
+            },
+            {
+              "title": "Start",
+              "md": "A single *start* signal crosses into the chip's fast clock domain."
+            },
+            {
+              "title": "Run",
+              "md": "The March test runs at the **memory clock** — hundreds of operations for every JTAG clock."
+            },
+            {
+              "title": "Compare",
+              "md": "Every read is checked as it happens; nothing has to wait for the tester."
+            },
+            {
+              "title": "Done",
+              "md": "*done* and *pass* cross back to the JTAG side."
+            },
+            {
+              "title": "Read out",
+              "md": "The tester shifts the result out through JTAG."
+            }
+          ]
+        },
+        {
+          "type": "sort",
+          "prompt": "Practice: put the steps of an MBIST run in order.",
+          "items": [
+            "Configure through TAP / IJTAG",
+            "Start: collars switch to test mode",
+            "Run the March test at speed",
+            "Compare read data, set fail flags",
+            "Done: collars back to functional mode",
+            "Tester reads done and pass/fail"
+          ]
+        },
+        {
+          "type": "callout",
+          "kind": "key",
+          "title": "Slow outside, fast inside",
+          "md": "The tester talks to the chip through a **slow** JTAG clock (a few to tens of MHz). The test itself runs at the **functional** memory clock (hundreds of MHz or more). Only the start and the results cross between the two."
+        }
+      ]
+    },
+    {
+      "id": "choices",
+      "title": "Design choices",
+      "blocks": [
+        {
+          "type": "svg",
+          "src": "assets/shared.svg",
+          "caption": "Dedicated controllers test everything in parallel; a shared controller saves area"
+        },
+        {
+          "type": "tabs",
+          "tabs": [
+            {
+              "label": "Dedicated or shared",
+              "md": "**One controller per memory** is simple and fast — every memory runs in parallel — but costs area for every memory. **One controller for many memories** saves area; the memories share the address and data generators. Real chips share, grouping memories that are physically close and use the same clock."
+            },
+            {
+              "label": "Serial or parallel",
+              "md": "A shared controller can test its memories **one after another** (serial — low power, long time) or **all at once** (parallel — short time, high power). Memories of different sizes and widths need care: the controller must know when each one is finished."
+            },
+            {
+              "label": "Hard-wired or programmable",
+              "md": "A **hard-wired** controller runs one or a few fixed algorithms. A **programmable** one loads the algorithm through IJTAG, so a stronger test can be used after the chip is made. Topic 4 compares both."
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "quiz": {
+    "questions": [
+      {
+        "id": "q-collar",
+        "type": "single",
+        "text": "What is the main job of the **collar** around a memory?",
+        "options": [
+          "Switching the memory between functional use and test use, and often comparing read data",
+          "Generating the March algorithm",
+          "Talking to the tester through JTAG",
+          "Storing the golden signature of the CPU"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "big-picture",
+          "parts"
+        ]
+      },
+      {
+        "id": "q-compare",
+        "type": "single",
+        "text": "Why does memory BIST compare read data directly instead of compacting it in a MISR, as logic BIST does?",
+        "options": [
+          "The expected memory data is known at every read, so it can be compared directly.",
+          "MISRs cannot be built for memories.",
+          "Memories have no outputs.",
+          "Direct compare needs a slower clock."
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "parts"
+        ]
+      },
+      {
+        "id": "q-order",
+        "type": "order",
+        "text": "Put the steps of an MBIST run in order.",
+        "items": [
+          "Configure",
+          "Start",
+          "Run at speed",
+          "Done",
+          "Read out pass/fail"
+        ],
+        "review": [
+          "test-run"
+        ]
+      },
+      {
+        "id": "q-clock",
+        "type": "single",
+        "text": "Which clock runs the March test itself?",
+        "options": [
+          "The memory's functional clock",
+          "The JTAG clock (TCK)",
+          "The tester's power supply",
+          "No clock — the test is asynchronous"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "test-run"
+        ]
+      },
+      {
+        "id": "q-shared",
+        "type": "multiple",
+        "text": "What is true about sharing one controller among several memories? Select **all** correct answers.",
+        "options": [
+          "It saves area compared with one controller per memory.",
+          "The memories can be tested serially or in parallel.",
+          "Memories sharing a controller are usually physically close and on the same clock.",
+          "Shared memories cannot be tested at speed."
+        ],
+        "correct": [
+          0,
+          1,
+          2
+        ],
+        "review": [
+          "choices"
+        ]
+      },
+      {
+        "id": "q-tap",
+        "type": "truefalse",
+        "text": "The tester starts MBIST and reads its results through the test access port (JTAG / IJTAG).",
+        "options": [
+          "True",
+          "False"
+        ],
+        "correct": [
+          0
+        ],
+        "shuffle": false,
+        "review": [
+          "big-picture"
+        ]
+      }
+    ]
+  }
+}

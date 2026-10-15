@@ -1,0 +1,219 @@
+{
+  "id": "icl-pdl",
+  "title": "ICL and PDL: describing and operating instruments",
+  "duration": "40 min",
+  "summary": "IEEE 1687 comes with two languages. **ICL** describes the hardware — registers, ports, SIBs, muxes and how they connect. **PDL** describes how an instrument is used, at the instrument's own level. A **retargeting** tool combines both and produces the chip-level JTAG operations.",
+  "objectives": [
+    "Read a small ICL description of an instrument and a SIB.",
+    "Use the main PDL commands: iProc, iWrite, iRead, iApply, iRunLoop, iCall, iMerge.",
+    "Explain how iApply merges many requests into few scans.",
+    "Explain retargeting and why PDL stays portable."
+  ],
+  "subsections": [
+    {
+      "id": "icl",
+      "title": "ICL: describing the network",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "ICL (Instrument Connectivity Language) describes **modules** and how they are connected. A module lists its **ports** (the scan interface of Topic 6 and data ports), its **registers** and **muxes**, and the **instances** of other modules inside it."
+        },
+        {
+          "type": "table",
+          "columns": ["ICL keyword", "Describes"],
+          "rows": [
+            ["Module", "a block: an instrument TDR, a SIB, a core's network, the whole chip"],
+            ["ScanInPort / ScanOutPort", "serial in / out of the module"],
+            ["SelectPort, ShiftEnPort, CaptureEnPort, UpdateEnPort, ResetPort, TCKPort", "the scan control interface"],
+            ["DataInPort / DataOutPort", "parallel ports to and from the instrument logic"],
+            ["ScanRegister", "a shift register on the scan path, with CaptureSource and ResetValue"],
+            ["ScanMux … SelectedBy", "a mux in the scan path and the register bits that control it"],
+            ["Instance", "a module used inside another module"],
+            ["Alias, Enum", "readable names for register fields and values"],
+            ["AccessLink", "how the top-level network attaches to the TAP"]
+          ],
+          "caption": "Main ICL keywords"
+        },
+        {
+          "type": "code",
+          "lang": "text",
+          "code": "// A SIB in ICL (close to the example in IEEE 1687, simplified)\nModule SIB {\n  ScanInPort    si;\n  ScanOutPort   so     { Source SR; }\n  ScanOutPort   toSI   { Source si; }\n  ScanInPort    fromSO;\n  SelectPort    sel;\n  ToSelectPort  toSel  { Source SR; }\n  ShiftEnPort   se;  CaptureEnPort ce;  UpdateEnPort ue;\n  ResetPort     rst; TCKPort       tck;\n  ScanRegister  SR { ScanInSource sibMux; CaptureSource 1'b0; ResetValue 1'b0; }\n  ScanMux sibMux SelectedBy SR {\n    1'b0 : si;\n    1'b1 : fromSO;\n  }\n}"
+        },
+        {
+          "type": "code",
+          "lang": "text",
+          "code": "// An instrument TDR (illustration)\nModule mbist_tdr {\n  ScanInPort  si;   ScanOutPort so { Source R[0]; }\n  SelectPort  sel;  ShiftEnPort se;  CaptureEnPort ce;  UpdateEnPort ue;\n  ResetPort   rst;  TCKPort tck;\n  DataOutPort config[7:0] { Source R[15:8]; }\n  DataInPort  status[7:0];\n  ScanRegister R[15:0] { ScanInSource si; CaptureSource status[7:0], 8'b0; ResetValue 16'b0; }\n  Alias start = R[15];\n  Alias done  = R[7];\n  Alias pass  = R[6];\n}"
+        },
+        {
+          "type": "callout",
+          "kind": "info",
+          "title": "Who writes ICL?",
+          "md": "Instrument designers write the ICL of their instrument; the DFT tool that inserts the network writes the ICL of the network and the chip. Nobody writes the chip-level ICL by hand."
+        }
+      ]
+    },
+    {
+      "id": "pdl",
+      "title": "PDL: operating an instrument",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "PDL (Procedural Description Language) is written from the **instrument's point of view**: write this field, wait, read that field. It knows nothing about the network around the instrument. PDL comes in two levels: **level 0**, a fixed list of commands, and **level 1**, which adds the full Tcl language — loops, conditions, and reading back data with *iGetReadData* to decide what to do next."
+        },
+        {
+          "type": "table",
+          "columns": ["PDL command", "Meaning"],
+          "rows": [
+            ["iProcsForModule *m*", "the following procedures belong to module *m*"],
+            ["iProc *name* {args} {…}", "define a procedure"],
+            ["iWrite *reg* *value*", "queue a write to a register, field or data port"],
+            ["iRead *reg* *value*", "queue a read and the value expected"],
+            ["iApply", "execute all queued writes and reads in as few scans as possible"],
+            ["iRunLoop *n* -tck", "wait *n* clocks (e.g. while a BIST runs)"],
+            ["iCall *instance.proc*", "call a procedure of an instrument further down the hierarchy"],
+            ["iMerge -begin … -end", "run the iCalls in between concurrently, sharing scans"],
+            ["iReset", "reset the network"],
+            ["iClock *port*", "state that a clock must be running for the following operations"]
+          ],
+          "caption": "Main PDL commands (level 0)"
+        },
+        {
+          "type": "code",
+          "lang": "text",
+          "code": "iProcsForModule mbist_tdr\n\niProc run_test {algo} {\n  iWrite config $algo\n  iWrite start  1\n  iApply\n  iRunLoop 1100000 -tck\n  iRead  done 1\n  iRead  pass 1\n  iApply\n}"
+        },
+        {
+          "type": "categorize",
+          "prompt": "Practice: ICL or PDL?",
+          "categories": [{ "id": "icl", "label": "ICL — structure" }, { "id": "pdl", "label": "PDL — operation" }],
+          "items": [
+            { "text": "ScanRegister R[15:0] { … }", "category": "icl" },
+            { "text": "ScanMux m SelectedBy SR { … }", "category": "icl" },
+            { "text": "iWrite start 1", "category": "pdl" },
+            { "text": "iRunLoop 1000 -tck", "category": "pdl" },
+            { "text": "DataInPort status[7:0];", "category": "icl" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "iapply",
+      "title": "iApply: few scans for many requests",
+      "blocks": [
+        {
+          "type": "stepper",
+          "src": "assets/iapply.svg",
+          "interval": 3000,
+          "steps": [
+            { "title": "Queue", "md": "iWrite and iRead only **queue** requests. They can address different instruments." },
+            { "title": "Build the path", "md": "At **iApply** the tool finds a path through the network that contains all addressed registers, and the SIB settings to open it." },
+            { "title": "One scan", "md": "One DR scan writes both start bits and checks the sensor. Registers on the path that were not addressed keep their values." }
+          ]
+        },
+        {
+          "type": "callout",
+          "kind": "key",
+          "title": "iMerge: instruments in parallel",
+          "md": "Inside **iMerge**, the iCalls to several instruments are interleaved: their iApply steps are combined into shared scans. Starting 40 MBIST controllers then costs about the same number of scans as starting one."
+        }
+      ]
+    },
+    {
+      "id": "retargeting",
+      "title": "Retargeting",
+      "blocks": [
+        {
+          "type": "svg",
+          "src": "assets/retarget.svg",
+          "caption": "Instrument-level PDL plus the network's ICL become chip-level JTAG operations"
+        },
+        {
+          "type": "text",
+          "md": "The **retargeting** tool reads the PDL of every instrument and the ICL of the whole chip. For every iApply it computes which SIBs and muxes must be set, how many scans are needed, and which bits to shift — and writes the result as tester patterns (or as software for on-chip access)."
+        },
+        {
+          "type": "code",
+          "lang": "text",
+          "code": "# chip-level PDL: call instrument procedures by instance path\niProcsForModule chip\niProc test_all_mbist {} {\n  iMerge -begin\n    iCall coreA.mbist1.run_test MarchCminus\n    iCall coreA.mbist2.run_test MarchCminus\n  iMerge -end\n}"
+        },
+        {
+          "type": "callout",
+          "kind": "tip",
+          "title": "Write once, reuse everywhere",
+          "md": "When an instrument moves to a new chip, its ICL and PDL stay the same. Only the network around it — and its ICL — changes, and retargeting produces the new patterns automatically."
+        },
+        {
+          "type": "sort",
+          "prompt": "Practice: put the steps from instrument to tester in order.",
+          "items": ["Instrument designer writes ICL and PDL of the instrument", "DFT tool inserts the network and writes the chip ICL", "Test engineer writes chip-level PDL with iCall", "Retargeting produces TAP patterns", "Tester runs the patterns"]
+        }
+      ]
+    }
+  ],
+  "quiz": {
+    "questions": [
+      {
+        "id": "q-icl",
+        "type": "single",
+        "text": "What does ICL describe?",
+        "options": ["The structure and connections of registers, muxes and modules", "How to use an instrument step by step", "The board netlist", "The memory content"],
+        "correct": [0],
+        "review": ["icl"]
+      },
+      {
+        "id": "q-mux",
+        "type": "single",
+        "text": "In the SIB ICL, what happens when SR = 1?",
+        "options": ["The ScanMux takes fromSO: the segment is in the path", "The segment is skipped", "The network is reset", "TCK stops"],
+        "correct": [0],
+        "review": ["icl"]
+      },
+      {
+        "id": "q-iapply",
+        "type": "single",
+        "text": "What does iApply do?",
+        "options": ["Executes all queued iWrite/iRead requests in as few scans as possible", "Defines a procedure", "Waits for a number of TCK clocks", "Resets the network"],
+        "correct": [0],
+        "review": ["pdl", "iapply"]
+      },
+      {
+        "id": "q-level",
+        "type": "single",
+        "text": "What does PDL level 1 add to level 0?",
+        "options": ["The Tcl language: loops, conditions and using read data to decide", "Boundary scan", "A graphical editor", "Analog instruments"],
+        "correct": [0],
+        "review": ["pdl"]
+      },
+      {
+        "id": "q-merge",
+        "type": "single",
+        "text": "Why use iMerge around several iCalls?",
+        "options": ["Their operations are combined into shared scans, so the instruments run concurrently", "To run them strictly one after another", "To merge two ICL files", "To combine TDI and TDO"],
+        "correct": [0],
+        "review": ["iapply", "retargeting"]
+      },
+      {
+        "id": "q-portable",
+        "type": "truefalse",
+        "text": "When an instrument is reused in a new chip, its PDL can stay the same; only the ICL of the new network changes.",
+        "options": ["True", "False"],
+        "correct": [0],
+        "shuffle": false,
+        "review": ["retargeting"]
+      },
+      {
+        "id": "q-sort",
+        "type": "match",
+        "text": "Sort the statements: ICL or PDL?",
+        "categories": [{ "id": "icl", "label": "ICL" }, { "id": "pdl", "label": "PDL" }],
+        "items": [
+          { "text": "ScanOutPort so { Source R[0]; }", "category": "icl" },
+          { "text": "Alias start = R[15];", "category": "icl" },
+          { "text": "iRead pass 1", "category": "pdl" },
+          { "text": "iCall coreA.mbist1.run_test", "category": "pdl" }
+        ],
+        "review": ["icl", "pdl"]
+      }
+    ]
+  }
+}

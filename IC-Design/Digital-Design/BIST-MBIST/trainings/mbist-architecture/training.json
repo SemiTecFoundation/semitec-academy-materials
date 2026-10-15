@@ -1,0 +1,58 @@
+{
+  "id": "mbist-architecture",
+  "version": "0.1",
+  "title": "MBIST Architecture",
+  "subtitle": "SemiTec Foundation · BIST / MBIST",
+  "language": "en",
+  "layout": "sidebar",
+  "theme": "foundation",
+  "themes": [
+    "foundation",
+    "midnight",
+    "paper"
+  ],
+  "allowViewSwitch": true,
+  "passThreshold": 0.75,
+  "showCorrectAnswers": "afterPass",
+  "requireSequential": true,
+  "topicWord": "Topic",
+  "hours": "4",
+  "schedule": {
+    "weeks": 2,
+    "topics": [
+      {
+        "week": 1,
+        "topics": [
+          "overview",
+          "collar",
+          "generators",
+          "controller"
+        ]
+      },
+      {
+        "week": 2,
+        "topics": [
+          "results",
+          "special",
+          "integration"
+        ]
+      }
+    ]
+  },
+  "delivery": {
+    "mode": "standalone",
+    "urlParams": true,
+    "resume": true
+  },
+  "labels": {},
+  "topics": [
+    "01-overview.json",
+    "02-collar.json",
+    "03-generators.json",
+    "04-controller.json",
+    "05-results.json",
+    "06-special.json",
+    "07-integration.json"
+  ],
+  "certificate": "certificate.json"
+}

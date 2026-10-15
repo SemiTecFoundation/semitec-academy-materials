@@ -1,0 +1,220 @@
+{
+  "id": "fault-primitives",
+  "title": "Fault primitives and what comes next",
+  "duration": "30 min",
+  "summary": "Topics 4–6 used a different notation for every fault family. This topic puts all of them into **one notation — the fault primitive** — separates static from dynamic and linked faults, and ends with the table that turns fault models into test requirements: the bridge to **March tests**.",
+  "objectives": [
+    "Read and write a fault primitive ⟨S / F / R⟩ for single-cell and two-cell faults.",
+    "Tell static, dynamic and linked faults apart.",
+    "State which operations a test needs to detect each fault family."
+  ],
+  "subsections": [
+    {
+      "id": "fp-notation",
+      "title": "One notation for all faults",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "A **fault primitive (FP)** describes a fault by the behaviour you can see from outside: what you do to the memory, and what goes wrong. It has three parts:"
+        },
+        {
+          "type": "stepper",
+          "src": "assets/fp-notation.svg",
+          "interval": 3000,
+          "steps": [
+            { "title": "⟨ S / F / R ⟩", "md": "**S** — the *sensitizing sequence*: the value in the cell plus the operations that trigger the fault (e.g. **0w1** = the cell holds 0, then 1 is written). **F** — the value the faulty cell holds afterwards. **R** — the value a read in S returns; **−** if S does not end with a read." },
+            { "title": "A single-cell example", "md": "**⟨0r0/1/0⟩** — the cell holds 0 and is read. Afterwards it holds 1, but the read returned the correct 0. This is the **DRDF** from Topic 6." },
+            { "title": "A two-cell example", "md": "For coupling faults S has two parts, **aggressor ; victim**. **⟨0w1;0/1/−⟩** — the aggressor goes 0 → 1 while the victim holds 0, and the victim flips to 1. This is a coupling fault from Topic 5." }
+          ]
+        },
+        {
+          "type": "table",
+          "columns": ["Fault (topic)", "Fault primitive", "In words"],
+          "rows": [
+            ["State fault (4)", "⟨0/1/−⟩", "the cell flips by itself, without any operation"],
+            ["Transition fault ↑ (4)", "⟨0w1/0/−⟩", "writing 1 into a 0 does not change the cell"],
+            ["Write-disturb fault (6)", "⟨0w0/1/−⟩", "writing the same 0 flips the cell"],
+            ["Read destructive fault (6)", "⟨0r0/1/1⟩", "the read flips the cell and returns 1"],
+            ["Deceptive RDF (6)", "⟨0r0/1/0⟩", "the read flips the cell but returns 0"],
+            ["Incorrect read fault (6)", "⟨0r0/0/1⟩", "the read returns 1, the cell is fine"],
+            ["State coupling (5)", "⟨1;1/0/−⟩", "while the aggressor holds 1, the victim cannot hold 1"],
+            ["Disturb coupling (5)", "⟨0w1;0/1/−⟩", "an aggressor write 0 → 1 flips the victim"]
+          ],
+          "caption": "Faults from Topics 4–6 written as fault primitives (each also exists with 0 and 1 swapped)"
+        },
+        {
+          "type": "callout",
+          "kind": "key",
+          "title": "Why this notation matters",
+          "md": "Because S, F and R can only take a few values, the FPs can be **counted**: there are exactly **12 static single-cell** FPs and **36 static two-cell** FPs. A test can be checked against the complete list — this is how modern March tests are proven to detect *all* static faults."
+        }
+      ]
+    },
+    {
+      "id": "static-dynamic",
+      "title": "Static, dynamic and linked faults",
+      "blocks": [
+        {
+          "type": "tabs",
+          "tabs": [
+            { "label": "Static", "md": "S contains **at most one operation** (0, 0w1, 0r0 …). Every fault in Topics 4–6 is static. Most defects behave like this, and classic March tests target them." },
+            { "label": "Dynamic", "md": "S contains **two or more operations in a row**, for example **⟨0w1r1/0/0⟩**: writing 1 and reading it *immediately* afterwards flips the cell back and returns 0. A slower sequence, or one with another operation in between, would not trigger it. Dynamic faults grow more important in small technology nodes and need **back-to-back operations at full speed**." },
+            { "label": "Linked", "md": "Two faults that **mask each other**. Example: writing 1 into aggressor *a1* flips victim *v* to 1, and writing 1 into aggressor *a2* flips it back to 0. A test that writes a1, then a2, then reads v sees the correct 0 — **both faults escape**. Special tests (e.g. March SL) order their operations so that linked faults cannot hide." }
+          ]
+        },
+        {
+          "type": "categorize",
+          "prompt": "Practice: is the fault primitive static or dynamic?",
+          "categories": [{ "id": "s", "label": "Static (≤ 1 operation)" }, { "id": "d", "label": "Dynamic (≥ 2 operations)" }],
+          "items": [
+            { "text": "⟨0w1/0/−⟩", "category": "s" },
+            { "text": "⟨1r1/0/0⟩", "category": "s" },
+            { "text": "⟨0/1/−⟩", "category": "s" },
+            { "text": "⟨0w1r1/0/0⟩", "category": "d" },
+            { "text": "⟨1r1r1/0/0⟩", "category": "d" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "detect",
+      "title": "From faults to tests",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "Every fault model asks for certain operations. Collect them in one table and you have the **requirements for a memory test**:"
+        },
+        {
+          "type": "table",
+          "columns": ["Fault family", "The test must …", "Example operations"],
+          "rows": [
+            ["Stuck-at (SAF)", "write and read **both values** in every cell", "w0 … r0, w1 … r1"],
+            ["Transition (TF)", "make **both transitions**, then read", "w0, w1, r1 · w1, w0, r0"],
+            ["Stuck-open (SOF)", "read **opposite values** one after the other", "r0 then r1 in the same column"],
+            ["Data retention (DRF)", "**wait** after a write, then read", "w0, pause, r0 · w1, pause, r1"],
+            ["Coupling (CF)", "operate on the aggressor, then read the victim — in **both address orders**", "⇑(r0, w1) ⇓(r1, w0)"],
+            ["Address decoder (AF)", "⇑(r x … w x̄) **and** ⇓(r x̄ … w x)", "⇑(r0, w1) ⇓(r1, w0)"],
+            ["RDF, IRF", "**read** every cell in both states", "r0, r1"],
+            ["DRDF", "read **twice** in a row", "r0, r0"],
+            ["WDF", "**write the value the cell already holds**, then read", "w0, w0, r0"],
+            ["Intra-word CF", "use several **data backgrounds**", "log₂(B) + 1 backgrounds for B-bit words"]
+          ],
+          "caption": "Test requirements collected from Topics 4–6"
+        },
+        {
+          "type": "callout",
+          "kind": "info",
+          "title": "Look at the last column",
+          "md": "The same few patterns appear again and again: **sweep up, sweep down, read, write the opposite value**. A short sequence such as **⇕(w0) ⇑(r0, w1) ⇓(r1, w0) ⇕(r0)** already meets many of these requirements. That is a **March test** — the subject of the next training."
+        },
+        {
+          "type": "callout",
+          "kind": "tip",
+          "title": "And ECC?",
+          "md": "MBIST finds faults **at test time**. Faults that appear later — wear-out, or bits flipped by radiation (**soft errors**) — are handled in operation by **error-correcting codes (ECC)**. How ECC works is part of the memory courses in *Digital Design*; how MBIST tests memories with ECC, and how both work together in the field, comes in the *MBIST Architecture* and *BIST in the Field* trainings."
+        },
+        {
+          "type": "flipcards",
+          "md": "Check yourself before the quiz: say the meaning, then flip the card.",
+          "cards": [
+            { "front": "**Functional model**", "back": "Address decoder, cell array and read/write logic — the parts a fault model talks about." },
+            { "front": "**SAF / TF**", "back": "A cell stuck at one value / a cell that cannot make one transition." },
+            { "front": "**DRF**", "back": "Data retention fault: the cell loses its value after a while without access." },
+            { "front": "**Aggressor / victim**", "back": "In a coupling fault, the cell that acts / the cell that goes wrong." },
+            { "front": "**AF1–AF4**", "back": "No cell · cell never reached · several cells · several addresses." },
+            { "front": "**DRDF**", "back": "The read returns the right value but flips the cell — needs two reads." },
+            { "front": "**⟨S / F / R⟩**", "back": "Fault primitive: sensitizing sequence / faulty cell value / read result." },
+            { "front": "**Linked faults**", "back": "Two faults that mask each other so that a simple test misses both." }
+          ]
+        },
+        {
+          "type": "callout",
+          "kind": "tip",
+          "title": "Your certificate",
+          "md": "Pass the quiz of this topic to complete the training and open your certificate."
+        }
+      ]
+    }
+  ],
+  "quiz": {
+    "questions": [
+      {
+        "id": "q-fpparts",
+        "type": "single",
+        "text": "In the fault primitive ⟨S / F / R⟩, what does **R** stand for?",
+        "options": [
+          "The value returned by the read in S (− if there is no read)",
+          "The number of repetitions of S",
+          "The row of the faulty cell",
+          "The value the faulty cell holds afterwards"
+        ],
+        "correct": [0],
+        "review": ["fp-notation"]
+      },
+      {
+        "id": "q-decode",
+        "type": "single",
+        "text": "Which fault is **⟨0r0/0/1⟩**?",
+        "options": ["Incorrect read fault (IRF)", "Read destructive fault (RDF)", "Deceptive read destructive fault (DRDF)", "Transition fault"],
+        "correct": [0],
+        "review": ["fp-notation"]
+      },
+      {
+        "id": "q-write",
+        "type": "single",
+        "text": "Which fault primitive describes a **transition fault ↑** (the cell cannot go from 0 to 1)?",
+        "options": ["⟨0w1/0/−⟩", "⟨0w0/1/−⟩", "⟨0r0/1/1⟩", "⟨1w0/1/−⟩"],
+        "correct": [0],
+        "review": ["fp-notation"]
+      },
+      {
+        "id": "q-staticdyn",
+        "type": "match",
+        "text": "Sort the fault primitives: static or dynamic?",
+        "categories": [{ "id": "s", "label": "Static" }, { "id": "d", "label": "Dynamic" }],
+        "items": [
+          { "text": "⟨1w0/1/−⟩", "category": "s" },
+          { "text": "⟨0r0/1/0⟩", "category": "s" },
+          { "text": "⟨0w1r1/0/0⟩", "category": "d" },
+          { "text": "⟨0r0r0/1/1⟩", "category": "d" }
+        ],
+        "review": ["static-dynamic"]
+      },
+      {
+        "id": "q-linked",
+        "type": "single",
+        "text": "What makes **linked faults** hard to detect?",
+        "options": [
+          "One fault can undo the effect of the other, so the victim ends with the correct value.",
+          "They only occur in ROM.",
+          "They need more than 64 data backgrounds.",
+          "They change the address decoder."
+        ],
+        "correct": [0],
+        "review": ["static-dynamic"]
+      },
+      {
+        "id": "q-req",
+        "type": "multiple",
+        "text": "Which requirements must a memory test meet to cover the faults of this training? Select **all** correct answers.",
+        "options": [
+          "Visit the addresses both upwards and downwards.",
+          "Read some cells twice in a row.",
+          "Wait between a write and a read for retention faults.",
+          "Write each cell only once to save time."
+        ],
+        "correct": [0, 1, 2],
+        "review": ["detect"]
+      },
+      {
+        "id": "q-ecc",
+        "type": "truefalse",
+        "text": "ECC corrects errors during operation, for example soft errors, while MBIST finds faults when the memory is tested.",
+        "options": ["True", "False"],
+        "correct": [0],
+        "shuffle": false,
+        "review": ["detect"]
+      }
+    ]
+  }
+}

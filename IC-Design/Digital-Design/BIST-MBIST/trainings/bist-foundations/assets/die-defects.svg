@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500" font-family="Segoe UI, Arial, sans-serif">
+  <defs>
+    <pattern id="dd-grid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0H0V20" fill="none" stroke="#dfe7f1" stroke-width="1"/></pattern>
+    <radialGradient id="dd-part" cx="40%" cy="35%" r="70%"><stop offset="0" stop-color="#9a6b3a"/><stop offset="1" stop-color="#5a3a1a"/></radialGradient>
+  </defs>
+  <rect width="800" height="500" rx="14" fill="#ffffff"/>
+  <!-- the die -->
+  <rect x="20" y="20" width="760" height="460" rx="10" fill="#f6f9fc" stroke="#1f4e79" stroke-width="3"/>
+  <rect x="20" y="20" width="760" height="460" rx="10" fill="url(#dd-grid)"/>
+  <text x="400" y="45" text-anchor="middle" font-size="15" font-weight="700" fill="#1f4e79">A die under the microscope (not to scale)</text>
+  <!-- bond pads -->
+  <g fill="#c9a227" stroke="#8a6d00">
+    <rect x="34" y="70" width="14" height="14"/><rect x="34" y="150" width="14" height="14"/><rect x="34" y="230" width="14" height="14"/><rect x="34" y="310" width="14" height="14"/><rect x="34" y="390" width="14" height="14"/>
+    <rect x="752" y="70" width="14" height="14"/><rect x="752" y="150" width="14" height="14"/><rect x="752" y="230" width="14" height="14"/><rect x="752" y="310" width="14" height="14"/><rect x="752" y="390" width="14" height="14"/>
+  </g>
+
+  <!-- 1: bridge (short) between two wires -->
+  <g>
+    <rect x="80" y="70" width="200" height="150" rx="8" fill="#ffffff" stroke="#b9c6d6"/>
+    <rect x="95" y="110" width="170" height="16" rx="3" fill="#6b8fb8"/>
+    <rect x="95" y="160" width="170" height="16" rx="3" fill="#6b8fb8"/>
+    <ellipse cx="185" cy="143" rx="20" ry="30" fill="url(#dd-part)"/>
+    <text x="180" y="95" text-anchor="middle" font-size="13" fill="#34495e">metal wires A and B</text>
+    <text x="180" y="205" text-anchor="middle" font-size="13" font-weight="700" fill="#c0392b">particle</text>
+  </g>
+
+  <!-- 2: open (broken wire / missing via) -->
+  <g>
+    <rect x="310" y="70" width="180" height="150" rx="8" fill="#ffffff" stroke="#b9c6d6"/>
+    <rect x="325" y="135" width="62" height="16" rx="3" fill="#6b8fb8"/>
+    <rect x="413" y="135" width="62" height="16" rx="3" fill="#6b8fb8"/>
+    <path d="M387 130l8 10-6 6 8 10" fill="none" stroke="#c0392b" stroke-width="2.5"/>
+    <path d="M413 130l-8 10 6 6-8 10" fill="none" stroke="#c0392b" stroke-width="2.5"/>
+    <rect x="440" y="95" width="18" height="18" fill="none" stroke="#c0392b" stroke-width="2" stroke-dasharray="4 3"/>
+    <text x="400" y="95" text-anchor="middle" font-size="13" fill="#34495e">one wire</text>
+    <text x="400" y="205" text-anchor="middle" font-size="13" font-weight="700" fill="#c0392b">crack / missing via</text>
+  </g>
+
+  <!-- 3: gate-oxide defect in a transistor -->
+  <g>
+    <rect x="520" y="70" width="210" height="150" rx="8" fill="#ffffff" stroke="#b9c6d6"/>
+    <rect x="545" y="160" width="160" height="34" fill="#d9e6f2" stroke="#7d93ab"/>
+    <rect x="555" y="150" width="40" height="14" fill="#a8c4e0"/><rect x="655" y="150" width="40" height="14" fill="#a8c4e0"/>
+    <rect x="600" y="138" width="50" height="8" fill="#f3d27a" stroke="#8a6d00"/>
+    <rect x="600" y="112" width="50" height="26" fill="#8e9fb3"/>
+    <circle cx="625" cy="142" r="5" fill="#c0392b"/>
+    <text x="625" y="100" text-anchor="middle" font-size="13" fill="#34495e">transistor gate</text>
+    <text x="625" y="212" text-anchor="middle" font-size="13" font-weight="700" fill="#c0392b">pinhole in gate oxide</text>
+  </g>
+
+  <!-- 4: resistive / slow path (delay defect) -->
+  <g>
+    <rect x="80" y="260" width="250" height="180" rx="8" fill="#ffffff" stroke="#b9c6d6"/>
+    <rect x="100" y="300" width="40" height="30" rx="4" fill="#eef4fb" stroke="#1f4e79" stroke-width="2"/>
+    <rect x="270" y="300" width="40" height="30" rx="4" fill="#eef4fb" stroke="#1f4e79" stroke-width="2"/>
+    <text x="120" y="320" text-anchor="middle" font-size="11" font-weight="700" fill="#1f4e79">FF</text>
+    <text x="290" y="320" text-anchor="middle" font-size="11" font-weight="700" fill="#1f4e79">FF</text>
+    <path d="M140 315H180l5-8 10 16 10-16 10 16 10-16 5 8H270" fill="none" stroke="#c0392b" stroke-width="2.5"/>
+    <text x="205" y="295" text-anchor="middle" font-size="12" fill="#c0392b">thin / resistive spot</text>
+    <path d="M100 400h40v-30h50v30h40v-30h50" fill="none" stroke="#34495e" stroke-width="2"/>
+    <path d="M100 410h55v-30h50v30h40v-30h35" fill="none" stroke="#c0392b" stroke-width="2" stroke-dasharray="5 3"/>
+    <text x="205" y="432" text-anchor="middle" font-size="13" font-weight="700" fill="#c0392b">signal arrives too late</text>
+  </g>
+
+  <!-- 5: memory array with a bad cell -->
+  <g>
+    <rect x="360" y="260" width="370" height="180" rx="8" fill="#ffffff" stroke="#b9c6d6"/>
+    <text x="545" y="285" text-anchor="middle" font-size="13" fill="#34495e">embedded SRAM (thousands of cells)</text>
+    <g fill="#eaf1f8" stroke="#9fb3c8">
+      <rect x="400" y="300" width="22" height="18"/><rect x="426" y="300" width="22" height="18"/><rect x="452" y="300" width="22" height="18"/><rect x="478" y="300" width="22" height="18"/><rect x="504" y="300" width="22" height="18"/><rect x="530" y="300" width="22" height="18"/><rect x="556" y="300" width="22" height="18"/><rect x="582" y="300" width="22" height="18"/><rect x="608" y="300" width="22" height="18"/><rect x="634" y="300" width="22" height="18"/><rect x="660" y="300" width="22" height="18"/>
+      <rect x="400" y="322" width="22" height="18"/><rect x="426" y="322" width="22" height="18"/><rect x="452" y="322" width="22" height="18"/><rect x="478" y="322" width="22" height="18"/><rect x="504" y="322" width="22" height="18"/><rect x="530" y="322" width="22" height="18"/><rect x="556" y="322" width="22" height="18"/><rect x="582" y="322" width="22" height="18"/><rect x="608" y="322" width="22" height="18"/><rect x="634" y="322" width="22" height="18"/><rect x="660" y="322" width="22" height="18"/>
+      <rect x="400" y="344" width="22" height="18"/><rect x="426" y="344" width="22" height="18"/><rect x="452" y="344" width="22" height="18"/><rect x="478" y="344" width="22" height="18"/><rect x="504" y="344" width="22" height="18"/><rect x="530" y="344" width="22" height="18"/><rect x="556" y="344" width="22" height="18"/><rect x="582" y="344" width="22" height="18"/><rect x="608" y="344" width="22" height="18"/><rect x="634" y="344" width="22" height="18"/><rect x="660" y="344" width="22" height="18"/>
+      <rect x="400" y="366" width="22" height="18"/><rect x="426" y="366" width="22" height="18"/><rect x="452" y="366" width="22" height="18"/><rect x="478" y="366" width="22" height="18"/><rect x="504" y="366" width="22" height="18"/><rect x="530" y="366" width="22" height="18"/><rect x="556" y="366" width="22" height="18"/><rect x="582" y="366" width="22" height="18"/><rect x="608" y="366" width="22" height="18"/><rect x="634" y="366" width="22" height="18"/><rect x="660" y="366" width="22" height="18"/>
+      <rect x="400" y="388" width="22" height="18"/><rect x="426" y="388" width="22" height="18"/><rect x="452" y="388" width="22" height="18"/><rect x="478" y="388" width="22" height="18"/><rect x="504" y="388" width="22" height="18"/><rect x="530" y="388" width="22" height="18"/><rect x="556" y="388" width="22" height="18"/><rect x="582" y="388" width="22" height="18"/><rect x="608" y="388" width="22" height="18"/><rect x="634" y="388" width="22" height="18"/><rect x="660" y="388" width="22" height="18"/>
+    </g>
+    <rect x="556" y="344" width="22" height="18" fill="#f5b7b1" stroke="#c0392b" stroke-width="2.5"/>
+    <text x="545" y="430" text-anchor="middle" font-size="13" font-weight="700" fill="#c0392b">one cell cannot hold a 1</text>
+  </g>
+</svg>

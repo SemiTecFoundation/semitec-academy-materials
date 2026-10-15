@@ -1,0 +1,214 @@
+{
+  "id": "tiny-bist",
+  "title": "A tiny BIST, end to end",
+  "duration": "30 min",
+  "summary": "Time to put everything together: a **controller** starts the test, an **LFSR** makes the patterns, a small circuit answers, a **MISR** compacts the answers, and the result is compared with the **golden signature**. You will follow every clock and see a fault being caught.",
+  "objectives": [
+    "Describe the states of a BIST controller.",
+    "Explain where the golden signature comes from and what fault coverage means.",
+    "Follow a complete BIST run clock by clock and see how a fault changes the signature.",
+    "Know what the MBIST and LBIST courses build on this."
+  ],
+  "subsections": [
+    {
+      "id": "controller",
+      "title": "The BIST controller",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "The pattern generator and the MISR need someone to tell them **when** to start and **when** to stop. That is the job of a small finite-state machine, the **BIST controller**:"
+        },
+        {
+          "type": "stepper",
+          "src": "assets/tiny-fsm.svg",
+          "interval": 2400,
+          "steps": [
+            { "title": "IDLE", "md": "The chip works normally. The BIST logic waits; its output **done** is 0." },
+            { "title": "INIT", "md": "The tester (or the chip's own software at power-on) raises **start**. The controller loads the **seed** into the LFSR, clears the MISR and the pattern counter, and switches the circuit's inputs to the LFSR." },
+            { "title": "RUN", "md": "On every clock the LFSR produces a new pattern, the circuit answers and the MISR takes the answers in. A counter counts the patterns." },
+            { "title": "CHECK", "md": "After exactly **N** patterns the controller stops the LFSR and the MISR and compares the MISR with the **golden signature**." },
+            { "title": "DONE", "md": "The controller raises **done** and sets **pass** to 1 or 0. When the tester has read the result and drops *start*, it returns to IDLE and the chip goes back to normal work." }
+          ]
+        },
+        {
+          "type": "callout",
+          "kind": "key",
+          "title": "Why count exactly N patterns?",
+          "md": "The golden signature is valid only for the **same seed** and the **same number of patterns**. One clock more or less and even a perfect chip gives a different signature."
+        },
+        {
+          "type": "table",
+          "columns": ["Signal", "Direction", "Meaning"],
+          "rows": [
+            ["start", "in", "begin a BIST run"],
+            ["done", "out", "the run is finished"],
+            ["pass", "out", "1 = signature equals the golden one"],
+            ["test_mode", "internal", "connects the circuit to the LFSR and MISR instead of its normal inputs"]
+          ],
+          "caption": "The controller's interface — in a real chip these are reached through JTAG"
+        }
+      ]
+    },
+    {
+      "id": "golden",
+      "title": "The golden signature and fault coverage",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "Where does the expected value come from? Before the chip is built, engineers **simulate** the fault-free design with exactly the BIST settings: same seed, same number of patterns. The final MISR value in the simulation is the **golden signature**. It is stored as a constant in the controller, or the tester reads the signature and compares it."
+        },
+        {
+          "type": "accordion",
+          "items": [
+            { "title": "Fault simulation", "md": "The same simulation is repeated with one modelled fault at a time (for example, every line stuck-at-0 and stuck-at-1). If the final signature differs from the golden one, the fault is **detected**." },
+            { "title": "Fault coverage", "md": "> fault coverage = detected faults ÷ all modelled faults\n\nFor production chips the target is usually well above **95 %** for stuck-at faults. If LBIST alone does not reach it, more patterns, test points or extra tester patterns are added." },
+            { "title": "Keep it up to date", "md": "Every change in the design (or in the seed or pattern count) changes the golden signature. It is regenerated automatically in the design flow — never typed in by hand." }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "walkthrough",
+      "title": "Walk-through: catching a fault",
+      "blocks": [
+        {
+          "type": "scrolly",
+          "src": "assets/tiny-bist.svg",
+          "steps": [
+            { "title": "1. Pattern generator", "md": "A 3-bit LFSR from Topic 4 (new Q1 = Q2 ⊕ Q3), seed 100. It drives the inputs **a, b, c** and goes through all 7 non-zero patterns." },
+            { "title": "2. Circuit under test", "md": "A tiny circuit with three outputs: **y1 = a AND b**, **y2 = b OR c**, **y3 = a XOR c**." },
+            { "title": "3. MISR", "md": "The 4-bit MISR from Topic 5 takes y1, y2, y3 as D1, D2, D3 (D4 = 0). It starts at 0000." },
+            { "title": "4. Compare", "md": "After the 7th pattern the MISR holds the signature. The golden value, from simulation, is **0110**." },
+            { "title": "5. Controller", "md": "The controller from 6.1 runs everything: seeds the LFSR, clears the MISR, counts 7 patterns and reports done and pass." }
+          ]
+        },
+        {
+          "type": "text",
+          "md": "Now run it — once fault-free, and once with a defect that makes **y1 stuck-at-0**:"
+        },
+        {
+          "type": "table",
+          "columns": ["Clock", "Pattern abc", "Good y1y2y3", "Good MISR", "Faulty y1y2y3", "Faulty MISR"],
+          "rows": [
+            ["1", "100", "001", "0010", "001", "0010"],
+            ["2", "010", "010", "0101", "010", "0101"],
+            ["3", "101", "010", "1111", "010", "1111"],
+            ["4", "110", "111", "0000", "**0**11", "1000"],
+            ["5", "111", "110", "1100", "**0**10", "0000"],
+            ["6", "011", "011", "0000", "011", "0110"],
+            ["7", "001", "011", "**0110**", "011", "**0101**"]
+          ],
+          "caption": "MISR states Q1Q2Q3Q4 after each clock. The faulty chip ends with 0101 ≠ 0110 → FAIL"
+        },
+        {
+          "type": "callout",
+          "kind": "info",
+          "title": "Look at clock 6",
+          "md": "In clock 6 the faulty MISR happens to show **0110** — the golden value — but the test is not over yet. Only the value after the **last** pattern counts; that is why the controller must stop at exactly N."
+        },
+        {
+          "type": "tabs",
+          "tabs": [
+            { "label": "Fault coverage of the tiny BIST", "md": "Simulating all 12 stuck-at faults on the lines a, b, c, y1, y2, y3 (each stuck-at-0 and stuck-at-1): **all 12** give a signature different from 0110. Fault coverage = 12 ÷ 12 = **100 %**." },
+            { "label": "With a 3-bit MISR", "md": "Replace the MISR by a 3-bit one (x³ + x² + 1) and simulate again: **4 of the 12** faults (b stuck-at-0/1, y3 stuck-at-0/1) change the responses but end with the golden signature — **aliasing**. Coverage drops to 8 ÷ 12 ≈ 67 %. A narrow MISR is risky; real ones are 16–64 bits." }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "next",
+      "title": "What comes next",
+      "blocks": [
+        {
+          "type": "flipcards",
+          "md": "Check yourself: say the meaning, then flip the card.",
+          "cards": [
+            { "front": "**BIST**", "back": "Built-in self-test: generator, circuit under test, response checker and controller on the chip." },
+            { "front": "**LFSR**", "back": "Shift register with XOR feedback; with a primitive polynomial it runs through 2ⁿ − 1 states." },
+            { "front": "**MISR**", "back": "Signature register that compacts many response bits per clock into one signature." },
+            { "front": "**Golden signature**", "back": "The signature of the fault-free design, from simulation with the same seed and pattern count." },
+            { "front": "**Aliasing**", "back": "A faulty circuit produces the golden signature; probability ≈ 2⁻ⁿ." },
+            { "front": "**Fault coverage**", "back": "Detected faults ÷ all modelled faults." }
+          ]
+        },
+        {
+          "type": "tabs",
+          "tabs": [
+            { "label": "Memory BIST course", "md": "Memories and their fault models, **March tests**, the MBIST controller and collar, test access over JTAG, diagnosis and **repair**. Instead of an LFSR and a MISR, MBIST uses address/data generators and a comparator — but the controller idea is the same." },
+            { "label": "Logic BIST course", "md": "LFSR + phase shifter feeding **scan chains**, a MISR at the outputs, X-bounding, test points and at-speed clocking — the full-size version of this topic's tiny BIST." },
+            { "label": "Labs", "md": "**Lab 1:** build and simulate the LFSR in SystemVerilog. **Lab 2:** build a MISR, inject faults and measure aliasing — the experiment you saw in the last tab." }
+          ]
+        },
+        {
+          "type": "callout",
+          "kind": "tip",
+          "title": "Your certificate",
+          "md": "Pass the quiz of this topic to complete the training and open your certificate."
+        }
+      ]
+    }
+  ],
+  "quiz": {
+    "questions": [
+      {
+        "id": "q-fsm",
+        "type": "order",
+        "text": "Put the states of the BIST controller in order.",
+        "items": ["IDLE", "INIT", "RUN", "CHECK", "DONE"],
+        "review": ["controller"]
+      },
+      {
+        "id": "q-golden",
+        "type": "single",
+        "text": "Where does the golden signature come from?",
+        "options": [
+          "From simulating the fault-free design with the same seed and number of patterns.",
+          "From the first chip that comes out of the factory.",
+          "It is always 0000.",
+          "From a random number chosen by the tester."
+        ],
+        "correct": [0],
+        "review": ["golden"]
+      },
+      {
+        "id": "q-count",
+        "type": "single",
+        "text": "Why must the controller stop after exactly N patterns?",
+        "options": [
+          "The golden signature is valid only for that exact seed and pattern count.",
+          "The LFSR breaks after N patterns.",
+          "To save power in the MISR.",
+          "Because the tester cannot count."
+        ],
+        "correct": [0],
+        "review": ["controller", "walkthrough"]
+      },
+      {
+        "id": "q-step",
+        "type": "single",
+        "text": "In the walk-through, the MISR holds **0101** and the circuit outputs y1y2y3 = **010** (D4 = 0). Using Q1 = Q4 ⊕ D1, Q2 = Q1 ⊕ D2, Q3 = Q2 ⊕ D3, Q4 = Q3 ⊕ Q4, what is the next MISR state?",
+        "options": ["1111", "0101", "1010", "0111"],
+        "correct": [0],
+        "review": ["walkthrough"],
+        "explain": "Q1 = 1 ⊕ 0 = 1, Q2 = 0 ⊕ 1 = 1, Q3 = 1 ⊕ 0 = 1, Q4 = 0 ⊕ 1 = 1 → **1111** (clock 3 of the table)."
+      },
+      {
+        "id": "q-cov",
+        "type": "single",
+        "text": "Fault simulation of a block with 50 modelled faults finds that 45 change the signature. What is the fault coverage?",
+        "options": ["90 %", "45 %", "95 %", "10 %"],
+        "correct": [0],
+        "review": ["golden"]
+      },
+      {
+        "id": "q-wide",
+        "type": "truefalse",
+        "text": "In the tiny BIST, replacing the 4-bit MISR by a 3-bit MISR made some faults escape because of aliasing.",
+        "options": ["True", "False"],
+        "correct": [0],
+        "shuffle": false,
+        "review": ["walkthrough"]
+      }
+    ]
+  }
+}

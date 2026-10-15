@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 560" font-family="Segoe UI, Arial, sans-serif">
+  <rect width="640" height="560" rx="14" fill="#ffffff"/>
+  <text x="320" y="34" text-anchor="middle" font-size="16" font-weight="700" fill="#1f4e79">One chip, many self-tests</text>
+  <line x1="70" y1="60" x2="70" y2="530" stroke="#b9c6d6" stroke-width="4"/>
+  <text x="70" y="550" text-anchor="middle" font-size="12" fill="#6b7a8c">time</text>
+
+  <g data-step="1">
+    <circle cx="70" cy="85" r="14" fill="#27ae60"/><text x="70" y="90" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">1</text>
+    <rect x="100" y="60" width="500" height="54" rx="10" fill="#eaf6ee" stroke="#27ae60" stroke-width="2"/>
+    <text x="118" y="83" font-size="15" font-weight="700" fill="#1e8449">Wafer sort and final test</text>
+    <text x="118" y="103" font-size="12" fill="#34495e">the tester starts MBIST and LBIST, reads pass / fail</text>
+  </g>
+  <g data-step="2">
+    <circle cx="70" cy="160" r="14" fill="#6c4fb3"/><text x="70" y="165" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">2</text>
+    <rect x="100" y="135" width="500" height="54" rx="10" fill="#efeafa" stroke="#6c4fb3" stroke-width="2"/>
+    <text x="118" y="158" font-size="15" font-weight="700" fill="#5b3fa0">Burn-in</text>
+    <text x="118" y="178" font-size="12" fill="#34495e">hundreds of chips in a hot oven exercise themselves with BIST</text>
+  </g>
+  <g data-step="3">
+    <circle cx="70" cy="235" r="14" fill="#1f6feb"/><text x="70" y="240" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">3</text>
+    <rect x="100" y="210" width="500" height="54" rx="10" fill="#e3effc" stroke="#1f6feb" stroke-width="2"/>
+    <text x="118" y="233" font-size="15" font-weight="700" fill="#1f4e79">Board and system test</text>
+    <text x="118" y="253" font-size="12" fill="#34495e">the customer runs the same BIST through the JTAG port</text>
+  </g>
+  <g data-step="4">
+    <circle cx="70" cy="310" r="14" fill="#e67e22"/><text x="70" y="315" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">4</text>
+    <rect x="100" y="285" width="500" height="54" rx="10" fill="#fdf3e4" stroke="#e67e22" stroke-width="2"/>
+    <text x="118" y="308" font-size="15" font-weight="700" fill="#b8641b">Power-on self-test</text>
+    <text x="118" y="328" font-size="12" fill="#34495e">at every start-up, before the chip begins its real work</text>
+  </g>
+  <g data-step="5">
+    <circle cx="70" cy="385" r="14" fill="#c0392b"/><text x="70" y="390" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">5</text>
+    <rect x="100" y="360" width="500" height="54" rx="10" fill="#fbeaea" stroke="#c0392b" stroke-width="2"/>
+    <text x="118" y="383" font-size="15" font-weight="700" fill="#c0392b">Periodic test while running</text>
+    <text x="118" y="403" font-size="12" fill="#34495e">short tests in idle moments — one block at a time</text>
+  </g>
+  <g data-step="6">
+    <circle cx="70" cy="460" r="14" fill="#34495e"/><text x="70" y="465" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">6</text>
+    <rect x="100" y="435" width="500" height="54" rx="10" fill="#eef1f4" stroke="#34495e" stroke-width="2"/>
+    <text x="118" y="458" font-size="15" font-weight="700" fill="#34495e">Shut-down test and diagnosis</text>
+    <text x="118" y="478" font-size="12" fill="#34495e">longer tests when the system turns off; results kept for service</text>
+  </g>
+</svg>

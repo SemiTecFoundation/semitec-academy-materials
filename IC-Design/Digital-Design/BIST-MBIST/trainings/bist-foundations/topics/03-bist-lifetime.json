@@ -1,0 +1,198 @@
+{
+  "id": "bist-lifetime",
+  "title": "BIST over a chip's life",
+  "duration": "25 min",
+  "summary": "BIST is not only a factory tool. The same hardware tests the chip during **burn-in**, at the **customer**, at every **power-on** and even **while the system runs** — which is why cars, planes and data centres depend on it. But BIST also has a **price**.",
+  "objectives": [
+    "Explain the bathtub curve and why burn-in is done.",
+    "Describe power-on and periodic self-test and why safety standards such as ISO 26262 need them.",
+    "List the costs of BIST and weigh them against its benefits."
+  ],
+  "subsections": [
+    {
+      "id": "burn-in",
+      "title": "Weak chips and burn-in",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "Some chips pass every test in the factory and still fail after a few weeks. They carry **weak spots** — a thin wire, a marginal oxide — that work today but break soon. Reliability engineers draw this with the **bathtub curve**:"
+        },
+        {
+          "type": "stepper",
+          "src": "assets/bathtub.svg",
+          "interval": 2600,
+          "steps": [
+            { "title": "Early failures", "md": "At the start of life the failure rate is high: the **weak** chips fail first. This is called *infant mortality*." },
+            { "title": "Useful life", "md": "Once the weak chips are gone, the failure rate is low and nearly constant — random failures only." },
+            { "title": "Wear-out", "md": "After many years the transistors and wires **age** (hot carriers, electromigration, oxide wear) and failures rise again." },
+            { "title": "Burn-in", "md": "**Burn-in** runs the chips for hours at high temperature and voltage in the factory. This *ages* them quickly, so the weak ones fail **before shipping** — not at the customer." }
+          ]
+        },
+        {
+          "type": "text",
+          "md": "During burn-in the chips should be **active**, so that the stress reaches every transistor. But a burn-in oven holds hundreds of chips on large boards, and a full tester channel for every pin of every chip is impossible.\n\nWith BIST it is easy: each chip needs only power, a clock and a *start* signal, and it **exercises itself**. The board just collects *pass/fail* from each socket."
+        },
+        {
+          "type": "callout",
+          "kind": "tip",
+          "title": "BIST makes burn-in useful",
+          "md": "Running MBIST and LBIST in the oven both **stresses** the logic and memories and **detects** the chips that broke during the stress."
+        }
+      ]
+    },
+    {
+      "id": "in-field",
+      "title": "Testing in the field",
+      "blocks": [
+        {
+          "type": "scrolly",
+          "src": "assets/chip-life.svg",
+          "steps": [
+            { "title": "1. Wafer sort and final test", "md": "In the factory the tester starts MBIST and LBIST through a few pins and reads the results — the work you saw in Topic 2." },
+            { "title": "2. Burn-in", "md": "In the oven the chips run their own BIST again and again while they are stressed." },
+            { "title": "3. Board and system test", "md": "The customer solders the chip on a board. The **same** BIST can be started through the JTAG port — no expensive tester needed." },
+            { "title": "4. Power-on self-test (POST)", "md": "Every time the system is switched on, the chip tests itself **before** it starts its real job. A car's brake controller does this at every key-on." },
+            { "title": "5. Periodic test while running", "md": "Some systems cannot wait for the next start-up. They run **short** tests in idle moments, one block at a time, saving and restoring the block's state around the test." },
+            { "title": "6. Shut-down test and diagnosis", "md": "When the system turns off there is time for longer tests. Results are stored, so a service engineer can later see what failed." }
+          ]
+        },
+        {
+          "type": "text",
+          "md": "Why test a chip that already passed in the factory? Because chips **age**, are hit by radiation, heat and voltage spikes. In most products a rare failure is annoying. In a car, a plane or a medical device it can **hurt people**."
+        },
+        {
+          "type": "tabs",
+          "tabs": [
+            { "label": "Cars (ISO 26262)", "blocks": [
+              { "type": "text", "md": "The functional-safety standard **ISO 26262** asks how well the chip detects its own faults. Each safety function gets an **ASIL** level, from A (lowest) to D (highest, e.g. braking, steering). The higher the level, the more faults the safety mechanisms must catch:" },
+              { "type": "table", "columns": ["", "ASIL B", "ASIL C", "ASIL D"], "rows": [
+                ["Single-point fault metric", "≥ 90 %", "≥ 97 %", "≥ 99 %"],
+                ["Latent fault metric", "≥ 60 %", "≥ 80 %", "≥ 90 %"]
+              ], "caption": "Hardware targets in ISO 26262-5 (simplified)" },
+              { "type": "text", "md": "**Latent** faults are faults that hide — for example in a safety mechanism that is not used until something else breaks. Power-on and periodic **LBIST and MBIST** are a main way to find them." }
+            ] },
+            { "label": "Data centres", "md": "Servers run for years without a break. Memory BIST at boot finds weak cells and **repairs** them with spare rows (MBIST course), and periodic tests catch **silent data corruption** — a core that computes wrong results without crashing." },
+            { "label": "Aerospace and medical", "md": "Space electronics is hit by radiation; medical devices must prove they work before every use. Both rely on **self-test at start-up** and during operation, together with error-correcting memories." }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "bist-costs",
+      "title": "What BIST costs",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "BIST hardware is not free. Before adding it, designers weigh what it **costs** against what it **gives**:"
+        },
+        {
+          "type": "accordion",
+          "items": [
+            { "title": "Area", "md": "Pattern generators, comparators, controllers and multiplexers take silicon. MBIST for many small memories and LBIST with test points typically add a **few percent** of chip area. Sharing one controller between several memories reduces it." },
+            { "title": "Test power", "md": "During BIST far more flip-flops toggle than in normal use. The current can be **higher than in functional mode**, causing voltage drop and false failures. BIST must be designed to limit power — test fewer blocks at once, or slow down." },
+            { "title": "Timing", "md": "Test multiplexers sit in front of memories and flip-flops. Each adds a little **delay** to the functional path, which can reduce the maximum clock frequency if not handled carefully." },
+            { "title": "Design and verification effort", "md": "BIST must be inserted, connected, verified and documented for every block. Commercial EDA tools automate most of it (Tessent, TestMAX, Modus), but the work remains." },
+            { "title": "Test quality limits", "md": "Pseudo-random LBIST patterns miss some hard-to-test faults; it may need **test points** or extra deterministic patterns from the tester (LBIST course)." }
+          ]
+        },
+        {
+          "type": "categorize",
+          "prompt": "Practice: drag each item into Benefit or Cost.",
+          "categories": [{ "id": "benefit", "label": "Benefit of BIST" }, { "id": "cost", "label": "Cost of BIST" }],
+          "items": [
+            { "text": "shorter tester time", "category": "benefit" },
+            { "text": "tests at full clock speed", "category": "benefit" },
+            { "text": "reaches buried memories", "category": "benefit" },
+            { "text": "works in the field, at power-on", "category": "benefit" },
+            { "text": "extra silicon area", "category": "cost" },
+            { "text": "high current during test", "category": "cost" },
+            { "text": "extra delay in functional paths", "category": "cost" },
+            { "text": "more design and verification work", "category": "cost" }
+          ]
+        },
+        {
+          "type": "callout",
+          "kind": "key",
+          "title": "The usual answer",
+          "md": "For memories, MBIST is used in **almost every** modern chip — there is no other practical way to test them. LBIST is used where in-field test is required (automotive, aerospace, servers) or where test time is very expensive."
+        }
+      ]
+    }
+  ],
+  "quiz": {
+    "questions": [
+      {
+        "id": "q-bathtub",
+        "type": "single",
+        "text": "What is the purpose of burn-in?",
+        "options": [
+          "Make weak chips fail in the factory instead of at the customer.",
+          "Make every chip run faster.",
+          "Program the chip's memories.",
+          "Measure the yield of the wafer."
+        ],
+        "correct": [0],
+        "review": ["burn-in"],
+        "explain": "Burn-in ages the chips quickly so that the **early failures** of the bathtub curve happen before shipping."
+      },
+      {
+        "id": "q-oven",
+        "type": "single",
+        "text": "Why is BIST especially useful during burn-in?",
+        "options": [
+          "Each chip needs only power, a clock and a start signal, so hundreds can run at once in the oven.",
+          "BIST works only at high temperature.",
+          "Burn-in ovens contain a full tester for every pin.",
+          "BIST cools the chip down."
+        ],
+        "correct": [0],
+        "review": ["burn-in"]
+      },
+      {
+        "id": "q-post",
+        "type": "single",
+        "text": "A car's brake controller tests itself every time the driver starts the car. This is called …",
+        "options": ["power-on self-test", "wafer sort", "burn-in", "final test"],
+        "correct": [0],
+        "review": ["in-field"]
+      },
+      {
+        "id": "q-asil",
+        "type": "truefalse",
+        "text": "Under ISO 26262, a safety function with ASIL D must detect a larger share of faults than one with ASIL B.",
+        "options": ["True", "False"],
+        "correct": [0],
+        "shuffle": false,
+        "review": ["in-field"],
+        "explain": "ASIL D is the highest level: e.g. ≥ 99 % single-point fault metric versus ≥ 90 % for ASIL B."
+      },
+      {
+        "id": "q-periodic",
+        "type": "single",
+        "text": "Why does a periodic test during operation test only **one block at a time**, for a short time?",
+        "options": [
+          "The system must keep doing its job; the tested block is unavailable during the test.",
+          "BIST can only test one block in its whole life.",
+          "Short tests detect more faults than long ones.",
+          "The tester can only connect to one block."
+        ],
+        "correct": [0],
+        "review": ["in-field"]
+      },
+      {
+        "id": "q-costs",
+        "type": "match",
+        "text": "Sort into benefits and costs of BIST.",
+        "categories": [{ "id": "b", "label": "Benefit" }, { "id": "c", "label": "Cost" }],
+        "items": [
+          { "text": "at-speed test", "category": "b" },
+          { "text": "test in the field", "category": "b" },
+          { "text": "extra area", "category": "c" },
+          { "text": "high test power", "category": "c" },
+          { "text": "delay of test multiplexers", "category": "c" }
+        ],
+        "review": ["bist-costs"]
+      }
+    ]
+  }
+}

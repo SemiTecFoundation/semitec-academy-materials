@@ -1,0 +1,277 @@
+{
+  "id": "mbist-access",
+  "title": "Running MBIST through IJTAG",
+  "duration": "30 min",
+  "summary": "Time to connect this training to the previous ones: the MBIST controllers of *MBIST Architecture* sit in an IJTAG network behind the chip's TAP. This topic follows a complete MBIST run from the tester, through the TAP and the network, to the controller and back.",
+  "objectives": [
+    "Describe the test data register of an MBIST controller.",
+    "Write the sequence of TAP operations that runs one MBIST test.",
+    "Compute how long the tester waits in Run-Test/Idle.",
+    "Explain how many controllers are run together, and how test access is protected in the field."
+  ],
+  "subsections": [
+    {
+      "id": "tdr",
+      "title": "The controller's register",
+      "blocks": [
+        {
+          "type": "svg",
+          "src": "assets/mbist-tdr.svg",
+          "caption": "Configuration fields are written, status fields are captured and read"
+        },
+        {
+          "type": "text",
+          "md": "An MBIST controller appears in the IJTAG network as one or more **TDRs** behind a SIB. The tester **writes** configuration — which algorithm, which background, diagnosis on or off, *start* — and **reads** status — *done*, *pass*, and diagnosis data such as the failing address. Thanks to capture-shift-update, one scan can write the next configuration and read the last status."
+        }
+      ]
+    },
+    {
+      "id": "sequence",
+      "title": "One MBIST run, step by step",
+      "blocks": [
+        {
+          "type": "stepper",
+          "src": "assets/mbist-jtag-run.svg",
+          "interval": 3000,
+          "steps": [
+            {
+              "title": "IR scan",
+              "md": "Load the TAP instruction that connects the IJTAG network between TDI and TDO."
+            },
+            {
+              "title": "Open the path",
+              "md": "A DR scan writes the SIBs that lead to the MBIST controller."
+            },
+            {
+              "title": "Configure and start",
+              "md": "A DR scan writes algorithm, background and **start = 1**. In Update-DR the controller sees start and begins."
+            },
+            {
+              "title": "Wait",
+              "md": "The tester keeps the TAP in **Run-Test/Idle** for a given number of TCK clocks. Meanwhile the March test runs on the **memory clock**."
+            },
+            {
+              "title": "Read the result",
+              "md": "A DR scan captures **done** and **pass** and shifts them out. The tester compares them with the expected values: done = 1, pass = 1."
+            }
+          ]
+        },
+        {
+          "type": "code",
+          "lang": "text",
+          "code": "# PDL for the controller (simplified illustration, see Topic 7)\niProc run_march {} {\n  iWrite algorithm  MarchCminus\n  iWrite background 0\n  iWrite start      1\n  iApply\n  iRunLoop 1100000 -tck      ;# wait in Run-Test/Idle\n  iRead  done 1\n  iRead  pass 1\n  iApply\n}"
+        }
+      ]
+    },
+    {
+      "id": "wait",
+      "title": "How long to wait",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "The tester does not watch the test; it simply waits long enough and then reads *done*. The wait is counted in **TCK clocks**:\n\n> wait (TCK clocks) ≥ test time × f(TCK)\n\nExample: March C− on a 1 Mi-word memory at 100 MHz takes 105 ms. With TCK = 10 MHz the tester waits at least 0.105 s × 10 MHz ≈ **1.05 million** TCK clocks — the PDL above uses 1.1 million for margin."
+        },
+        {
+          "type": "callout",
+          "kind": "info",
+          "title": "Why not poll done?",
+          "md": "Polling — reading *done* again and again — is possible, but every read is a DR scan, and on a tester every branch on a result costs time. Production programs prefer a fixed, safe wait followed by a single read."
+        }
+      ]
+    },
+    {
+      "id": "many",
+      "title": "Many controllers, and access in the field",
+      "blocks": [
+        {
+          "type": "accordion",
+          "items": [
+            {
+              "title": "Starting many controllers together",
+              "md": "Open the SIBs of all controllers of one test session and write their configuration in **one** scan; their *start* bits all take effect in the same Update-DR. After the wait, one scan reads every *done* and *pass*."
+            },
+            {
+              "title": "Reading diagnosis data",
+              "md": "Fail addresses are read only when a memory fails. Opening just that controller's SIB keeps the path short."
+            },
+            {
+              "title": "Access in the field",
+              "md": "In a car or a server, the chip's own software may run MBIST through the **same IJTAG network**, reached from an on-chip bus instead of the TAP pins. The *BIST in the Field* training covers this."
+            },
+            {
+              "title": "Security",
+              "md": "Test access can read and write almost anything in the chip. Production parts therefore **lock** the TAP or parts of the network (fuses, passwords, challenge-response) so that attackers cannot use it."
+            }
+          ]
+        },
+        {
+          "type": "flipcards",
+          "md": "Check yourself before the quiz: say the meaning, then flip the card.",
+          "cards": [
+            {
+              "front": "**TAP**",
+              "back": "Test access port of IEEE 1149.1: TCK, TMS, TDI, TDO (+ TRST*), a 16-state controller and registers."
+            },
+            {
+              "front": "**TMS**",
+              "back": "Steers the TAP state machine; five 1s reset it from any state."
+            },
+            {
+              "front": "**BYPASS**",
+              "back": "1-bit register; puts a chip on the chain with one bit only."
+            },
+            {
+              "front": "**EXTEST**",
+              "back": "Boundary-scan cells drive the pins — board interconnect test."
+            },
+            {
+              "front": "**IEEE 1500 wrapper**",
+              "back": "WBR, WIR, WBY, WSP (+ WPP) around a core: test it in isolation."
+            },
+            {
+              "front": "**SIB**",
+              "back": "Segment insertion bit: includes or skips a part of the IJTAG path."
+            },
+            {
+              "front": "**ICL / PDL**",
+              "back": "Describe the network / describe how to operate an instrument."
+            },
+            {
+              "front": "**Retargeting**",
+              "back": "Turns instrument-level PDL into chip-level TAP operations."
+            }
+          ]
+        },
+        {
+          "type": "callout",
+          "kind": "tip",
+          "title": "Next: Memory Repair",
+          "md": "MBIST finds failing cells; the next training shows how spare rows and columns replace them — and how the repair information is stored in fuses and reached, again, through test access. Pass the quiz of this topic to complete *Test Access* and open your certificate."
+        }
+      ]
+    }
+  ],
+  "quiz": {
+    "questions": [
+      {
+        "id": "q-fields",
+        "type": "match",
+        "text": "Sort the MBIST register fields: written by the tester or read by the tester?",
+        "categories": [
+          {
+            "id": "w",
+            "label": "Written (configuration)"
+          },
+          {
+            "id": "r",
+            "label": "Read (status)"
+          }
+        ],
+        "items": [
+          {
+            "text": "algorithm",
+            "category": "w"
+          },
+          {
+            "text": "start",
+            "category": "w"
+          },
+          {
+            "text": "done",
+            "category": "r"
+          },
+          {
+            "text": "pass",
+            "category": "r"
+          }
+        ],
+        "review": [
+          "tdr"
+        ]
+      },
+      {
+        "id": "q-order",
+        "type": "order",
+        "text": "Put the steps of an MBIST run through JTAG in order.",
+        "items": [
+          "IR scan: select the IJTAG network",
+          "DR scan: open the SIB path",
+          "DR scan: write configuration and start",
+          "Wait in Run-Test/Idle",
+          "DR scan: read done and pass"
+        ],
+        "review": [
+          "sequence"
+        ]
+      },
+      {
+        "id": "q-wait",
+        "type": "single",
+        "text": "A memory test takes 20 ms. TCK runs at 25 MHz. At least how many TCK clocks must the tester wait?",
+        "options": [
+          "500 000",
+          "20 000",
+          "25 000",
+          "5 000 000"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "wait"
+        ],
+        "explain": "0.020 s × 25 000 000 /s = 500 000 clocks."
+      },
+      {
+        "id": "q-clock",
+        "type": "single",
+        "text": "While the tester waits in Run-Test/Idle, which clock runs the March test?",
+        "options": [
+          "The memory's functional clock",
+          "TCK",
+          "No clock",
+          "The tester's clock through TDI"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "sequence"
+        ]
+      },
+      {
+        "id": "q-many",
+        "type": "single",
+        "text": "How can several MBIST controllers be started at exactly the same time?",
+        "options": [
+          "Write all their start bits in one DR scan; they take effect together in Update-DR",
+          "Start them one per IR scan",
+          "Use a separate TAP for each",
+          "It is not possible"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "many"
+        ]
+      },
+      {
+        "id": "q-sec",
+        "type": "truefalse",
+        "text": "Production chips often lock test access, because an open TAP could let an attacker read or change the chip's internals.",
+        "options": [
+          "True",
+          "False"
+        ],
+        "correct": [
+          0
+        ],
+        "shuffle": false,
+        "review": [
+          "many"
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 330" font-family="Segoe UI, Arial, sans-serif">
+  <defs><marker id="dp-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#34495e"/></marker></defs>
+  <rect width="760" height="330" rx="14" fill="#ffffff"/>
+  <text x="380" y="32" text-anchor="middle" font-size="18" font-weight="700" fill="#1f4e79">A dual-port memory: two independent doors to the same cells</text>
+  <rect x="270" y="70" width="220" height="200" rx="12" fill="#eef4fb" stroke="#1f4e79" stroke-width="3"/>
+  <g fill="#ffffff" stroke="#9fb3c8"><rect x="295" y="100" width="40" height="30"/><rect x="340" y="100" width="40" height="30"/><rect x="385" y="100" width="40" height="30"/><rect x="430" y="100" width="40" height="30"/>
+  <rect x="295" y="135" width="40" height="30"/><rect x="340" y="135" width="40" height="30"/><rect x="385" y="135" width="40" height="30"/><rect x="430" y="135" width="40" height="30"/>
+  <rect x="295" y="170" width="40" height="30"/><rect x="340" y="170" width="40" height="30"/><rect x="385" y="170" width="40" height="30"/><rect x="430" y="170" width="40" height="30"/></g>
+  <rect x="340" y="135" width="40" height="30" fill="#f5b7b1" stroke="#c0392b" stroke-width="2.5"/>
+  <text x="380" y="240" text-anchor="middle" font-size="16" font-weight="700" fill="#1f4e79">shared cell array</text>
+  <rect x="40" y="110" width="170" height="120" rx="10" fill="#e3effc" stroke="#1f6feb" stroke-width="2.5"/>
+  <text x="125" y="150" text-anchor="middle" font-size="18" font-weight="800" fill="#1f4e79">Port A</text>
+  <text x="125" y="176" text-anchor="middle" font-size="14" fill="#34495e">address, data,</text><text x="125" y="196" text-anchor="middle" font-size="14" fill="#34495e">write enable, clock</text>
+  <rect x="550" y="110" width="170" height="120" rx="10" fill="#e8f6ee" stroke="#27ae60" stroke-width="2.5"/>
+  <text x="635" y="150" text-anchor="middle" font-size="18" font-weight="800" fill="#1e8449">Port B</text>
+  <text x="635" y="176" text-anchor="middle" font-size="14" fill="#34495e">address, data,</text><text x="635" y="196" text-anchor="middle" font-size="14" fill="#34495e">write enable, clock</text>
+  <path d="M210 170H266" stroke="#1f6feb" stroke-width="3" marker-end="url(#dp-a)"/><path d="M550 170H494" stroke="#27ae60" stroke-width="3" marker-end="url(#dp-a)"/>
+  <text x="380" y="305" text-anchor="middle" font-size="15" fill="#c0392b">Both ports may access the same cell in the same clock — new faults between ports.</text>
+</svg>

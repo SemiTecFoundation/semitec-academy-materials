@@ -1,0 +1,155 @@
+{
+  "id": "march-c",
+  "title": "March C− and proving coverage",
+  "duration": "40 min",
+  "summary": "**March C−** is the best-known March test: 10N operations that detect all stuck-at, address-decoder, transition and unlinked coupling faults. This topic walks through its six elements and shows how to **prove** that a test detects a fault model — case by case.",
+  "objectives": [
+    "Write March C− and explain the role of each of its six elements.",
+    "Prove that a March test detects a fault by following all aggressor/victim cases.",
+    "Explain why removing an element makes some faults escape."
+  ],
+  "subsections": [
+    {
+      "id": "elements",
+      "title": "The six elements",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "> **March C−** = {⇕(w0); ⇑(r0, w1); ⇑(r1, w0); ⇓(r0, w1); ⇓(r1, w0); ⇕(r0)}  — **10N**\n\nThe pattern is easy to remember: after initialising, the test does **both transitions going up**, then **both transitions going down**, and finishes with a read."
+        },
+        {
+          "type": "stepper",
+          "src": "assets/march-cminus.svg",
+          "interval": 3000,
+          "steps": [
+            { "title": "M0 ⇕(w0)", "md": "Initialise every cell to 0. Nothing is checked yet." },
+            { "title": "M1 ⇑(r0, w1)", "md": "Going up: check the 0, then make the **0 → 1** transition. Aggressors **below** a victim change before the victim is read." },
+            { "title": "M2 ⇑(r1, w0)", "md": "Going up again: check the 1, make the **1 → 0** transition." },
+            { "title": "M3 ⇓(r0, w1)", "md": "Going **down**: now aggressors **above** a victim change before the victim is read." },
+            { "title": "M4 ⇓(r1, w0)", "md": "Going down with the opposite transition." },
+            { "title": "M5 ⇕(r0)", "md": "A final read of every cell. It catches what the last writes of M4 did to cells that M4 had already passed." }
+          ]
+        },
+        {
+          "type": "table",
+          "columns": ["Fault model", "Detected by March C−?"],
+          "rows": [
+            ["Stuck-at (SAF)", "✓ all"],
+            ["Address decoder (AF)", "✓ all — M1 and M4 form the AF condition"],
+            ["Transition (TF)", "✓ all"],
+            ["Coupling: CFin, CFid, CFst", "✓ all, when they are not linked"],
+            ["Read faults RDF, IRF", "✓"],
+            ["DRDF, write-disturb (WDF)", "✗ — see Topic 4"]
+          ],
+          "caption": "What March C− covers"
+        },
+        {
+          "type": "callout",
+          "kind": "info",
+          "title": "March C and March C−",
+          "md": "The original **March C** (Marinescu, 1982) had one more element, an extra ⇕(r0) in the middle — **11N**. Van de Goor showed that for the classical fault models this read adds nothing, and removed it: **March C−**, 10N."
+        }
+      ]
+    },
+    {
+      "id": "proof",
+      "title": "Proving coverage: idempotent coupling",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "How do we *know* March C− detects every idempotent coupling fault (CFid)? We check **every case**. A CFid has a trigger (↑ or ↓ in the aggressor), a forced value (0 or 1 in the victim) and a position (aggressor below or above the victim) — **2 × 2 × 2 = 8 cases**.\n\nWorked example **⟨↑;0⟩, a < v**: the fault only shows if v holds **1** when a rises.\n\n1. M1 ⇑: a rises — but v is not visited yet and still holds 0. Forcing 0 changes nothing.\n2. M2 ⇑: a falls — no trigger.\n3. M3 ⇓: going **down**, v is visited first and becomes 1. Then a rises → v is forced to **0**.\n4. M4 ⇓: going down, v is read first: expected 1, read **0** → **detected in M4**."
+        },
+        {
+          "type": "table",
+          "columns": ["CFid", "a < v (aggressor below)", "a > v (aggressor above)"],
+          "rows": [
+            ["⟨↑;0⟩", "M4 (r1)", "M2 (r1)"],
+            ["⟨↑;1⟩", "M1 (r0)", "M3 (r0)"],
+            ["⟨↓;0⟩", "M2 (r1)", "M4 (r1)"],
+            ["⟨↓;1⟩", "**M5** (r0)", "M3 (r0)"]
+          ],
+          "caption": "The element where each of the 8 CFid cases is detected (checked with a fault simulator)"
+        },
+        {
+          "type": "callout",
+          "kind": "key",
+          "title": "Every case has an entry — so the proof is complete",
+          "md": "If one cell of the table said *escape*, the test would not cover the fault model. This case-by-case method is how every coverage claim in the literature is made — today usually with a **fault simulator** that runs the test on a memory model with each fault injected."
+        }
+      ]
+    },
+    {
+      "id": "every-element",
+      "title": "Why every element is needed",
+      "blocks": [
+        {
+          "type": "accordion",
+          "items": [
+            { "title": "Remove M5 ⇕(r0)", "md": "Look at the table: ⟨↓;1⟩ with a < v is detected **only** in M5. Without M5, about one in eight CFid cases escapes (in a simulation of a 6-cell memory, 15 of 120 CFid faults)." },
+            { "title": "Make M3 and M4 go up instead of down", "md": "Then the test never lets an aggressor *above* the victim act before the victim is read in the right state. In simulation **half** of all CFid faults escape." },
+            { "title": "Remove M4 (and end with ⇕(r1))", "md": "Going down, the test now makes only the 0 → 1 transition. The 1 → 0 transitions of aggressors above a victim are never checked — in simulation **a quarter** of the CFid faults (30 of 120) escape." },
+            { "title": "Add more elements", "md": "Extra reads or writes cost time but can catch more fault models — that is the subject of the next topic (DRDF, WDF, linked faults)." }
+          ]
+        },
+        {
+          "type": "sort",
+          "prompt": "Practice: put the elements of March C− in order.",
+          "items": ["⇕(w0)", "⇑(r0, w1)", "⇑(r1, w0)", "⇓(r0, w1)", "⇓(r1, w0)", "⇕(r0)"]
+        }
+      ]
+    }
+  ],
+  "quiz": {
+    "questions": [
+      {
+        "id": "q-len",
+        "type": "single",
+        "text": "How long is March C−?",
+        "options": ["10N", "11N", "6N", "22N"],
+        "correct": [0],
+        "review": ["elements"]
+      },
+      {
+        "id": "q-order",
+        "type": "order",
+        "text": "Put the elements of March C− in order.",
+        "items": ["⇕(w0)", "⇑(r0, w1)", "⇑(r1, w0)", "⇓(r0, w1)", "⇓(r1, w0)", "⇕(r0)"],
+        "review": ["elements"]
+      },
+      {
+        "id": "q-case",
+        "type": "single",
+        "text": "In March C−, a CFid ⟨↑;1⟩ with the aggressor **below** the victim: where is it detected?",
+        "options": ["M1 ⇑(r0, w1)", "M0 ⇕(w0)", "M4 ⇓(r1, w0)", "It escapes"],
+        "correct": [0],
+        "review": ["proof"],
+        "explain": "Going up, the aggressor rises before the victim is visited and forces it to 1; M1 then reads the victim expecting 0."
+      },
+      {
+        "id": "q-cases",
+        "type": "single",
+        "text": "How many cases must be checked to prove that a test detects all CFid faults?",
+        "options": ["8: trigger ↑/↓ × forced value 0/1 × aggressor below/above", "2", "4", "16"],
+        "correct": [0],
+        "review": ["proof"]
+      },
+      {
+        "id": "q-misses",
+        "type": "multiple",
+        "text": "Which faults does March C− **not** detect? Select **all** correct answers.",
+        "options": ["Deceptive read destructive faults (DRDF)", "Write-disturb faults (WDF)", "Stuck-at faults", "Address-decoder faults"],
+        "correct": [0, 1],
+        "review": ["elements"]
+      },
+      {
+        "id": "q-m5",
+        "type": "truefalse",
+        "text": "The last element ⇕(r0) of March C− can be removed without losing any coupling fault.",
+        "options": ["True", "False"],
+        "correct": [1],
+        "shuffle": false,
+        "review": ["every-element"]
+      }
+    ]
+  }
+}

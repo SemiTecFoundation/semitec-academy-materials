@@ -1,0 +1,199 @@
+{
+  "id": "coupling",
+  "title": "Coupling faults",
+  "duration": "30 min",
+  "summary": "Cells are packed so tightly that one cell can disturb another. In a **coupling fault**, an operation on — or the state of — one cell (the **aggressor**) changes another cell (the **victim**). These faults are the main reason why memory tests write and read in specific **orders**.",
+  "objectives": [
+    "Explain aggressor and victim.",
+    "Tell inversion, idempotent and state coupling faults apart and write their notation.",
+    "Explain why a test must visit addresses in both directions and use several data backgrounds.",
+    "Describe neighbourhood pattern-sensitive faults."
+  ],
+  "subsections": [
+    {
+      "id": "aggressor-victim",
+      "title": "Aggressor and victim",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "Two neighbouring cells share wires and are separated by only a few nanometres. A defect — a resistive bridge, a leaky junction, too much capacitance between bit lines — can **couple** them:\n\n- the **aggressor** (*a*) is the cell that is written or holds a certain value;\n- the **victim** (*v*) is the cell whose value goes wrong because of it.\n\nThe notation is **⟨what happens to a ; what happens to v⟩**: ↑ is a 0 → 1 transition, ↓ is 1 → 0, ↕ means *inverted*, and 0 / 1 are values."
+        },
+        {
+          "type": "stepper",
+          "src": "assets/coupling-steps.svg",
+          "interval": 2800,
+          "steps": [
+            { "title": "Two cells", "md": "The test has written 0 into both the aggressor and the victim." },
+            { "title": "Inversion coupling ⟨↑ ; ↕⟩", "md": "Writing 1 into **a** makes it go 0 → 1. With an **inversion** coupling fault this transition **flips** the victim, whatever it held." },
+            { "title": "Detect it", "md": "The test now reads **v** and expects 0 — it gets 1. Detected, but only because the test read **v after** writing **a**." },
+            { "title": "Idempotent coupling ⟨↑ ; 0⟩", "md": "An **idempotent** coupling fault **forces** the victim to a fixed value. Here v held 1; the transition of a forces it to 0. If v had already been 0, nothing would be visible — the test must put the *opposite* value in v first." },
+            { "title": "State coupling ⟨1 ; 0⟩", "md": "A **state** coupling fault needs no transition: as long as **a holds 1**, v is forced to 0 — v cannot store a 1. Detected by writing 1 into v while a = 1 and reading v." }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cf-types",
+      "title": "Three kinds of coupling faults",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": ["Fault", "Trigger in the aggressor", "Effect on the victim", "Variants"],
+          "rows": [
+            ["**CFin** — inversion", "a transition ↑ or ↓", "v is inverted", "⟨↑;↕⟩ ⟨↓;↕⟩ — 2"],
+            ["**CFid** — idempotent", "a transition ↑ or ↓", "v is forced to 0 or 1", "⟨↑;0⟩ ⟨↑;1⟩ ⟨↓;0⟩ ⟨↓;1⟩ — 4"],
+            ["**CFst** — state", "a **holds** 0 or 1", "v is forced to 0 or 1", "⟨0;0⟩ ⟨0;1⟩ ⟨1;0⟩ ⟨1;1⟩ — 4"]
+          ],
+          "caption": "Coupling faults between one aggressor and one victim"
+        },
+        {
+          "type": "callout",
+          "kind": "key",
+          "title": "Why tests go up AND down through the addresses",
+          "md": "The aggressor can have a **lower** or a **higher** address than the victim. A test that only walks **upwards** writes the lower cell first; to catch a fault whose aggressor sits *above* the victim, the aggressor must be written **after** the victim was written and **before** it is read — that needs a pass going **downwards**. This is why March tests contain both ⇑ and ⇓ elements."
+        },
+        {
+          "type": "categorize",
+          "prompt": "Practice: which kind of coupling fault is it?",
+          "categories": [{ "id": "in", "label": "Inversion" }, { "id": "id", "label": "Idempotent" }, { "id": "st", "label": "State" }],
+          "items": [
+            { "text": "⟨↓ ; ↕⟩", "category": "in" },
+            { "text": "⟨↑ ; 1⟩", "category": "id" },
+            { "text": "⟨0 ; 1⟩", "category": "st" },
+            { "text": "a 1 → 0 write on a forces v to 0", "category": "id" },
+            { "text": "while a holds 0, v cannot hold 0", "category": "st" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "inter-intra",
+      "title": "Inter-word and intra-word coupling",
+      "blocks": [
+        {
+          "type": "tabs",
+          "tabs": [
+            { "label": "Inter-word", "md": "Aggressor and victim are in **different words** (different addresses). The test can write and read them at different times, in any order it likes — March tests with a plain background (all 0s, then all 1s) are enough." },
+            { "label": "Intra-word", "md": "Aggressor and victim are **bits of the same word**. They are always written **at the same moment** — so if every bit gets the same value (0000 → 1111), the aggressor and victim always change together and many coupling faults stay hidden.\n\nThe fix: repeat the test with several **data backgrounds** in which the bits of a word differ. For an 8-bit word, for example: **0000 0000, 0101 0101, 0011 0011, 0000 1111** — log₂(8) + 1 = 4 backgrounds (plus their inverses, which March tests write anyway). Every pair of bits then sees both *equal* and *different* values." }
+          ]
+        },
+        {
+          "type": "callout",
+          "kind": "info",
+          "title": "Physical neighbours",
+          "md": "Coupling happens between **physically** adjacent cells — on the same word line, the same bit-line pair, or side by side. Because of column multiplexing and address scrambling (Topic 2), these are often **not** neighbouring addresses or neighbouring bits."
+        }
+      ]
+    },
+    {
+      "id": "npsf",
+      "title": "Neighbourhood pattern-sensitive faults",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "In very dense memories, the victim can be disturbed not by one aggressor but by a **pattern** of values in the cells around it — a **neighbourhood pattern-sensitive fault (NPSF)**."
+        },
+        {
+          "type": "reveal",
+          "src": "assets/npsf.svg",
+          "hint": "Click the cells.",
+          "caption": "Victim and its neighbourhood",
+          "spots": [
+            { "x": 43.4, "y": 40.5, "w": 10.5, "h": 19, "label": "1", "title": "The victim (base cell)", "md": "The cell under test. Its behaviour depends on the values around it." },
+            { "x": 43.4, "y": 16.7, "w": 10.5, "h": 19, "label": "2", "title": "Type-1 neighbourhood", "md": "The four direct neighbours **N, S, E, W** — together with the victim, 5 cells." },
+            { "x": 30.3, "y": 16.7, "w": 10.5, "h": 19, "label": "3", "title": "Type-2 neighbourhood", "md": "Adds the four **diagonal** cells — 9 cells in all." }
+          ]
+        },
+        {
+          "type": "table",
+          "columns": ["NPSF type", "What goes wrong"],
+          "rows": [
+            ["**Active** (dynamic)", "the victim changes when **one neighbour makes a transition** while the other neighbours hold a certain pattern"],
+            ["**Passive**", "a certain pattern of the neighbours **prevents** the victim from changing"],
+            ["**Static**", "a certain pattern of the neighbours **forces** the victim to a value"]
+          ],
+          "caption": "Three kinds of NPSF"
+        },
+        {
+          "type": "callout",
+          "kind": "warning",
+          "title": "Expensive to test",
+          "md": "Detecting NPSFs needs every relevant pattern around **every** cell, and the exact physical layout. Such tests are much longer than March tests and are used mainly for DRAM. For SRAM, MBIST relies on March tests, which catch some NPSFs along the way."
+        }
+      ]
+    }
+  ],
+  "quiz": {
+    "questions": [
+      {
+        "id": "q-av",
+        "type": "single",
+        "text": "In a coupling fault, which cell shows the wrong value?",
+        "options": ["The victim", "The aggressor", "Both cells", "The cell with the lowest address"],
+        "correct": [0],
+        "review": ["aggressor-victim"]
+      },
+      {
+        "id": "q-kinds",
+        "type": "match",
+        "text": "Match the notation with the kind of coupling fault.",
+        "categories": [{ "id": "in", "label": "Inversion" }, { "id": "id", "label": "Idempotent" }, { "id": "st", "label": "State" }],
+        "items": [
+          { "text": "⟨↑ ; ↕⟩", "category": "in" },
+          { "text": "⟨↓ ; 0⟩", "category": "id" },
+          { "text": "⟨1 ; 1⟩", "category": "st" },
+          { "text": "⟨↓ ; ↕⟩", "category": "in" }
+        ],
+        "review": ["cf-types"]
+      },
+      {
+        "id": "q-cfid",
+        "type": "single",
+        "text": "Which sequence detects the idempotent coupling fault ⟨↑ ; 0⟩ (aggressor a, victim v)?",
+        "options": [
+          "w1 to v, w0 to a, w1 to a, read v (expect 1)",
+          "w0 to v, w1 to a, read v (expect 0)",
+          "w1 to a, w1 to v, read a",
+          "read v only"
+        ],
+        "correct": [0],
+        "review": ["aggressor-victim", "cf-types"],
+        "explain": "v must hold the **opposite** value (1), a must make the **↑** transition, then v is read."
+      },
+      {
+        "id": "q-dir",
+        "type": "single",
+        "text": "Why do memory tests walk through the addresses both upwards and downwards?",
+        "options": [
+          "The aggressor can have a lower or a higher address than the victim.",
+          "To make the test twice as long.",
+          "Decoders only work in one direction.",
+          "To refresh the memory."
+        ],
+        "correct": [0],
+        "review": ["cf-types"]
+      },
+      {
+        "id": "q-intra",
+        "type": "single",
+        "text": "Why does testing intra-word coupling faults need several data backgrounds?",
+        "options": [
+          "Bits of one word are written together; they must also get different values for the faults to show.",
+          "Backgrounds make the test faster.",
+          "Intra-word faults only appear in ROMs.",
+          "Data backgrounds replace the address order."
+        ],
+        "correct": [0],
+        "review": ["inter-intra"]
+      },
+      {
+        "id": "q-npsf",
+        "type": "single",
+        "text": "How many cells does a type-1 neighbourhood contain (victim included)?",
+        "options": ["5", "4", "9", "8"],
+        "correct": [0],
+        "review": ["npsf"]
+      }
+    ]
+  }
+}

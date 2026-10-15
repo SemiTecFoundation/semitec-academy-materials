@@ -1,0 +1,56 @@
+{
+  "id": "bist-foundations",
+  "version": "0.1",
+  "title": "BIST Foundations: Why Chips Test Themselves",
+  "subtitle": "SemiTec Foundation · BIST / MBIST",
+  "language": "en",
+  "layout": "sidebar",
+  "theme": "foundation",
+  "themes": [
+    "foundation",
+    "midnight",
+    "paper"
+  ],
+  "allowViewSwitch": true,
+  "passThreshold": 0.75,
+  "showCorrectAnswers": "afterPass",
+  "requireSequential": true,
+  "topicWord": "Topic",
+  "hours": "4",
+  "schedule": {
+    "weeks": 2,
+    "topics": [
+      {
+        "week": 1,
+        "topics": [
+          "why-test",
+          "why-bist",
+          "bist-lifetime"
+        ]
+      },
+      {
+        "week": 2,
+        "topics": [
+          "lfsr",
+          "misr",
+          "tiny-bist"
+        ]
+      }
+    ]
+  },
+  "delivery": {
+    "mode": "standalone",
+    "urlParams": true,
+    "resume": true
+  },
+  "labels": {},
+  "topics": [
+    "01-why-test.json",
+    "02-why-bist.json",
+    "03-bist-lifetime.json",
+    "04-lfsr.json",
+    "05-misr.json",
+    "06-tiny-bist.json"
+  ],
+  "certificate": "certificate.json"
+}

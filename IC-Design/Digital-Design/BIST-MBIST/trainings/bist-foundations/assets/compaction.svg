@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 300" font-family="Segoe UI, Arial, sans-serif">
+  <defs><marker id="cp-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#34495e"/></marker></defs>
+  <rect width="800" height="300" rx="14" fill="#ffffff"/>
+  <text x="400" y="32" text-anchor="middle" font-size="16" font-weight="700" fill="#1f4e79">Millions of response bits in, one short signature out</text>
+  <rect x="30" y="80" width="150" height="140" rx="10" fill="#eef1f4" stroke="#34495e" stroke-width="2.5"/>
+  <text x="105" y="145" text-anchor="middle" font-size="15" font-weight="700" fill="#34495e">Circuit</text>
+  <text x="105" y="165" text-anchor="middle" font-size="15" font-weight="700" fill="#34495e">under test</text>
+  <g font-family="Consolas, monospace" font-size="13" fill="#1f6feb">
+    <text x="195" y="100">1011001110100101101…</text><text x="195" y="130">0110111000101101001…</text>
+    <text x="195" y="160">1100010111010011010…</text><text x="195" y="190">0011101001011100110…</text>
+  </g>
+  <text x="290" y="222" text-anchor="middle" font-size="12" fill="#6b7a8c">responses: millions of bits</text>
+  <path d="M370 150H418" stroke="#34495e" stroke-width="2.5" marker-end="url(#cp-a)"/>
+  <rect x="420" y="95" width="140" height="110" rx="10" fill="#e8f6ee" stroke="#27ae60" stroke-width="2.5"/>
+  <text x="490" y="145" text-anchor="middle" font-size="15" font-weight="700" fill="#1e8449">Compactor</text>
+  <text x="490" y="165" text-anchor="middle" font-size="12" fill="#34495e">MISR</text>
+  <path d="M560 150H598" stroke="#34495e" stroke-width="2.5" marker-end="url(#cp-a)"/>
+  <rect x="600" y="70" width="170" height="60" rx="8" fill="#eef4fb" stroke="#1f4e79" stroke-width="2"/>
+  <text x="685" y="94" text-anchor="middle" font-size="12" fill="#34495e">signature</text>
+  <text x="685" y="118" text-anchor="middle" font-family="Consolas, monospace" font-size="20" font-weight="800" fill="#1f6feb">0100</text>
+  <rect x="600" y="170" width="170" height="60" rx="8" fill="#fdf7e3" stroke="#c9a227" stroke-width="2"/>
+  <text x="685" y="194" text-anchor="middle" font-size="12" fill="#34495e">golden (from simulation)</text>
+  <text x="685" y="218" text-anchor="middle" font-family="Consolas, monospace" font-size="20" font-weight="800" fill="#8a6d00">0100</text>
+  <text x="685" y="262" text-anchor="middle" font-size="15" font-weight="800" fill="#1e8449">equal → PASS</text>
+</svg>

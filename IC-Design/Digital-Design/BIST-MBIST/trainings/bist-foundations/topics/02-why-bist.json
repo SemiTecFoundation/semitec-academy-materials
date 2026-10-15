@@ -1,0 +1,207 @@
+{
+  "id": "why-bist",
+  "title": "Why external test is not enough",
+  "duration": "25 min",
+  "summary": "A tester outside the chip runs into three walls: **too few pins**, **too slow** for some defects, and **no way in** to the buried memories. This topic shows each wall and the idea that gets around all three: let the chip **test itself**.",
+  "objectives": [
+    "Estimate how long it takes to load test data through a few pins.",
+    "Explain why delay defects need a test at full clock speed.",
+    "Explain why embedded memories are hard to reach from outside.",
+    "Name the four blocks of a BIST and what each one does."
+  ],
+  "subsections": [
+    {
+      "id": "pin-bottleneck",
+      "title": "Too few pins, too much data",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "To test the logic, the tester must put a known value into **every flip-flop**, run one clock, and read every flip-flop back. For this the flip-flops are connected into long shift registers called **scan chains** (you meet them in the DFT course). The values are shifted in and out through a few **test pins** — one bit per pin per clock."
+        },
+        {
+          "type": "svg",
+          "src": "assets/pin-bottleneck.svg",
+          "controls": true,
+          "caption": "Millions of flip-flops, a handful of pins"
+        },
+        {
+          "type": "callout",
+          "kind": "key",
+          "title": "Worked example",
+          "md": "A chip has **10 million** flip-flops and **20** scan input pins.\n\n- Loading one pattern: 10 000 000 ÷ 20 = **500 000 clock cycles**.\n- The test needs **10 000** patterns: 500 000 × 10 000 = 5 × 10⁹ cycles.\n- Shifting at 50 MHz: 5 × 10⁹ ÷ 50 × 10⁶ = **100 seconds** per chip — and the tester must store all those bits."
+        },
+        {
+          "type": "text",
+          "md": "One hundred seconds per chip, times millions of chips, is far too expensive. Engineers fight back with **test compression** (fewer bits on the pins, expanded on chip) and with **BIST**, where the patterns are made on the chip and only a start command and a result cross the pins.\n\nAnd the problem grows every year: chips get more flip-flops much faster than they get more pins."
+        }
+      ]
+    },
+    {
+      "id": "at-speed",
+      "title": "Defects that only show at full speed",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "Remember the **slow path** from Topic 1: a resistive contact makes a signal arrive late. The logic value is right — it just comes **too late**. Whether the test catches it depends on the clock:"
+        },
+        {
+          "type": "tabs",
+          "tabs": [
+            { "label": "Slow test clock", "blocks": [
+              { "type": "image", "src": "assets/slow-test.svg", "alt": "Slow clock: the delayed signal arrives before the capture edge" },
+              { "type": "text", "md": "The clock period is long. The late signal still settles before the capture edge, so the flip-flop stores the **right** value. The chip **passes** — the defect is missed." }
+            ] },
+            { "label": "Full-speed clock", "blocks": [
+              { "type": "image", "src": "assets/atspeed-test.svg", "alt": "Fast clock: the delayed signal misses the capture edge" },
+              { "type": "text", "md": "At the real operating frequency the capture edge comes earlier. The late signal has not changed yet, the flip-flop stores the **old** value, and the test **fails** — the defect is found." }
+            ] }
+          ]
+        },
+        {
+          "type": "text",
+          "md": "So delay defects need **at-speed** test — at the real clock, which can be 1–3 GHz. Driving and sampling hundreds of pins that fast from outside needs very expensive tester channels, and the package and probe wires distort fast signals.\n\nThe chip, however, already has a fast clock: its own **PLL**. A test that runs **inside** the chip can use it."
+        }
+      ]
+    },
+    {
+      "id": "buried-memories",
+      "title": "Memories you cannot reach",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "Look at a modern system on chip: much of its area is **memory** — caches, buffers, register files, ROMs. In many chips memories take a third to half of the area, or more."
+        },
+        {
+          "type": "reveal",
+          "src": "assets/soc-memories.svg",
+          "hint": "Click the blocks to see where the memories are.",
+          "caption": "Memories are everywhere in a system on chip",
+          "spots": [
+            { "x": 5.6, "y": 13.5, "w": 37.5, "h": 41.7, "label": "1", "title": "Caches inside the CPU cores", "md": "Every core has small, very fast **L1 caches** and register files. They sit deep inside the core — no pin is connected to them." },
+            { "x": 45.6, "y": 13.5, "w": 25, "h": 41.7, "label": "2", "title": "L2 cache", "md": "A large block with millions of cells, packed as densely as the process allows. Dense means **many defects**." },
+            { "x": 73.1, "y": 13.5, "w": 21.9, "h": 41.7, "label": "3", "title": "Accelerator memory", "md": "GPUs and AI accelerators carry their own local SRAMs, often hundreds of small instances." },
+            { "x": 5.6, "y": 68.8, "w": 27.5, "h": 22.9, "label": "4", "title": "Small buffers", "md": "FIFOs and buffers in the peripherals. Small, but there can be **hundreds** of them — each one needs a test." },
+            { "x": 35.6, "y": 68.8, "w": 18.8, "h": 22.9, "label": "5", "title": "ROM", "md": "Read-only memory with boot code. It cannot be written, so it is tested by reading all words and checking a signature." },
+            { "x": 56.9, "y": 68.8, "w": 38.1, "h": 22.9, "label": "6", "title": "Shared SRAM", "md": "Large on-chip working memory. Testing it well means writing and reading **every cell many times** in special orders." }
+          ]
+        },
+        {
+          "type": "text",
+          "md": "To test a memory properly you must write and read **every address several times** in special orders (the March tests of the MBIST course). From outside, every access would have to travel through the surrounding logic — slow, complicated, and for many memories simply impossible.\n\nThe practical answer: put a small test engine **next to each memory**. That is **memory BIST (MBIST)**."
+        }
+      ]
+    },
+    {
+      "id": "bist-idea",
+      "title": "The BIST idea",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "**Built-in self-test (BIST)** moves the tester's work into the chip. Step through the four blocks:"
+        },
+        {
+          "type": "stepper",
+          "src": "assets/bist-idea.svg",
+          "interval": 2600,
+          "steps": [
+            { "title": "Pattern generator", "md": "Makes the test patterns **on the chip** — no pattern memory on the tester needed. For logic it is usually an **LFSR** (Topic 4); for memories, address and data generators that run a **March** test." },
+            { "title": "Circuit under test", "md": "The block being tested: a piece of logic or a memory. During the test it is cut off from its normal inputs and fed by the generator." },
+            { "title": "Response checker", "md": "Checks the answers. A memory BIST **compares** each read with the expected value. A logic BIST **compacts** millions of answers into one short **signature** in a MISR (Topic 5)." },
+            { "title": "BIST controller", "md": "A small state machine: waits for *start*, runs the test for the right number of cycles, then raises *done* and *pass/fail*." },
+            { "title": "The tester's job now", "md": "The tester only sends **start** and later reads **done** and **pass/fail** through a few pins, often the JTAG port. The test itself runs inside the chip, **at the chip's own clock speed**." }
+          ]
+        },
+        {
+          "type": "tabs",
+          "tabs": [
+            { "label": "Memory BIST (MBIST)", "md": "Tests embedded memories. The generator runs **March algorithms** — write and read every address in a fixed order — and a comparator checks every read. Can also tell **which cell** failed and help **repair** the memory with spare rows or columns." },
+            { "label": "Logic BIST (LBIST)", "md": "Tests random logic. An **LFSR** feeds pseudo-random patterns into the scan chains, a **MISR** compacts the responses, and at the end the signature is compared with the expected (**golden**) one." }
+          ]
+        },
+        {
+          "type": "callout",
+          "kind": "info",
+          "title": "BIST does not replace the tester",
+          "md": "The tester is still needed: to power the chip, run other tests, and read the results. BIST makes test **faster and cheaper**, reaches the **buried** blocks, runs **at speed** — and lets the chip test itself later in the **field** (Topic 3)."
+        }
+      ]
+    }
+  ],
+  "quiz": {
+    "questions": [
+      {
+        "id": "q-shift",
+        "type": "single",
+        "text": "A chip has 2 million scan flip-flops and 10 scan input pins. How many clock cycles does it take to shift in **one** pattern?",
+        "options": ["200 000", "20 000", "2 000 000", "20"],
+        "correct": [0],
+        "review": ["pin-bottleneck"],
+        "explain": "2 000 000 ÷ 10 = **200 000** cycles — one bit per pin per clock."
+      },
+      {
+        "id": "q-slow",
+        "type": "single",
+        "text": "Why can a test with a slow clock miss a delay defect?",
+        "options": [
+          "The late signal still settles before the capture edge, so the right value is stored.",
+          "Slow clocks cannot shift data into scan chains.",
+          "Delay defects disappear at low temperature.",
+          "The tester cannot read the outputs at a slow clock."
+        ],
+        "correct": [0],
+        "review": ["at-speed"],
+        "explain": "With a long clock period the late signal has time to arrive, so the chip passes. Only at **full speed** does it arrive too late and cause a failure."
+      },
+      {
+        "id": "q-mem",
+        "type": "multiple",
+        "text": "Why are embedded memories hard to test from outside the chip? Select **all** correct answers.",
+        "options": [
+          "They are buried inside the chip with no direct connection to pins.",
+          "A good memory test reads and writes every address several times.",
+          "They are very dense, so they collect many defects.",
+          "Memories cannot have manufacturing defects."
+        ],
+        "correct": [0, 1, 2],
+        "review": ["buried-memories"]
+      },
+      {
+        "id": "q-flow",
+        "type": "order",
+        "text": "Put the events of one BIST run in order.",
+        "items": [
+          "The tester sends start",
+          "The pattern generator applies patterns",
+          "The circuit under test produces responses",
+          "The response checker compares or compacts them",
+          "The controller raises done and pass/fail"
+        ],
+        "review": ["bist-idea"]
+      },
+      {
+        "id": "q-kind",
+        "type": "match",
+        "text": "Sort the features into MBIST and LBIST.",
+        "categories": [{ "id": "mbist", "label": "MBIST" }, { "id": "lbist", "label": "LBIST" }],
+        "items": [
+          { "text": "March algorithms", "category": "mbist" },
+          { "text": "compares every read with the expected value", "category": "mbist" },
+          { "text": "can help repair with spare rows", "category": "mbist" },
+          { "text": "pseudo-random patterns into scan chains", "category": "lbist" },
+          { "text": "MISR signature", "category": "lbist" }
+        ],
+        "review": ["bist-idea"]
+      },
+      {
+        "id": "q-tester",
+        "type": "truefalse",
+        "text": "With BIST, a chip no longer needs a tester at all.",
+        "options": ["True", "False"],
+        "correct": [1],
+        "shuffle": false,
+        "review": ["bist-idea"],
+        "explain": "The tester still powers the chip, starts BIST, reads the results and runs other tests — but its job becomes much smaller."
+      }
+    ]
+  }
+}

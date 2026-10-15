@@ -1,0 +1,335 @@
+{
+  "id": "controller",
+  "title": "The MBIST controller",
+  "duration": "35 min",
+  "summary": "The controller turns a March test into a sequence of commands — address, data, read or write — one per clock. It can be a fixed state machine for one algorithm, or a small programmable engine that runs any algorithm loaded into it.",
+  "objectives": [
+    "Describe a March test as three nested loops and map them to counters.",
+    "Sketch a hard-wired controller for a given March test.",
+    "Write a simple March test as a microcode program.",
+    "Compare hard-wired and programmable controllers."
+  ],
+  "subsections": [
+    {
+      "id": "loops",
+      "title": "A March test as nested loops",
+      "blocks": [
+        {
+          "type": "stepper",
+          "src": "assets/march-loops.svg",
+          "interval": 3000,
+          "steps": [
+            {
+              "title": "Elements",
+              "md": "The outer loop walks through the **elements** of the test — an **element counter**."
+            },
+            {
+              "title": "Addresses",
+              "md": "For each element, the middle loop walks through all **addresses** in the element's order — the **address counter** of Topic 3."
+            },
+            {
+              "title": "Operations",
+              "md": "For each address, the inner loop runs the element's **operations** — an **operation counter**. Each operation is one memory access: write data, or read and compare."
+            },
+            {
+              "title": "Done",
+              "md": "When the last operation of the last address of the last element is finished, the controller raises **done**; **pass** is 1 if no compare failed."
+            }
+          ]
+        },
+        {
+          "type": "code",
+          "lang": "text",
+          "code": "for e in elements:                 # element counter\n    for a in addresses(e.order):    # address counter, up or down\n        for op in e.ops:            # operation counter\n            if op.write: mem[a] = data(op.value)\n            else:        fail |= (mem[a] != data(op.value))\ndone = 1; pass = not fail"
+        }
+      ]
+    },
+    {
+      "id": "hardwired",
+      "title": "A hard-wired controller",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "For one fixed algorithm the loops can be unrolled into a **state machine**. Each state issues one operation; the address counter and the *last* flag decide whether to stay in the element or move to the next. For MATS+ = {⇕(w0); ⇑(r0, w1); ⇓(r1, w0)}:"
+        },
+        {
+          "type": "stepper",
+          "src": "assets/mats-fsm.svg",
+          "interval": 3000,
+          "steps": [
+            {
+              "title": "Start and M0",
+              "md": "*start* leaves IDLE. **M0_W** writes 0 and stays until the last address."
+            },
+            {
+              "title": "M1",
+              "md": "**M1_R** reads 0, **M1_W** writes 1, and the pair repeats going up until the last address."
+            },
+            {
+              "title": "M2",
+              "md": "**M2_R** reads 1, **M2_W** writes 0, going down until address 0."
+            },
+            {
+              "title": "Done",
+              "md": "**DONE** raises *done*; when *start* is released the controller returns to IDLE."
+            }
+          ]
+        },
+        {
+          "type": "table",
+          "columns": [
+            "State",
+            "Operation",
+            "Next state"
+          ],
+          "rows": [
+            [
+              "M0_W",
+              "w0, address up",
+              "M0_W — or M1_R after the last address (load 0)"
+            ],
+            [
+              "M1_R",
+              "r0 and compare",
+              "M1_W"
+            ],
+            [
+              "M1_W",
+              "w1, address up",
+              "M1_R — or M2_R after the last address (load N−1)"
+            ],
+            [
+              "M2_R",
+              "r1 and compare",
+              "M2_W"
+            ],
+            [
+              "M2_W",
+              "w0, address down",
+              "M2_R — or DONE after address 0"
+            ],
+            [
+              "DONE",
+              "done = 1",
+              "IDLE when start is released"
+            ]
+          ],
+          "caption": "A hard-wired MATS+ controller: one state per operation"
+        },
+        {
+          "type": "callout",
+          "kind": "info",
+          "title": "Small, fast — and fixed",
+          "md": "A hard-wired controller is a handful of flip-flops and gates and runs easily at speed. But the algorithm is frozen in silicon. Many chips include **a few** hard-wired algorithms (for example a production test and a short power-on test) and select one through IJTAG."
+        }
+      ]
+    },
+    {
+      "id": "programmable",
+      "title": "A programmable controller",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "A **programmable** controller stores the algorithm as a short **program** in registers that are loaded through IJTAG. Each instruction describes one March element:"
+        },
+        {
+          "type": "table",
+          "columns": [
+            "Field",
+            "Meaning",
+            "Example"
+          ],
+          "rows": [
+            [
+              "order",
+              "⇑, ⇓ or ⇕",
+              "⇑"
+            ],
+            [
+              "operations",
+              "up to k operations, each read/write + 0/1",
+              "r0, w1"
+            ],
+            [
+              "background",
+              "which data background to use",
+              "D0"
+            ],
+            [
+              "last",
+              "1 = this is the last instruction",
+              "0"
+            ]
+          ],
+          "caption": "One microcode instruction = one March element"
+        },
+        {
+          "type": "stepper",
+          "src": "assets/prog-ctrl.svg",
+          "interval": 2600,
+          "steps": [
+            {
+              "title": "Instruction 0: ⇕(w0)",
+              "md": "The program counter (PC) points to instruction 0. The address generator counts through all addresses, the sequencer issues one **w0** per address."
+            },
+            {
+              "title": "Instruction 1: ⇑(r0, w1)",
+              "md": "Load 0, count up; at every address **r0** then **w1**."
+            },
+            {
+              "title": "Instruction 2: ⇑(r1, w0)",
+              "md": "Up again with the opposite values."
+            },
+            {
+              "title": "Instruction 3: ⇓(r0, w1)",
+              "md": "Load N−1 and count **down**."
+            },
+            {
+              "title": "Instruction 4: ⇓(r1, w0)",
+              "md": "Down with the opposite values."
+            },
+            {
+              "title": "Instruction 5: ⇕(r0)",
+              "md": "The final read. This instruction has *last* = 1, so the controller raises **done** afterwards."
+            }
+          ]
+        },
+        {
+          "type": "sort",
+          "prompt": "Practice: put the instructions of a MATS++ program {⇕(w0); ⇑(r0, w1); ⇓(r1, w0, r0)} in order.",
+          "items": [
+            "⇕ | w0 | last 0",
+            "⇑ | r0, w1 | last 0",
+            "⇓ | r1, w0, r0 | last 1"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "compare",
+      "title": "Hard-wired or programmable?",
+      "blocks": [
+        {
+          "type": "tabs",
+          "tabs": [
+            {
+              "label": "Hard-wired",
+              "md": "**+** smallest area, simplest timing.\n\n**−** only the algorithms chosen at design time. If silicon shows a new fault type, nothing can be changed."
+            },
+            {
+              "label": "Programmable",
+              "md": "**+** any March-type algorithm, loaded after the chip is made; different tests for production, power-on and diagnosis.\n\n**−** more area (instruction registers, decoding), longer setup through IJTAG."
+            },
+            {
+              "label": "In practice",
+              "md": "Commercial MBIST generators offer both and mix them: a library of built-in algorithms selectable at run time, plus an optional programmable mode for new algorithms. The engineer chooses per controller, depending on how critical the memories are."
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "quiz": {
+    "questions": [
+      {
+        "id": "q-loops",
+        "type": "order",
+        "text": "Order the loops of a March test from outermost to innermost.",
+        "items": [
+          "elements",
+          "addresses",
+          "operations"
+        ],
+        "review": [
+          "loops"
+        ]
+      },
+      {
+        "id": "q-counter",
+        "type": "single",
+        "text": "Which counter decides when a March element is finished?",
+        "options": [
+          "The address counter reaching the last address of the element's order",
+          "The operation counter",
+          "The JTAG clock",
+          "The data background register"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "loops",
+          "hardwired"
+        ]
+      },
+      {
+        "id": "q-states",
+        "type": "single",
+        "text": "In the hard-wired MATS+ controller, how many states issue memory operations?",
+        "options": [
+          "5 — one per operation",
+          "3 — one per element",
+          "1",
+          "10"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "hardwired"
+        ]
+      },
+      {
+        "id": "q-instr",
+        "type": "single",
+        "text": "In the programmable controller, what does one instruction describe?",
+        "options": [
+          "One March element: order, operations, background",
+          "One memory address",
+          "One bit of the memory",
+          "The whole chip test"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "programmable"
+        ]
+      },
+      {
+        "id": "q-adv",
+        "type": "multiple",
+        "text": "What are advantages of a programmable controller? Select **all** correct answers.",
+        "options": [
+          "A new algorithm can be used after the chip is made.",
+          "Different tests can be run for production, power-on and diagnosis.",
+          "It is always smaller than a hard-wired controller.",
+          "It needs no test access port."
+        ],
+        "correct": [
+          0,
+          1
+        ],
+        "review": [
+          "compare"
+        ]
+      },
+      {
+        "id": "q-hw",
+        "type": "truefalse",
+        "text": "A chip may contain a few hard-wired algorithms and select one of them through IJTAG.",
+        "options": [
+          "True",
+          "False"
+        ],
+        "correct": [
+          0
+        ],
+        "shuffle": false,
+        "review": [
+          "hardwired"
+        ]
+      }
+    ]
+  }
+}

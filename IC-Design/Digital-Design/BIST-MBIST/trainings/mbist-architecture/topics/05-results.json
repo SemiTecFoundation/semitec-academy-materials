@@ -1,0 +1,304 @@
+{
+  "id": "results",
+  "title": "Results and diagnosis",
+  "duration": "30 min",
+  "summary": "A test is only useful if its result reaches someone. For a production go/no-go decision one bit per memory is enough; for repair and for yield learning the chip must also say **where** it failed. This topic follows a fail from the comparator to the tester.",
+  "objectives": [
+    "Explain sticky fail flags and the go/no-go result.",
+    "Describe diagnosis modes: fail capture, stop and resume, bitmaps.",
+    "Read typical failure-bitmap patterns.",
+    "Explain why ROMs are checked with a signature."
+  ],
+  "subsections": [
+    {
+      "id": "fail-path",
+      "title": "Comparators and the fail flag",
+      "blocks": [
+        {
+          "type": "stepper",
+          "src": "assets/results.svg",
+          "interval": 3000,
+          "steps": [
+            {
+              "title": "Comparator",
+              "md": "Every read is compared bit by bit with the expected data."
+            },
+            {
+              "title": "Sticky fail flag",
+              "md": "A mismatch sets a **fail flag** that stays set until the next test — it is *sticky*. At the end, *pass = not fail*. This is the **go / no-go** result."
+            },
+            {
+              "title": "Diagnosis register",
+              "md": "In diagnosis mode the controller also captures **where**: the element, the address and which bits were wrong."
+            },
+            {
+              "title": "Read out",
+              "md": "The record is shifted out through TAP/IJTAG. To log more fails, the test **stops** at a fail, the record is read, and the test **resumes** — again and again."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "modes",
+      "title": "Go/no-go and diagnosis modes",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": [
+            "Mode",
+            "What is kept",
+            "Used for"
+          ],
+          "rows": [
+            [
+              "**Go / no-go**",
+              "one sticky fail bit per memory (or per controller)",
+              "production: throw the chip away or keep it"
+            ],
+            [
+              "**Per-bit fail**",
+              "a fail flag per data bit or column",
+              "column repair; quick hint where the defect is"
+            ],
+            [
+              "**First-fail capture**",
+              "element, address, failing bits of the first fail",
+              "quick diagnosis"
+            ],
+            [
+              "**Stop and resume**",
+              "every fail, read out one by one",
+              "complete failure bitmaps in the lab"
+            ],
+            [
+              "**Repair mode**",
+              "failing rows and columns, analysed on the chip",
+              "programming spare rows / columns — *Memory Repair* training"
+            ]
+          ],
+          "caption": "How much the chip remembers about its fails"
+        },
+        {
+          "type": "callout",
+          "kind": "info",
+          "title": "Why not always keep everything?",
+          "md": "Every fail record costs **register area** and **read-out time** through the slow JTAG port. Production wants a fast decision; detailed diagnosis is only switched on for chips being analysed or repaired."
+        }
+      ]
+    },
+    {
+      "id": "bitmaps",
+      "title": "Failure bitmaps",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "Plot every failing cell at its **physical** row and column (using the scrambling information) and you get a **failure bitmap**. Its shape points to the defect:"
+        },
+        {
+          "type": "svg",
+          "src": "assets/bitmaps.svg",
+          "caption": "Four typical failure bitmaps"
+        },
+        {
+          "type": "table",
+          "columns": [
+            "Bitmap shape",
+            "Likely cause"
+          ],
+          "rows": [
+            [
+              "single cell",
+              "defect inside one cell: a weak transistor, a particle"
+            ],
+            [
+              "two adjacent cells",
+              "a bridge between neighbours — a coupling fault"
+            ],
+            [
+              "a whole row",
+              "broken word line or row decoder defect"
+            ],
+            [
+              "a whole column",
+              "broken bit line, sense amplifier or column mux"
+            ],
+            [
+              "a cluster of cells",
+              "a large particle or a local process problem"
+            ],
+            [
+              "the same cells on many chips",
+              "a design or layout weakness, not a random defect"
+            ]
+          ],
+          "caption": "Reading a failure bitmap"
+        },
+        {
+          "type": "categorize",
+          "prompt": "Practice: what is the most likely cause?",
+          "categories": [
+            {
+              "id": "cell",
+              "label": "Cell defect"
+            },
+            {
+              "id": "row",
+              "label": "Word line / row decoder"
+            },
+            {
+              "id": "col",
+              "label": "Bit line / sense amplifier"
+            }
+          ],
+          "items": [
+            {
+              "text": "Only cell (12, 40) fails",
+              "category": "cell"
+            },
+            {
+              "text": "All cells of row 87 fail",
+              "category": "row"
+            },
+            {
+              "text": "All cells of column 5 fail",
+              "category": "col"
+            },
+            {
+              "text": "Column 9 always reads 0",
+              "category": "col"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "rom",
+      "title": "ROM: signatures instead of compares",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "A ROM cannot be written, so the controller cannot know the expected data at each address — unless it stored a copy of the ROM, which would make no sense. Instead MBIST **reads every address** and compacts the data in a **MISR**, exactly as in *BIST Foundations*:\n\n> {⇑(r); ⇓(r)} → MISR → compare with the golden signature\n\nThe golden signature is computed from the ROM content when the chip is designed. Reading in both directions also catches address-decoder faults."
+        },
+        {
+          "type": "svg",
+          "src": "assets/rom-misr.svg",
+          "caption": "ROM test: address counter, ROM, MISR and one compare at the end"
+        },
+        {
+          "type": "callout",
+          "kind": "key",
+          "title": "Compare or compact?",
+          "md": "**Compare** when the expected data is known (RAM: the test wrote it). **Compact** when it is not (ROM, or logic). Compacting gives only pass/fail — it cannot say *which* address failed."
+        }
+      ]
+    }
+  ],
+  "quiz": {
+    "questions": [
+      {
+        "id": "q-sticky",
+        "type": "single",
+        "text": "What does a **sticky** fail flag do?",
+        "options": [
+          "It stays set from the first fail until the next test.",
+          "It is cleared after every correct read.",
+          "It counts the number of fails.",
+          "It stops the memory clock."
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "fail-path"
+        ]
+      },
+      {
+        "id": "q-diag",
+        "type": "multiple",
+        "text": "What can a diagnosis register capture? Select **all** correct answers.",
+        "options": [
+          "The March element of the fail",
+          "The failing address",
+          "Which data bits were wrong",
+          "The chip's temperature"
+        ],
+        "correct": [
+          0,
+          1,
+          2
+        ],
+        "review": [
+          "fail-path"
+        ]
+      },
+      {
+        "id": "q-prod",
+        "type": "single",
+        "text": "Why does production usually run in go/no-go mode?",
+        "options": [
+          "It is fastest and needs the least read-out through the slow JTAG port.",
+          "Diagnosis mode cannot run at speed.",
+          "Go/no-go finds more faults.",
+          "Production chips have no diagnosis registers."
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "modes"
+        ]
+      },
+      {
+        "id": "q-column",
+        "type": "single",
+        "text": "A failure bitmap shows every cell of one column failing. What is the most likely cause?",
+        "options": [
+          "A broken bit line or sense amplifier",
+          "A single weak cell",
+          "A row-decoder defect",
+          "A wrong algorithm"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "bitmaps"
+        ]
+      },
+      {
+        "id": "q-rom",
+        "type": "single",
+        "text": "How is a ROM tested by MBIST?",
+        "options": [
+          "Read all addresses, compact the data in a MISR and compare with a golden signature.",
+          "Write a checkerboard and read it back.",
+          "Run March C− with four backgrounds.",
+          "ROMs cannot be tested by MBIST."
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "rom"
+        ]
+      },
+      {
+        "id": "q-compact",
+        "type": "truefalse",
+        "text": "Signature compaction can tell exactly which ROM address failed.",
+        "options": [
+          "True",
+          "False"
+        ],
+        "correct": [
+          1
+        ],
+        "shuffle": false,
+        "review": [
+          "rom"
+        ]
+      }
+    ]
+  }
+}

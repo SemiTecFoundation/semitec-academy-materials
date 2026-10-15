@@ -1,0 +1,262 @@
+{
+  "id": "special",
+  "title": "Special memories",
+  "duration": "30 min",
+  "summary": "Not every memory is a plain single-port SRAM. Memories with **ECC**, **multi-port** memories and memories in other **clock domains** each change what MBIST must do.",
+  "objectives": [
+    "Explain why MBIST bypasses ECC and how the ECC logic itself is tested.",
+    "Describe what extra testing multi-port memories need.",
+    "Explain how MBIST handles clock domains and runs at speed."
+  ],
+  "subsections": [
+    {
+      "id": "ecc",
+      "title": "Memories with ECC",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "Many memories store extra **check bits** and use an **error-correcting code** (ECC): an encoder computes the check bits on every write, a decoder corrects a flipped bit on every read. How ECC works is covered in the memory courses of *Digital Design*; here we only ask how to **test** such a memory."
+        },
+        {
+          "type": "stepper",
+          "src": "assets/ecc-test.svg",
+          "interval": 3200,
+          "steps": [
+            {
+              "title": "ECC hides faults",
+              "md": "If MBIST tested through the ECC, a stuck-at cell would simply be **corrected** — the test would pass. The chip would ship with a defect, and with no margin left for a second error in the field."
+            },
+            {
+              "title": "Test the array with ECC bypassed",
+              "md": "MBIST writes and reads the **full code word** — data bits and check bits — directly. Every cell, including the check bits, gets the March test."
+            },
+            {
+              "title": "Test the ECC logic",
+              "md": "Then the encoder and decoder are checked: write a code word with **one flipped bit** (or two) through the bypass, read it through the decoder, and check the corrected data and the **error flags**."
+            }
+          ]
+        },
+        {
+          "type": "table",
+          "columns": [
+            "What to test",
+            "How"
+          ],
+          "rows": [
+            [
+              "Data and check-bit cells",
+              "March test with ECC bypassed, full code-word width"
+            ],
+            [
+              "Encoder",
+              "write data through the encoder, read raw check bits through the bypass"
+            ],
+            [
+              "Decoder: single error",
+              "store a code word with 1 flipped bit → data corrected, *corrected* flag set"
+            ],
+            [
+              "Decoder: double error (SECDED)",
+              "store 2 flipped bits → *uncorrectable* flag set"
+            ]
+          ],
+          "caption": "A complete test of a memory with ECC"
+        },
+        {
+          "type": "callout",
+          "kind": "tip",
+          "title": "ECC in the field",
+          "md": "During operation ECC corrects soft errors, and error counters tell the system when a memory is getting worse. How ECC, scrubbing and periodic MBIST work together is a topic of *BIST in the Field*."
+        }
+      ]
+    },
+    {
+      "id": "multiport",
+      "title": "Multi-port memories and register files",
+      "blocks": [
+        {
+          "type": "accordion",
+          "items": [
+            {
+              "title": "Test every port",
+              "md": "Each port has its own address decoder, read and write circuits. The March test is run **through each port**, so a faulty decoder of port B is not hidden by a good port A."
+            },
+            {
+              "title": "Port-interaction faults",
+              "md": "Two ports working at the same time share bit lines and cells. Faults may appear only when port A **reads** while port B **writes** the same row or column. **Two-port March tests** run operations on both ports in the same clock."
+            },
+            {
+              "title": "Register files",
+              "md": "Small, many ports, very fast. They are tested like multi-port memories; very small ones built from flip-flops may be tested by **scan** instead of MBIST."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "clocks",
+      "title": "Clocks and at-speed operation",
+      "blocks": [
+        {
+          "type": "svg",
+          "src": "assets/clock-domains.svg",
+          "caption": "Configuration and results cross between the slow and the fast clock through synchronizers"
+        },
+        {
+          "type": "accordion",
+          "items": [
+            {
+              "title": "The controller lives in the memory's clock domain",
+              "md": "To test at speed, the controller and the collar run on the **same clock as the memory**. Memories in different clock domains get **different controllers**."
+            },
+            {
+              "title": "Crossing from TAP to the controller",
+              "md": "Configuration and results travel through the slow JTAG clock (TCK). Signals such as *start* and *done* cross between TCK and the memory clock through **synchronizers**."
+            },
+            {
+              "title": "Where the fast clock comes from",
+              "md": "On the tester, the chip's own **PLL** usually provides the at-speed clock; the tester only supplies a slow reference. MBIST is often repeated at several **voltages** and **temperatures** to find weak cells."
+            }
+          ]
+        },
+        {
+          "type": "categorize",
+          "prompt": "Practice: which clock does the signal or block use?",
+          "categories": [
+            {
+              "id": "tck",
+              "label": "JTAG clock (TCK)"
+            },
+            {
+              "id": "mem",
+              "label": "Memory clock"
+            }
+          ],
+          "items": [
+            {
+              "text": "Shifting the algorithm program into the controller",
+              "category": "tck"
+            },
+            {
+              "text": "The March operations on the memory",
+              "category": "mem"
+            },
+            {
+              "text": "The comparator in the collar",
+              "category": "mem"
+            },
+            {
+              "text": "Reading the pass/fail result out of the chip",
+              "category": "tck"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "quiz": {
+    "questions": [
+      {
+        "id": "q-bypass",
+        "type": "single",
+        "text": "Why must MBIST bypass the ECC when it tests the memory cells?",
+        "options": [
+          "Otherwise single faulty cells are corrected and the test would pass.",
+          "ECC makes the memory too slow for MBIST.",
+          "ECC changes the addresses.",
+          "MBIST cannot write check bits."
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "ecc"
+        ]
+      },
+      {
+        "id": "q-check",
+        "type": "truefalse",
+        "text": "The check-bit cells must be tested by MBIST as well as the data cells.",
+        "options": [
+          "True",
+          "False"
+        ],
+        "correct": [
+          0
+        ],
+        "shuffle": false,
+        "review": [
+          "ecc"
+        ]
+      },
+      {
+        "id": "q-dec",
+        "type": "single",
+        "text": "How is the ECC decoder tested?",
+        "options": [
+          "Store a code word with flipped bits through the bypass and read it through the decoder.",
+          "Run March C− through the decoder.",
+          "Measure the decoder's power.",
+          "It does not need a test."
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "ecc"
+        ]
+      },
+      {
+        "id": "q-port",
+        "type": "single",
+        "text": "Why is a March test run through **each** port of a dual-port memory?",
+        "options": [
+          "Each port has its own decoder and read/write circuits that can be faulty.",
+          "The memory content is different on each port.",
+          "One port is only for ECC.",
+          "To make the test twice as fast."
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "multiport"
+        ]
+      },
+      {
+        "id": "q-domain",
+        "type": "single",
+        "text": "Two memories run on different functional clocks. What does MBIST usually do?",
+        "options": [
+          "Use a separate controller for each clock domain",
+          "Test both on the JTAG clock",
+          "Test only the faster one",
+          "Merge the two clocks"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "clocks"
+        ]
+      },
+      {
+        "id": "q-sync",
+        "type": "single",
+        "text": "Which signals cross between the JTAG clock and the memory clock?",
+        "options": [
+          "Control and status such as start and done",
+          "Every memory address",
+          "Every read data word",
+          "None — both run on TCK"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "clocks"
+        ]
+      }
+    ]
+  }
+}

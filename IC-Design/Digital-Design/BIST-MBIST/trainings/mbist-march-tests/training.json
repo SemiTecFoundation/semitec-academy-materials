@@ -1,0 +1,56 @@
+{
+  "id": "mbist-march-tests",
+  "version": "0.1",
+  "title": "March Tests",
+  "subtitle": "SemiTec Foundation · BIST / MBIST",
+  "language": "en",
+  "layout": "sidebar",
+  "theme": "foundation",
+  "themes": [
+    "foundation",
+    "midnight",
+    "paper"
+  ],
+  "allowViewSwitch": true,
+  "passThreshold": 0.75,
+  "showCorrectAnswers": "afterPass",
+  "requireSequential": true,
+  "topicWord": "Topic",
+  "hours": "4",
+  "schedule": {
+    "weeks": 2,
+    "topics": [
+      {
+        "week": 1,
+        "topics": [
+          "notation",
+          "first-tests",
+          "march-c"
+        ]
+      },
+      {
+        "week": 2,
+        "topics": [
+          "new-faults",
+          "words-other",
+          "choosing"
+        ]
+      }
+    ]
+  },
+  "delivery": {
+    "mode": "standalone",
+    "urlParams": true,
+    "resume": true
+  },
+  "labels": {},
+  "topics": [
+    "01-notation.json",
+    "02-first-tests.json",
+    "03-march-c.json",
+    "04-new-faults.json",
+    "05-words-other.json",
+    "06-choosing.json"
+  ],
+  "certificate": "certificate.json"
+}

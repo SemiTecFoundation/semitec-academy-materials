@@ -1,0 +1,347 @@
+{
+  "id": "metrics",
+  "title": "Metrics",
+  "duration": "45 min",
+  "summary": "How do you compare memories? This topic defines latency and cycle time, bandwidth, density, energy and leakage, retention and endurance — with worked calculations you will need when choosing and sizing memories.",
+  "objectives": [
+    "Distinguish latency and cycle time.",
+    "Compute peak bandwidth for on-chip and external memories.",
+    "Explain why small memories are area-inefficient.",
+    "Compare the energy of on-chip and off-chip accesses.",
+    "Use retention and endurance figures in design decisions."
+  ],
+  "subsections": [
+    {
+      "id": "latency",
+      "title": "Latency and cycle time",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "Two different numbers describe speed:\n\n- **Latency** (access time): how long from the request until the data is there.\n- **Cycle time**: how often a new access can start.\n\nA pipelined memory can have a latency of 2 clocks but still accept a new access **every** clock — its cycle time is one clock."
+        },
+        {
+          "type": "svg",
+          "src": "assets/latency.svg",
+          "caption": "Access time across the hierarchy — note the logarithmic scale"
+        },
+        {
+          "type": "callout",
+          "kind": "key",
+          "title": "Latency hurts, bandwidth helps",
+          "md": "Latency cannot be hidden by making the memory wider; it is fought with caches and prefetching. Bandwidth can be bought with width, more ports or more banks."
+        }
+      ]
+    },
+    {
+      "id": "bandwidth",
+      "title": "Bandwidth",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "> bandwidth = width × accesses per second × number of ports (or channels)\n\nWorked examples:"
+        },
+        {
+          "type": "table",
+          "columns": [
+            "Memory",
+            "Calculation",
+            "Bandwidth"
+          ],
+          "rows": [
+            [
+              "on-chip SRAM, 128 bit, 1 GHz, 1 port",
+              "16 B × 1 G/s",
+              "16 GB/s"
+            ],
+            [
+              "same SRAM, simple dual port (1W + 1R)",
+              "2 × 16 GB/s",
+              "32 GB/s"
+            ],
+            [
+              "DDR4-3200, 64-bit channel",
+              "8 B × 3200 M transfers/s",
+              "25.6 GB/s"
+            ],
+            [
+              "HBM2 stack, 1024 bit, 2 Gb/s per pin",
+              "128 B × 2 G/s",
+              "256 GB/s"
+            ]
+          ],
+          "caption": "Peak bandwidth examples"
+        },
+        {
+          "type": "callout",
+          "kind": "info",
+          "title": "Peak and sustained",
+          "md": "These are **peak** numbers. Real DRAM bandwidth is lower because of row opening, refresh and bus turnarounds — often 60–90 % of the peak."
+        }
+      ]
+    },
+    {
+      "id": "area",
+      "title": "Density and area",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "Density is bits per mm². It depends first on the **cell** — DRAM and flash pack several times more bits per area than SRAM — and then on the **overhead** around the array: decoders, sense amplifiers, column muxes, control.\n\nThe overhead is roughly fixed per memory, so **small memories are inefficient**: a 64-word memory may spend more area on its periphery than on its cells. That is why many small memories are merged into fewer large ones — or built from flip-flops."
+        },
+        {
+          "type": "table",
+          "columns": [
+            "Memory size",
+            "Array share of the area (rough)"
+          ],
+          "rows": [
+            [
+              "very small (≤ 1 Kibit)",
+              "low — periphery dominates"
+            ],
+            [
+              "medium (tens of Kibit)",
+              "about half"
+            ],
+            [
+              "large (Mibit)",
+              "most of the area"
+            ]
+          ],
+          "caption": "Array efficiency grows with size (qualitative)"
+        }
+      ]
+    },
+    {
+      "id": "power",
+      "title": "Power and energy",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "A memory consumes:\n\n- **dynamic energy per access** — charging word lines, bit lines and sense amplifiers; it grows with the memory size (longer lines);\n- **leakage** — every cell leaks all the time, so it grows with the number of bits.\n\nOff-chip accesses are far more expensive than on-chip ones:"
+        },
+        {
+          "type": "table",
+          "columns": [
+            "Operation (45 nm, 64-bit unless noted)",
+            "Energy"
+          ],
+          "rows": [
+            [
+              "32-bit integer add",
+              "0.1 pJ"
+            ],
+            [
+              "read 8 KB SRAM",
+              "10 pJ"
+            ],
+            [
+              "read 32 KB SRAM",
+              "20 pJ"
+            ],
+            [
+              "read 1 MB SRAM",
+              "100 pJ"
+            ],
+            [
+              "read DRAM",
+              "1.3–2.6 nJ"
+            ]
+          ],
+          "caption": "Energy per operation (after M. Horowitz, ISSCC 2014)"
+        },
+        {
+          "type": "text",
+          "md": "To save leakage, SRAM macros offer **light sleep** (periphery off), **deep sleep / retention** (lower array voltage, data kept) and **shut-down** (everything off, data lost). In RTL the enable signal already helps: `en = 0` avoids the dynamic energy of an access."
+        },
+        {
+          "type": "sort",
+          "prompt": "Practice: order by energy per 64-bit access, lowest first.",
+          "items": [
+            "32-bit add",
+            "8 KB SRAM read",
+            "1 MB SRAM read",
+            "DRAM read"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "nvm",
+      "title": "Retention and endurance",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": [
+            "Memory",
+            "Retention",
+            "Endurance (writes per cell)"
+          ],
+          "rows": [
+            [
+              "SRAM",
+              "while powered",
+              "unlimited"
+            ],
+            [
+              "DRAM",
+              "~64 ms without refresh",
+              "unlimited"
+            ],
+            [
+              "NOR / SLC NAND flash",
+              "~10 years",
+              "~10⁵"
+            ],
+            [
+              "TLC NAND flash",
+              "years",
+              "~10³"
+            ],
+            [
+              "eFuse / OTP",
+              "lifetime",
+              "1"
+            ],
+            [
+              "MRAM",
+              "~10 years",
+              "10¹⁰ and more"
+            ]
+          ],
+          "caption": "Typical retention and endurance"
+        },
+        {
+          "type": "callout",
+          "kind": "tip",
+          "title": "Endurance shapes the design",
+          "md": "Flash controllers spread writes over all blocks (**wear levelling**) and use strong ECC. A design that writes a log entry to the same flash page every second would wear it out in about a day at 10⁵ cycles."
+        }
+      ]
+    }
+  ],
+  "quiz": {
+    "questions": [
+      {
+        "id": "q-latcyc",
+        "type": "single",
+        "text": "A pipelined SRAM has a latency of 2 clocks and accepts a new read every clock. What is its cycle time?",
+        "options": [
+          "1 clock",
+          "2 clocks",
+          "3 clocks",
+          "0.5 clock"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "latency"
+        ]
+      },
+      {
+        "id": "q-bw",
+        "type": "single",
+        "text": "What is the peak bandwidth of a 64-bit SRAM at 500 MHz with one port?",
+        "options": [
+          "4 GB/s",
+          "32 GB/s",
+          "500 MB/s",
+          "64 GB/s"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "bandwidth"
+        ],
+        "explain": "8 bytes × 500 M/s = 4 GB/s."
+      },
+      {
+        "id": "q-ddr",
+        "type": "single",
+        "text": "DDR4-2400 with a 64-bit channel: peak bandwidth?",
+        "options": [
+          "19.2 GB/s",
+          "2.4 GB/s",
+          "153.6 GB/s",
+          "9.6 GB/s"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "bandwidth"
+        ],
+        "explain": "8 B × 2400 M/s = 19.2 GB/s."
+      },
+      {
+        "id": "q-small",
+        "type": "single",
+        "text": "Why are many tiny memories area-inefficient?",
+        "options": [
+          "The periphery (decoders, sense amps) does not shrink with the array",
+          "Their cells are larger",
+          "They need more address bits",
+          "They cannot use SRAM cells"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "area"
+        ]
+      },
+      {
+        "id": "q-energy",
+        "type": "single",
+        "text": "Roughly how much more energy does a 64-bit DRAM read cost than an 8 KB SRAM read (45 nm)?",
+        "options": [
+          "About 100–250 times more",
+          "About the same",
+          "About 10 times less",
+          "About 2 times more"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "power"
+        ]
+      },
+      {
+        "id": "q-wear",
+        "type": "single",
+        "text": "A flash page rated for 10⁵ writes is written once per second. About when is it worn out?",
+        "options": [
+          "After about a day",
+          "After about a year",
+          "After about a minute",
+          "Never"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "nvm"
+        ],
+        "explain": "10⁵ s ≈ 28 hours."
+      },
+      {
+        "id": "q-en",
+        "type": "truefalse",
+        "text": "Keeping a memory's enable low when it is not accessed saves dynamic energy.",
+        "options": [
+          "True",
+          "False"
+        ],
+        "correct": [
+          0
+        ],
+        "shuffle": false,
+        "review": [
+          "power"
+        ]
+      }
+    ]
+  }
+}

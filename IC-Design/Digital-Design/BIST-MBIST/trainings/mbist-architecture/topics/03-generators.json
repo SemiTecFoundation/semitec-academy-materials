@@ -1,0 +1,289 @@
+{
+  "id": "generators",
+  "title": "Address and data generators",
+  "duration": "35 min",
+  "summary": "A March element needs an **address** for every step and the right **data** for every write and expected read. Two small generators produce them: an up/down address counter and a data-background generator.",
+  "objectives": [
+    "Explain how one up/down counter produces both ⇑ and ⇓.",
+    "Explain fast-row and fast-column order and why address scrambling matters.",
+    "Produce solid, checkerboard and stripe data from the background and the address bits.",
+    "Describe what write masks and different word widths add to the generators."
+  ],
+  "subsections": [
+    {
+      "id": "counter",
+      "title": "The address counter",
+      "blocks": [
+        {
+          "type": "stepper",
+          "src": "assets/addr-gen.svg",
+          "interval": 3000,
+          "steps": [
+            {
+              "title": "One counter",
+              "md": "An n-bit counter (2ⁿ ≥ N) with a **direction** input. The controller loads the first address, then steps the counter once per address."
+            },
+            {
+              "title": "⇑",
+              "md": "Load 0 and count up. When the counter reaches N−1, the comparator signals **last address** and the element ends."
+            },
+            {
+              "title": "⇓",
+              "md": "Load N−1 and count down to 0 — exactly the reverse order, as March tests require."
+            },
+            {
+              "title": "Rows and columns",
+              "md": "The address is made of **row bits** (which word line) and **column bits** (which column of the multiplexer). Which part counts fastest sets the visiting order."
+            }
+          ]
+        },
+        {
+          "type": "callout",
+          "kind": "info",
+          "title": "Memories that are not a power of two",
+          "md": "A memory with 1000 words needs a 10-bit counter that stops at 999, not at 1023. The **last address** is a parameter of each memory — so one shared counter can serve memories of different sizes."
+        }
+      ]
+    },
+    {
+      "id": "order",
+      "title": "Address order and scrambling",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": [
+            "Order",
+            "Counts fastest",
+            "Effect"
+          ],
+          "rows": [
+            [
+              "**Fast column**",
+              "column bits",
+              "stays on one word line and walks through its columns — stresses column multiplexers and bit lines"
+            ],
+            [
+              "**Fast row**",
+              "row bits",
+              "changes the word line every access — stresses row decoders and word-line switching"
+            ]
+          ],
+          "caption": "Two common address orders; good MBIST runs critical algorithms in both"
+        },
+        {
+          "type": "stepper",
+          "src": "assets/addr-order.svg",
+          "interval": 3000,
+          "steps": [
+            {
+              "title": "Fast column",
+              "md": "Counting the **column** bits fastest walks along one word line, then moves to the next."
+            },
+            {
+              "title": "Fast row",
+              "md": "Counting the **row** bits fastest changes the word line on every access."
+            },
+            {
+              "title": "Scrambling",
+              "md": "In the layout, logical rows may be swapped or folded. Physical neighbours are then not logical neighbours."
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "md": "The **logical** address (what the controller counts) is not always the **physical** position of the cell: memory designers fold arrays, mirror halves and interleave bits to save area. This mapping is called **address scrambling** (and **data scrambling** for bits).\n\nMost March tests do not care — they visit every address in some order and its reverse. But tests that depend on **physical neighbours** — checkerboard, neighbourhood patterns, row/column stripes — need the scrambling information from the memory vendor, and the generator applies it."
+        },
+        {
+          "type": "sort",
+          "prompt": "Practice: a memory has 2 rows and 2 columns. Put the addresses in **fast-column** order.",
+          "items": [
+            "row 0, column 0",
+            "row 0, column 1",
+            "row 1, column 0",
+            "row 1, column 1"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "data",
+      "title": "The data generator",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "The data generator turns the **0 / 1** of the March test into a word:\n\n> data = background D, inverted when the operation says 1 (w1, r1)\n\nPatterns that depend on the position of the cell are made by XOR-ing the background with **address bits**:"
+        },
+        {
+          "type": "table",
+          "columns": [
+            "Pattern",
+            "Data written as \"0\"",
+            "What it looks like"
+          ],
+          "rows": [
+            [
+              "Solid",
+              "D",
+              "every word the same"
+            ],
+            [
+              "Row stripe",
+              "D ⊕ row[0]",
+              "every other row inverted"
+            ],
+            [
+              "Column stripe",
+              "D ⊕ col[0]",
+              "every other column inverted"
+            ],
+            [
+              "Checkerboard",
+              "D ⊕ row[0] ⊕ col[0]",
+              "every cell differs from its 4 neighbours"
+            ]
+          ],
+          "caption": "Address-dependent data with one XOR gate per pattern (physical address bits)"
+        },
+        {
+          "type": "svg",
+          "src": "assets/data-patterns.svg",
+          "caption": "Four patterns from one background and two address bits"
+        },
+        {
+          "type": "callout",
+          "kind": "tip",
+          "title": "Expected data comes from the same generator",
+          "md": "For a read, the generator produces the data that *should* be in the cell; this is the **expected data** sent to the comparator. One generator serves both writes and compares."
+        }
+      ]
+    },
+    {
+      "id": "masks-widths",
+      "title": "Write masks and wide words",
+      "blocks": [
+        {
+          "type": "accordion",
+          "items": [
+            {
+              "title": "Byte-write enables (write masks)",
+              "md": "Many memories can write only some bytes of a word. MBIST must test this logic too: write with a byte **masked**, read back, and check that the masked byte did **not** change."
+            },
+            {
+              "title": "Different word widths",
+              "md": "A shared controller may serve a 16-bit and a 72-bit memory. The data generator makes a pattern for the widest one; each collar takes the bits it needs. The background repeats across the word (e.g. 0101… for every width)."
+            },
+            {
+              "title": "Data backgrounds",
+              "md": "The background register is loaded with D0, D1 … in turn (log₂(B) + 1 of them), and the whole March test is repeated for each — exactly as in *March Tests*, Topic 5."
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "quiz": {
+    "questions": [
+      {
+        "id": "q-down",
+        "type": "single",
+        "text": "How does an MBIST address generator produce a ⇓ element?",
+        "options": [
+          "It loads N−1 and counts down to 0.",
+          "It uses a second memory.",
+          "It counts up and the memory reverses the addresses.",
+          "It reads the addresses from the tester."
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "counter"
+        ]
+      },
+      {
+        "id": "q-last",
+        "type": "single",
+        "text": "A shared controller tests a 1000-word and a 4096-word memory. What does it need for each memory?",
+        "options": [
+          "Its own last-address value",
+          "Its own address counter",
+          "A different algorithm",
+          "A different JTAG port"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "counter"
+        ]
+      },
+      {
+        "id": "q-scramble",
+        "type": "single",
+        "text": "Why does a checkerboard test need the memory's address scrambling information?",
+        "options": [
+          "Logical neighbours are not always physical neighbours, and the checkerboard is about physical neighbours.",
+          "Without it the memory cannot be written.",
+          "Scrambling changes the clock frequency.",
+          "It does not — scrambling only matters for ROMs."
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "order"
+        ]
+      },
+      {
+        "id": "q-cb",
+        "type": "single",
+        "text": "Which expression gives checkerboard data from background D?",
+        "options": [
+          "D ⊕ row[0] ⊕ col[0]",
+          "D ⊕ row[0]",
+          "D ⊕ col[0]",
+          "D AND row[0]"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "data"
+        ]
+      },
+      {
+        "id": "q-fastcol",
+        "type": "truefalse",
+        "text": "In fast-column order the test stays on one word line while it walks through the columns.",
+        "options": [
+          "True",
+          "False"
+        ],
+        "correct": [
+          0
+        ],
+        "shuffle": false,
+        "review": [
+          "order"
+        ]
+      },
+      {
+        "id": "q-mask",
+        "type": "single",
+        "text": "How is a byte-write enable tested?",
+        "options": [
+          "Write with one byte masked and check that the masked byte did not change.",
+          "Write every byte twice.",
+          "Read the memory without writing.",
+          "It cannot be tested by MBIST."
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "masks-widths"
+        ]
+      }
+    ]
+  }
+}

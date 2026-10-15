@@ -1,0 +1,23 @@
+# macOS and editor metadata
+.DS_Store
+**/.DS_Store
+
+# Python validation artefacts
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Local package signing keys and environment files — never publish these
+*.private.pem
+*.key
+*.p12
+*.pfx
+.env
+.env.*
+
+# Temporary work made while authoring
+.tmp/
+tmp/
+
+# Local browser previews; useful during authoring, never published
+/Previews/

@@ -1,0 +1,198 @@
+{
+  "id": "why-memories",
+  "title": "Why memories need their own test",
+  "duration": "25 min",
+  "summary": "Memories are the largest and densest blocks of a modern chip — and the place where most manufacturing defects land. They are also tested in a completely different way from logic. This topic explains why.",
+  "objectives": [
+    "Explain why embedded memories dominate chip area and defects.",
+    "Name the main memory types and what makes each one special for test.",
+    "Explain why scan, ATPG and random LBIST patterns do not test memories well, and what a memory test must do instead."
+  ],
+  "subsections": [
+    {
+      "id": "memories-everywhere",
+      "title": "Memories everywhere",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "You met this picture in *BIST Foundations*. Look at it again with one question: **how much of the chip is memory?**"
+        },
+        {
+          "type": "reveal",
+          "src": "assets/soc-memories.svg",
+          "hint": "Click the blocks — every yellow area is memory.",
+          "caption": "A system on chip: memories in yellow",
+          "spots": [
+            { "x": 5.6, "y": 13.5, "w": 37.5, "h": 41.7, "label": "1", "title": "Inside the cores", "md": "Each core has L1 instruction and data caches, register files and small buffers — several memory instances per core." },
+            { "x": 45.6, "y": 13.5, "w": 25, "h": 41.7, "label": "2", "title": "L2 cache", "md": "One of the biggest blocks on the die: millions of bits, often split into many banks." },
+            { "x": 73.1, "y": 13.5, "w": 21.9, "h": 41.7, "label": "3", "title": "Accelerators", "md": "GPUs and AI engines carry large local SRAMs next to their arithmetic units." },
+            { "x": 5.6, "y": 68.8, "w": 27.5, "h": 22.9, "label": "4", "title": "Hundreds of small memories", "md": "FIFOs and buffers in every interface. Each is small, but a big SoC can contain **thousands** of memory instances — and every one must be tested." },
+            { "x": 35.6, "y": 68.8, "w": 18.8, "h": 22.9, "label": "5", "title": "ROM", "md": "Fixed boot code. It can only be read, so its test is different." },
+            { "x": 56.9, "y": 68.8, "w": 38.1, "h": 22.9, "label": "6", "title": "Shared SRAM", "md": "On-chip working memory used by all cores." }
+          ]
+        },
+        {
+          "type": "text",
+          "md": "In many modern SoCs embedded memories take **half of the die area or more**, and they contain most of the transistors. Memory cells are drawn with the **tightest layout rules** the factory allows — smaller and denser than any logic. Dense structures catch more particles and suffer more from process variation."
+        },
+        {
+          "type": "callout",
+          "kind": "key",
+          "title": "Where the defects are",
+          "md": "More area, more transistors and denser layout mean that a **large share of all manufacturing defects lands in the memories**. Chip yield is often decided by memory yield — which is why memories get their own tests, their own BIST, and even spare rows and columns for **repair**."
+        }
+      ]
+    },
+    {
+      "id": "memory-types",
+      "title": "Memory types",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "Not all memories are alike. Each type stores a bit in a different way — and the way a bit is stored decides how it can fail."
+        },
+        {
+          "type": "tabs",
+          "tabs": [
+            { "label": "SRAM", "md": "**Static RAM.** Each bit is held by two cross-coupled inverters (6 transistors). Fast, keeps its value as long as power is on, no refresh. The workhorse of embedded memory: caches, buffers, FPGA block RAM. **This course focuses on SRAM.**" },
+            { "label": "Register file", "md": "Small, very fast memory inside a processor, usually with **several ports** (e.g. two reads and one write per clock). Built from SRAM-like cells or flip-flops. Extra ports bring extra fault types between ports." },
+            { "label": "ROM", "md": "**Read-only memory.** Content is fixed when the chip is made (boot code, tables). It cannot be written, so it is tested by **reading every word** and compacting the data into a signature (a MISR — Topic 5 of *BIST Foundations*)." },
+            { "label": "DRAM", "md": "**Dynamic RAM.** One transistor and one capacitor per bit — very dense, but the charge leaks, so every cell must be **refreshed** regularly. Usually a separate chip; its tests stress **retention** (how long a cell keeps its charge)." },
+            { "label": "Flash / NVM", "md": "**Non-volatile** memory: keeps data without power (floating gate or charge trap). Found as embedded flash in microcontrollers. Slow to write, wears out after many writes; tested with special program/erase sequences." }
+          ]
+        },
+        {
+          "type": "table",
+          "columns": ["Type", "Cell", "Keeps data without power?", "Typical use"],
+          "rows": [
+            ["SRAM", "6 transistors", "no", "caches, buffers, FPGA BRAM"],
+            ["Register file", "SRAM cell / flip-flops, many ports", "no", "CPU registers"],
+            ["ROM", "transistor present / absent", "**yes**", "boot code, tables"],
+            ["DRAM", "1 transistor + 1 capacitor", "no (needs refresh)", "main memory"],
+            ["Flash", "floating-gate transistor", "**yes**", "program memory of MCUs"]
+          ],
+          "caption": "Memory types at a glance"
+        },
+        {
+          "type": "categorize",
+          "prompt": "Practice: does the memory keep its data when the power is switched off?",
+          "categories": [{ "id": "v", "label": "Volatile (data lost)" }, { "id": "nv", "label": "Non-volatile (data kept)" }],
+          "items": [
+            { "text": "SRAM", "category": "v" },
+            { "text": "DRAM", "category": "v" },
+            { "text": "Register file", "category": "v" },
+            { "text": "ROM", "category": "nv" },
+            { "text": "Flash", "category": "nv" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "logic-tests-dont-fit",
+      "title": "Why logic tests do not fit memories",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "Logic is tested with **scan** and **ATPG** (automatic test pattern generation) or with **LBIST**: load a pattern into the flip-flops, clock once, compare the outputs. This does not work well for memories:"
+        },
+        {
+          "type": "accordion",
+          "items": [
+            { "title": "Memory cells are not scan flip-flops", "md": "Scan works by chaining **flip-flops** into shift registers. The millions of cells of an SRAM are not flip-flops and cannot be chained — you can only reach them through the memory's own ports, one address at a time." },
+            { "title": "ATPG does not model the inside of a memory", "md": "ATPG tools reason about gates. A memory is a huge, analog-ish array; in ATPG it is usually treated as a **black box**. The logic around it is tested, the cells inside are not." },
+            { "title": "Memory faults depend on the order of operations", "md": "Many memory faults appear only after a **sequence**: write 0, write 1 to a *neighbour*, then read — or only when the address goes **up** rather than down. A logic pattern is a single snapshot; random patterns would almost never create the right sequence at the right address." },
+            { "title": "Every address must be visited", "md": "A defect can sit in any one of millions of cells. A memory test must write and read **every** address, several times, with known data. Random patterns would need far too long to cover all of them." }
+          ]
+        },
+        {
+          "type": "svg",
+          "src": "assets/memory-sweep.svg",
+          "controls": true,
+          "caption": "A memory test: write all addresses in one order, then read and rewrite them in the other"
+        },
+        {
+          "type": "text",
+          "md": "Memory tests are therefore **algorithms**: fixed sequences of writes and reads that sweep through all addresses in a defined order — the **March tests** of the next training. They are regular and simple, so they are easy to put into hardware: an **address counter**, a **data generator** and a **comparator** are enough. That is **memory BIST**."
+        },
+        {
+          "type": "callout",
+          "kind": "tip",
+          "title": "How we continue",
+          "md": "To design good memory tests, we first need to know **how a memory works** (Topics 2–3) and **how it can fail** (Topics 4–7)."
+        }
+      ]
+    }
+  ],
+  "quiz": {
+    "questions": [
+      {
+        "id": "q-share",
+        "type": "single",
+        "text": "Why does a large share of manufacturing defects land in the embedded memories?",
+        "options": [
+          "Memories take much of the die area and use the densest layout, so they catch more defects.",
+          "Memories are made in a different factory.",
+          "Memory cells are larger than logic gates.",
+          "Memories are tested less often, so defects collect there."
+        ],
+        "correct": [0],
+        "review": ["memories-everywhere"]
+      },
+      {
+        "id": "q-sram",
+        "type": "single",
+        "text": "Which memory type holds each bit with two cross-coupled inverters and needs no refresh?",
+        "options": ["SRAM", "DRAM", "ROM", "Flash"],
+        "correct": [0],
+        "review": ["memory-types"]
+      },
+      {
+        "id": "q-refresh",
+        "type": "single",
+        "text": "Which memory loses its data even with power on unless it is refreshed?",
+        "options": ["DRAM", "SRAM", "ROM", "Flash"],
+        "correct": [0],
+        "review": ["memory-types"]
+      },
+      {
+        "id": "q-volatile",
+        "type": "match",
+        "text": "Sort the memories: does the data survive a power-off?",
+        "categories": [{ "id": "v", "label": "Volatile" }, { "id": "nv", "label": "Non-volatile" }],
+        "items": [
+          { "text": "SRAM", "category": "v" },
+          { "text": "Register file", "category": "v" },
+          { "text": "ROM", "category": "nv" },
+          { "text": "Flash", "category": "nv" }
+        ],
+        "review": ["memory-types"]
+      },
+      {
+        "id": "q-notscan",
+        "type": "multiple",
+        "text": "Why are scan, ATPG and random patterns not enough for memories? Select **all** correct answers.",
+        "options": [
+          "Memory cells cannot be chained into scan shift registers.",
+          "Many memory faults appear only after a specific sequence of writes and reads.",
+          "Every one of millions of addresses must be visited.",
+          "Memories cannot have stuck-at faults."
+        ],
+        "correct": [0, 1, 2],
+        "review": ["logic-tests-dont-fit"]
+      },
+      {
+        "id": "q-mbist",
+        "type": "single",
+        "text": "Which hardware does a simple memory BIST need to run a March-type test?",
+        "options": [
+          "An address counter, a data generator and a comparator.",
+          "A scan chain through every memory cell.",
+          "An ATPG tool on the chip.",
+          "A second copy of the memory."
+        ],
+        "correct": [0],
+        "review": ["logic-tests-dont-fit"]
+      }
+    ]
+  }
+}

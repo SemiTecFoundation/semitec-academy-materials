@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 560" font-family="Segoe UI, Arial, sans-serif">
+  <defs>
+    <marker id="tf-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#7d93ab"/></marker>
+  </defs>
+  <rect width="640" height="560" rx="14" fill="#ffffff"/>
+  <text x="320" y="34" text-anchor="middle" font-size="16" font-weight="700" fill="#1f4e79">From wafer to customer: where chips are tested</text>
+
+  <!-- 1 fab -->
+  <g data-step="1">
+    <rect x="40" y="56" width="560" height="62" rx="10" fill="#f2f5f9" stroke="#7d93ab" stroke-width="2"/>
+    <circle cx="90" cy="87" r="22" fill="#dfe7f1" stroke="#1f4e79" stroke-width="2"/>
+    <path d="M76 80h28M76 87h28M76 94h28M83 73v28M90 73v28M97 73v28" stroke="#1f4e79" stroke-width="1"/>
+    <text x="130" y="82" font-size="16" font-weight="700" fill="#1f4e79">1. Wafer fabrication</text>
+    <text x="130" y="104" font-size="13" fill="#34495e">hundreds of dies per wafer — some with defects</text>
+  </g>
+  <line x1="320" y1="120" x2="320" y2="138" stroke="#7d93ab" stroke-width="2" marker-end="url(#tf-arr)"/>
+
+  <!-- 2 wafer sort -->
+  <g data-step="2">
+    <rect x="40" y="140" width="560" height="62" rx="10" fill="#eaf6ee" stroke="#27ae60" stroke-width="2"/>
+    <circle cx="90" cy="171" r="22" fill="#dfe7f1" stroke="#1f4e79" stroke-width="2"/>
+    <path d="M90 140v20M84 158l6 8 6-8" stroke="#27ae60" stroke-width="3" fill="none"/>
+    <text x="130" y="166" font-size="16" font-weight="700" fill="#1e8449">2. Wafer sort (probe test)</text>
+    <text x="130" y="188" font-size="13" fill="#34495e">probe needles touch each die; bad dies are marked</text>
+  </g>
+  <line x1="320" y1="204" x2="320" y2="222" stroke="#7d93ab" stroke-width="2" marker-end="url(#tf-arr)"/>
+
+  <!-- 3 packaging -->
+  <g data-step="3">
+    <rect x="40" y="224" width="560" height="62" rx="10" fill="#f2f5f9" stroke="#7d93ab" stroke-width="2"/>
+    <rect x="72" y="238" width="36" height="34" rx="4" fill="#34495e"/>
+    <g stroke="#9aa7b4" stroke-width="3"><line x1="66" y1="244" x2="72" y2="244"/><line x1="66" y1="255" x2="72" y2="255"/><line x1="66" y1="266" x2="72" y2="266"/><line x1="108" y1="244" x2="114" y2="244"/><line x1="108" y1="255" x2="114" y2="255"/><line x1="108" y1="266" x2="114" y2="266"/></g>
+    <text x="130" y="250" font-size="16" font-weight="700" fill="#1f4e79">3. Dicing and packaging</text>
+    <text x="130" y="272" font-size="13" fill="#34495e">only good dies are cut out and put in packages</text>
+  </g>
+  <line x1="320" y1="288" x2="320" y2="306" stroke="#7d93ab" stroke-width="2" marker-end="url(#tf-arr)"/>
+
+  <!-- 4 burn-in + final test -->
+  <g data-step="4">
+    <rect x="40" y="308" width="560" height="62" rx="10" fill="#eaf6ee" stroke="#27ae60" stroke-width="2"/>
+    <rect x="70" y="322" width="40" height="34" rx="5" fill="#dfe7f1" stroke="#1f4e79" stroke-width="2"/>
+    <path d="M78 346l8-10 6 6 10-12" stroke="#27ae60" stroke-width="3" fill="none"/>
+    <text x="130" y="334" font-size="16" font-weight="700" fill="#1e8449">4. Burn-in and final test</text>
+    <text x="130" y="356" font-size="13" fill="#34495e">stress weak chips (some products), then test every package</text>
+  </g>
+  <line x1="320" y1="372" x2="320" y2="390" stroke="#7d93ab" stroke-width="2" marker-end="url(#tf-arr)"/>
+
+  <!-- 5 board / system -->
+  <g data-step="5">
+    <rect x="40" y="392" width="560" height="62" rx="10" fill="#fdf3e4" stroke="#e67e22" stroke-width="2"/>
+    <rect x="66" y="406" width="48" height="34" rx="3" fill="#2e7d4f"/>
+    <rect x="80" y="414" width="18" height="16" fill="#34495e"/>
+    <text x="130" y="418" font-size="16" font-weight="700" fill="#b8641b">5. Board and system test</text>
+    <text x="130" y="440" font-size="13" fill="#34495e">at the customer: chips are soldered on boards and tested again</text>
+  </g>
+  <line x1="320" y1="456" x2="320" y2="474" stroke="#7d93ab" stroke-width="2" marker-end="url(#tf-arr)"/>
+
+  <!-- 6 field -->
+  <g data-step="6">
+    <rect x="40" y="476" width="560" height="62" rx="10" fill="#fbeaea" stroke="#c0392b" stroke-width="2"/>
+    <path d="M68 520h44l-6-14h-30z" fill="#c0392b"/><circle cx="78" cy="522" r="5" fill="#34495e"/><circle cx="102" cy="522" r="5" fill="#34495e"/>
+    <text x="130" y="502" font-size="16" font-weight="700" fill="#c0392b">6. In the field</text>
+    <text x="130" y="524" font-size="13" fill="#34495e">a phone, a server, a car — a failure here is the most expensive</text>
+  </g>
+</svg>

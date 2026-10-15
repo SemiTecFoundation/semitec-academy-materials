@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 260" font-family="Segoe UI, Arial, sans-serif">
+  <rect width="700" height="260" rx="14" fill="#ffffff"/>
+  <text x="350" y="30" text-anchor="middle" font-size="15" font-weight="700" fill="#1f4e79">Full-speed clock: the late signal misses the capture edge</text>
+  <g font-size="13" font-weight="600" fill="#34495e"><text x="20" y="85">clock</text><text x="20" y="150">good path</text><text x="20" y="215">slow path</text></g>
+  <!-- clock: rising edges at 140 and 360 (fast) -->
+  <path d="M110 95H140V65H250V95H360V65H470V95H580V65H660" fill="none" stroke="#1f4e79" stroke-width="2.5"/>
+  <line x1="360" y1="45" x2="360" y2="235" stroke="#c0392b" stroke-width="1.5" stroke-dasharray="6 4"/>
+  <text x="360" y="250" text-anchor="middle" font-size="12" fill="#c0392b">capture edge</text>
+  <path d="M110 160H200V130H660" fill="none" stroke="#27ae60" stroke-width="2.5"/>
+  <path d="M110 225H420V195H660" fill="none" stroke="#e67e22" stroke-width="2.5"/>
+  <circle cx="360" cy="225" r="7" fill="#c0392b"/>
+  <text x="300" y="185" text-anchor="middle" font-size="12" fill="#c0392b">still the old value!</text>
+  <rect x="470" y="160" width="210" height="30" rx="6" fill="#fbeaea" stroke="#c0392b"/>
+  <text x="575" y="180" text-anchor="middle" font-size="13" font-weight="700" fill="#c0392b">FAIL — defect detected ✓</text>
+</svg>

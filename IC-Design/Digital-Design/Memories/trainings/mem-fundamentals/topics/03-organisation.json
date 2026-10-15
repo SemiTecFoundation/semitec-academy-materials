@@ -1,0 +1,595 @@
+{
+  "id": "organisation",
+  "title": "Organisation and address mapping",
+  "duration": "70 min",
+  "summary": "Where does an address go? This topic follows an address from the system **address map** through the memory's **fields** — region, bank, word, byte — into rows, columns and banks, and shows how big memories are built from small ones. Interactive diagrams first, then all of it in SystemVerilog.",
+  "objectives": [
+    "Read a system address map and decode an address to a region.",
+    "Split a byte address into region, word, bank and byte fields.",
+    "Compute address bits and capacity from depth and width.",
+    "Explain rows, columns, banks and interleaving and their effect on bandwidth.",
+    "Write address decoders and width- and depth-expanded memories in SystemVerilog."
+  ],
+  "subsections": [
+    {
+      "id": "address-map",
+      "title": "The system address map",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "A processor sees **one** address space — 4 GiB for 32-bit addresses. The **address map** divides it into regions: boot ROM, on-chip SRAM, peripheral registers, external DRAM. An **address decoder** looks at the upper address bits and selects the memory that answers; the lower bits are the **offset** inside it. Click the regions:"
+        },
+        {
+          "type": "reveal",
+          "src": "assets/memmap.svg",
+          "hint": "Click a region or the decoder.",
+          "caption": "An example address map of a small SoC",
+          "spots": [
+            {
+              "x": 14.5,
+              "y": 83.5,
+              "w": 18.5,
+              "h": 7,
+              "label": "1",
+              "title": "Boot ROM",
+              "md": "The processor starts executing at address 0 after reset, so the boot code sits there. 64 KiB = 16 offset bits."
+            },
+            {
+              "x": 14.5,
+              "y": 72,
+              "w": 18.5,
+              "h": 7,
+              "label": "2",
+              "title": "SRAM",
+              "md": "Fast on-chip RAM at 0x2000_0000. 128 KiB need 17 offset bits: addr[16:0]."
+            },
+            {
+              "x": 14.5,
+              "y": 60.5,
+              "w": 18.5,
+              "h": 7,
+              "label": "3",
+              "title": "APB peripherals",
+              "md": "Registers of UART, timers, GPIO — accessed like memory (**memory-mapped I/O**) but behind a slower bus."
+            },
+            {
+              "x": 14.5,
+              "y": 26,
+              "w": 18.5,
+              "h": 24,
+              "label": "4",
+              "title": "DRAM",
+              "md": "A large region for external DRAM, reached through a DRAM controller (Topic 9)."
+            },
+            {
+              "x": 72.5,
+              "y": 35,
+              "w": 24,
+              "h": 28,
+              "label": "5",
+              "title": "Address decoder",
+              "md": "Compares the upper bits with each region. Exactly one region may match; an address in an unmapped hole gives a **bus error** instead of silently reading garbage."
+            }
+          ]
+        },
+        {
+          "type": "callout",
+          "kind": "key",
+          "title": "Every memory gets a base address and a size",
+          "md": "A region's base address is normally a multiple of its size (aligned). Then the decoder only checks the upper bits, and the lower bits go to the memory unchanged."
+        }
+      ]
+    },
+    {
+      "id": "addr-fields",
+      "title": "From byte address to bank, word and byte",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "Buses use **byte addresses**: address 0x…04 is the byte after 0x…03. A memory with 32-bit words, however, stores 4 bytes per word, so its **word address** is the byte address without the 2 lowest bits. Follow one address through all its fields:"
+        },
+        {
+          "type": "stepper",
+          "src": "assets/addr-fields.svg",
+          "interval": 3000,
+          "steps": [
+            {
+              "title": "Region",
+              "md": "addr[31:28] = 0x2 selects the SRAM in the address map."
+            },
+            {
+              "title": "Byte in word",
+              "md": "addr[1:0] select the byte inside a 32-bit word; for full-word accesses they are 0, for byte writes they choose the byte strobe."
+            },
+            {
+              "title": "Bank",
+              "md": "In an SRAM with 4 interleaved banks, addr[3:2] — the word address modulo 4 — select the bank."
+            },
+            {
+              "title": "Word in bank",
+              "md": "The remaining offset bits addr[16:4] address the word inside that bank."
+            }
+          ]
+        },
+        {
+          "type": "table",
+          "columns": [
+            "Field",
+            "Bits",
+            "Value for 0x2000_0A4C"
+          ],
+          "rows": [
+            [
+              "region",
+              "addr[31:28]",
+              "0x2 → SRAM"
+            ],
+            [
+              "byte in word",
+              "addr[1:0]",
+              "0"
+            ],
+            [
+              "word address in SRAM",
+              "addr[16:2]",
+              "659"
+            ],
+            [
+              "bank (4-way interleaved)",
+              "addr[3:2]",
+              "3"
+            ],
+            [
+              "word in bank",
+              "addr[16:4]",
+              "164"
+            ]
+          ],
+          "caption": "One address, five fields"
+        }
+      ]
+    },
+    {
+      "id": "depth-width",
+      "title": "Depth, width and address bits",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "A memory is described by its **depth** (number of words) and its **width** (bits per word):\n\n> capacity = depth × width  ·  address bits AW = ⌈log₂(depth)⌉"
+        },
+        {
+          "type": "table",
+          "columns": [
+            "Memory",
+            "Address bits",
+            "Capacity"
+          ],
+          "rows": [
+            [
+              "256 × 8",
+              "8",
+              "2 Kibit = 256 B"
+            ],
+            [
+              "1024 × 32",
+              "10",
+              "32 Kibit = 4 KiB"
+            ],
+            [
+              "4096 × 64",
+              "12",
+              "256 Kibit = 32 KiB"
+            ],
+            [
+              "1000 × 16",
+              "10 (1024 addresses, 24 unused)",
+              "16 000 bits"
+            ]
+          ],
+          "caption": "Depth, width and address bits"
+        },
+        {
+          "type": "callout",
+          "kind": "info",
+          "title": "Ki and k",
+          "md": "Memory sizes use binary prefixes: 1 Ki = 1024, so 4 KiB = 4096 bytes. Datasheets often write \"4 KB\" and mean 4096 bytes."
+        }
+      ]
+    },
+    {
+      "id": "rows-cols",
+      "title": "Rows, columns and the column multiplexer",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "Inside the memory, words are not stored as one long column — the bit lines would be very long and slow. Several words share a **row**, and a **column multiplexer** picks one of them. The word address is split once more:"
+        },
+        {
+          "type": "stepper",
+          "src": "assets/addr-split.svg",
+          "interval": 3000,
+          "steps": [
+            {
+              "title": "Split the address",
+              "md": "The high bits select a **row**, the low bits a **column** (a word within the row)."
+            },
+            {
+              "title": "Row decoder",
+              "md": "The decoder raises one of 64 word lines; the whole row — 4 words — is read by the sense amplifiers."
+            },
+            {
+              "title": "Column mux",
+              "md": "The column bits pick one of the 4 words: here word 2."
+            }
+          ]
+        },
+        {
+          "type": "callout",
+          "kind": "key",
+          "title": "Aspect ratio",
+          "md": "Memory designers choose rows and columns so that the array is roughly **square**. The column-mux ratio (4:1, 8:1, 16:1) is a parameter of memory compilers."
+        }
+      ]
+    },
+    {
+      "id": "banks",
+      "title": "Banks and interleaving",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "Large memories are split into **banks** — independent arrays with their own decoders. A bank that is busy with one access cannot start the next; other banks can. **Which address bits select the bank** decides whether consecutive accesses collide:"
+        },
+        {
+          "type": "stepper",
+          "src": "assets/interleave.svg",
+          "interval": 3000,
+          "steps": [
+            {
+              "title": "High-order banking",
+              "md": "The upper address bits select the bank: words 0–3 all live in bank 0."
+            },
+            {
+              "title": "…streaming is slow",
+              "md": "Reading words 0, 1, 2, 3 hits the same bank four times; each access waits until the previous one is finished."
+            },
+            {
+              "title": "Low-order interleaving",
+              "md": "The lowest word-address bits select the bank: consecutive words go to consecutive banks."
+            },
+            {
+              "title": "…streaming is fast",
+              "md": "Four banks work in parallel: a new access every clock."
+            }
+          ]
+        },
+        {
+          "type": "table",
+          "columns": [
+            "Bank select",
+            "Consecutive words go to",
+            "Good for"
+          ],
+          "rows": [
+            [
+              "high-order bits",
+              "the same bank",
+              "switching off unused banks, simple decoding"
+            ],
+            [
+              "low-order bits (interleaving)",
+              "different banks in turn",
+              "streaming, many masters, DRAM"
+            ]
+          ],
+          "caption": "High-order banking vs low-order interleaving"
+        },
+        {
+          "type": "categorize",
+          "prompt": "Practice: with 4 banks and low-order interleaving, which bank holds the word?",
+          "categories": [
+            {
+              "id": "b0",
+              "label": "bank 0"
+            },
+            {
+              "id": "b1",
+              "label": "bank 1"
+            },
+            {
+              "id": "b2",
+              "label": "bank 2"
+            },
+            {
+              "id": "b3",
+              "label": "bank 3"
+            }
+          ],
+          "items": [
+            {
+              "text": "word 8",
+              "category": "b0"
+            },
+            {
+              "text": "word 13",
+              "category": "b1"
+            },
+            {
+              "text": "word 6",
+              "category": "b2"
+            },
+            {
+              "text": "word 11",
+              "category": "b3"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "expansion",
+      "title": "Building big memories from small ones",
+      "blocks": [
+        {
+          "type": "stepper",
+          "src": "assets/expansion.svg",
+          "interval": 3000,
+          "steps": [
+            {
+              "title": "Width expansion",
+              "md": "Four 16-bit memories side by side with the **same address** form one 64-bit memory."
+            },
+            {
+              "title": "Depth expansion",
+              "md": "Four 1K memories with a **decoder** on the upper address bits form one 4K memory; an output mux selects the bank that was read."
+            }
+          ]
+        },
+        {
+          "type": "callout",
+          "kind": "warning",
+          "title": "Do not forget the registered select",
+          "md": "The bank RAMs deliver their data **one clock after** the address. Selecting the output with the *current* bank number instead of the registered one returns the wrong word whenever two consecutive reads go to different banks — a classic bug."
+        },
+        {
+          "type": "sort",
+          "prompt": "Practice: put the steps of a read from a depth-expanded memory in order.",
+          "items": [
+            "Address with bank bits arrives",
+            "Only the selected bank is enabled",
+            "Clock edge: that bank reads its word",
+            "The bank number is registered",
+            "Output mux delivers the word"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sv",
+      "title": "In SystemVerilog: organisation and address mapping",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "**A parameterised single-port RAM** — the building block used from here on:"
+        },
+        {
+          "type": "code",
+          "lang": "systemverilog",
+          "code": "module sp_ram #(\n  parameter  int DW    = 32,              // width: bits per word\n  parameter  int DEPTH = 1024,            // depth: number of words\n  localparam int AW    = $clog2(DEPTH)    // address bits\n) (\n  input  logic          clk,\n  input  logic          en,               // access enable\n  input  logic          we,               // 1 = write, 0 = read\n  input  logic [AW-1:0] addr,\n  input  logic [DW-1:0] din,\n  output logic [DW-1:0] dout\n);\n  logic [DW-1:0] mem [DEPTH];             // DEPTH words of DW bits\n\n  always_ff @(posedge clk)\n    if (en) begin\n      if (we) mem[addr] <= din;\n      dout <= mem[addr];                  // read (old value during a write)\n    end\nendmodule"
+        },
+        {
+          "type": "text",
+          "md": "**An address decoder for the address map** above:"
+        },
+        {
+          "type": "code",
+          "lang": "systemverilog",
+          "code": "module addr_decode (\n  input  logic [31:0] addr,\n  output logic        sel_rom, sel_sram, sel_apb, sel_dram,\n  output logic        dec_err              // address not mapped\n);\n  always_comb begin\n    sel_rom  = (addr[31:16] == 16'h0000);  // 0x0000_0000 - 0x0000_FFFF\n    sel_sram = (addr[31:17] == 15'h1000);  // 0x2000_0000 - 0x2001_FFFF\n    sel_apb  = (addr[31:16] == 16'h4000);  // 0x4000_0000 - 0x4000_FFFF\n    sel_dram = (addr[31:30] == 2'b10);     // 0x8000_0000 - 0xBFFF_FFFF\n    dec_err  = !(sel_rom || sel_sram || sel_apb || sel_dram);\n  end\nendmodule"
+        },
+        {
+          "type": "text",
+          "md": "**Splitting the byte address** into the fields of the SRAM:"
+        },
+        {
+          "type": "code",
+          "lang": "systemverilog",
+          "code": "logic [31:0] addr;              // byte address from the bus\nlogic [1:0]  byte_in_word;      // byte strobe select\nlogic [1:0]  bank;              // 4 banks, interleaved by word\nlogic [12:0] word_in_bank;      // 8K words per bank\n\nassign byte_in_word = addr[1:0];\nassign bank         = addr[3:2];     // word address mod 4\nassign word_in_bank = addr[16:4];    // word address div 4"
+        },
+        {
+          "type": "text",
+          "md": "**Row and column** inside one array:"
+        },
+        {
+          "type": "code",
+          "lang": "systemverilog",
+          "code": "// 256 words x 16 bits, organised as 64 rows x 4 words (column mux 4:1)\nlogic [7:0] addr;\nlogic [5:0] row;          // which word line\nlogic [1:0] col;          // which word in the row\nassign {row, col} = addr; // low bits = column"
+        },
+        {
+          "type": "text",
+          "md": "**High-order vs low-order bank select:**"
+        },
+        {
+          "type": "code",
+          "lang": "systemverilog",
+          "code": "logic [11:0] addr;\nlogic [1:0]  bank_hi, bank_lo;\nassign bank_hi = addr[11:10];   // blocks of 1024 words per bank\nassign bank_lo = addr[1:0];     // word 0 → bank 0, word 1 → bank 1, …"
+        },
+        {
+          "type": "text",
+          "md": "**Width expansion:**"
+        },
+        {
+          "type": "code",
+          "lang": "systemverilog",
+          "code": "// Width: 64 x 1K from four 16 x 1K - same address, one 16-bit slice each\nmodule ram_64x1k (\n  input  logic        clk, en, we,\n  input  logic [9:0]  addr,\n  input  logic [63:0] din,\n  output logic [63:0] dout\n);\n  sp_ram #(.DW(16), .DEPTH(1024)) u_ram0 (.clk, .en, .we, .addr,\n    .din(din[15: 0]), .dout(dout[15: 0]));\n  sp_ram #(.DW(16), .DEPTH(1024)) u_ram1 (.clk, .en, .we, .addr,\n    .din(din[31:16]), .dout(dout[31:16]));\n  sp_ram #(.DW(16), .DEPTH(1024)) u_ram2 (.clk, .en, .we, .addr,\n    .din(din[47:32]), .dout(dout[47:32]));\n  sp_ram #(.DW(16), .DEPTH(1024)) u_ram3 (.clk, .en, .we, .addr,\n    .din(din[63:48]), .dout(dout[63:48]));\nendmodule"
+        },
+        {
+          "type": "text",
+          "md": "**Depth expansion** — note the registered bank select:"
+        },
+        {
+          "type": "code",
+          "lang": "systemverilog",
+          "code": "// Depth: 16 x 4K from four 16 x 1K - a decoder enables one bank\nmodule ram_16x4k (\n  input  logic        clk, en, we,\n  input  logic [11:0] addr,\n  input  logic [15:0] din,\n  output logic [15:0] dout\n);\n  logic [1:0]  bank, bank_q;\n  logic [15:0] q0, q1, q2, q3;\n\n  assign bank = addr[11:10];\n\n  sp_ram #(.DW(16), .DEPTH(1024)) u_bank0 (.clk, .we, .din,\n    .en(en && bank == 2'd0), .addr(addr[9:0]), .dout(q0));\n  sp_ram #(.DW(16), .DEPTH(1024)) u_bank1 (.clk, .we, .din,\n    .en(en && bank == 2'd1), .addr(addr[9:0]), .dout(q1));\n  sp_ram #(.DW(16), .DEPTH(1024)) u_bank2 (.clk, .we, .din,\n    .en(en && bank == 2'd2), .addr(addr[9:0]), .dout(q2));\n  sp_ram #(.DW(16), .DEPTH(1024)) u_bank3 (.clk, .we, .din,\n    .en(en && bank == 2'd3), .addr(addr[9:0]), .dout(q3));\n\n  // read data arrives one clock later: remember which bank was read\n  always_ff @(posedge clk) if (en) bank_q <= bank;\n\n  always_comb\n    case (bank_q)\n      2'd0:    dout = q0;\n      2'd1:    dout = q1;\n      2'd2:    dout = q2;\n      default: dout = q3;\n    endcase\nendmodule"
+        }
+      ]
+    }
+  ],
+  "quiz": {
+    "questions": [
+      {
+        "id": "q-region",
+        "type": "single",
+        "text": "In the example map, which memory answers address 0x2001_0000?",
+        "options": [
+          "SRAM",
+          "Boot ROM",
+          "APB peripherals",
+          "none — decode error"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "address-map"
+        ]
+      },
+      {
+        "id": "q-unmapped",
+        "type": "single",
+        "text": "What should happen for an access to an unmapped address such as 0x6000_0000?",
+        "options": [
+          "The decoder signals a bus error",
+          "The SRAM answers",
+          "The boot ROM answers",
+          "Nothing — the data is 0"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "address-map"
+        ]
+      },
+      {
+        "id": "q-word",
+        "type": "single",
+        "text": "A memory has 32-bit words. Which word address does byte address 0x0000_0010 have?",
+        "options": [
+          "4",
+          "16",
+          "2",
+          "8"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "addr-fields"
+        ],
+        "explain": "0x10 = 16 bytes; 16 ÷ 4 bytes per word = word 4."
+      },
+      {
+        "id": "q-aw",
+        "type": "single",
+        "text": "How many address bits does a memory with 2048 words need?",
+        "options": [
+          "11",
+          "10",
+          "12",
+          "2048"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "depth-width"
+        ]
+      },
+      {
+        "id": "q-col",
+        "type": "single",
+        "text": "256 words are organised as 64 rows × 4 words. Which address bits select the column?",
+        "options": [
+          "the 2 lowest bits",
+          "the 2 highest bits",
+          "the 6 lowest bits",
+          "all 8 bits"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "rows-cols"
+        ]
+      },
+      {
+        "id": "q-inter",
+        "type": "single",
+        "text": "With low-order interleaving over 4 banks, which bank holds word 13?",
+        "options": [
+          "bank 1",
+          "bank 3",
+          "bank 0",
+          "bank 13"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "banks"
+        ],
+        "explain": "13 mod 4 = 1."
+      },
+      {
+        "id": "q-stream",
+        "type": "single",
+        "text": "Why does low-order interleaving speed up streaming reads?",
+        "options": [
+          "Consecutive words are in different banks, so their accesses overlap",
+          "It makes each bank faster",
+          "It needs fewer address bits",
+          "It removes the output multiplexer"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "banks"
+        ]
+      },
+      {
+        "id": "q-width",
+        "type": "single",
+        "text": "Four 8 × 1K memories with a shared address form …",
+        "options": [
+          "a 32 × 1K memory (width expansion)",
+          "an 8 × 4K memory",
+          "a 32 × 4K memory",
+          "an 8 × 1K memory with 4 ports"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "expansion"
+        ]
+      },
+      {
+        "id": "q-bankq",
+        "type": "truefalse",
+        "text": "In a depth-expanded memory the output mux must use the bank number registered at the read, not the current one.",
+        "options": [
+          "True",
+          "False"
+        ],
+        "correct": [
+          0
+        ],
+        "shuffle": false,
+        "review": [
+          "expansion",
+          "sv"
+        ]
+      }
+    ]
+  }
+}

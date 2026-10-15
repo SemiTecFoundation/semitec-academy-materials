@@ -1,0 +1,141 @@
+{
+  "id": "why-access",
+  "title": "Why chips need test access",
+  "duration": "25 min",
+  "summary": "A modern chip contains hundreds of test and debug **instruments** — MBIST controllers, logic BIST, sensors, PLL and fuse settings — but only a handful of pins are free for test. This topic explains how a few serial pins reach all of them, and which IEEE standards define the way.",
+  "objectives": [
+    "Explain what an embedded instrument is and why so many need access.",
+    "Name the IEEE standards for test access and what each covers.",
+    "Explain serial access through a shift register and its cost in clock cycles."
+  ],
+  "subsections": [
+    {
+      "id": "instruments",
+      "title": "Many instruments, few pins",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "An **embedded instrument** is any on-chip block that is configured, started or read for test, debug or monitoring: the MBIST controllers of the last training, logic BIST, temperature and voltage sensors, PLL settings, the fuses that store repair information, trace and debug logic. A large SoC has **hundreds** of them."
+        },
+        {
+          "type": "svg",
+          "src": "assets/pins-instruments.svg",
+          "caption": "Four or five test pins and a network inside the chip reach every instrument"
+        },
+        {
+          "type": "callout",
+          "kind": "key",
+          "title": "The idea",
+          "md": "Give every instrument a small **register** and connect the registers into **shift paths**. A tester writes and reads them bit by bit through a few pins. One access port, one protocol, any number of instruments."
+        }
+      ]
+    },
+    {
+      "id": "standards",
+      "title": "The standards",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": ["Standard", "Name", "What it defines"],
+          "rows": [
+            ["**IEEE 1149.1** (1990, revised since)", "JTAG, boundary scan", "the **test access port** (TAP): pins, state machine, instruction and data registers; boundary-scan cells for **board** test"],
+            ["**IEEE 1500** (2005)", "embedded core test", "a standard **wrapper** around a core so it can be tested on its own inside an SoC"],
+            ["**IEEE 1687** (2014)", "IJTAG", "**networks** that connect many instruments behind the TAP, and languages to describe them (ICL) and to operate them (PDL)"],
+            ["IEEE 1149.6, IEEE 1838", "related", "boundary scan for AC-coupled high-speed links; test access for stacked 3D dies"]
+          ],
+          "caption": "IEEE standards for test access"
+        },
+        {
+          "type": "text",
+          "md": "The name **JTAG** comes from the *Joint Test Action Group*, the industry group that started the work in the 1980s. Today *JTAG* is used for the TAP itself, and the same port is used for **debugging** processors and **programming** FPGAs and flash — far beyond its original purpose."
+        },
+        {
+          "type": "sort",
+          "prompt": "Practice: put the standards in the order they were published.",
+          "items": ["IEEE 1149.1 — TAP and boundary scan", "IEEE 1500 — core wrappers", "IEEE 1687 — IJTAG networks"]
+        }
+      ]
+    },
+    {
+      "id": "serial",
+      "title": "Serial access",
+      "blocks": [
+        {
+          "type": "stepper",
+          "src": "assets/shift-chain.svg",
+          "interval": 2400,
+          "steps": [
+            { "title": "A shift register", "md": "Four flip-flops in a chain between **TDI** (test data in) and **TDO** (test data out). Every clock moves each bit one place on." },
+            { "title": "Clock 1", "md": "The first bit enters from TDI." },
+            { "title": "Clock 2", "md": "It moves on; the second bit follows." },
+            { "title": "Clock 3", "md": "Three bits are in the register." },
+            { "title": "Clock 4", "md": "The register holds the new value **1011**. At the same time its **old** content has come out at TDO — writing and reading happen in one pass." }
+          ]
+        },
+        {
+          "type": "callout",
+          "kind": "info",
+          "title": "The price: one clock per bit",
+          "md": "Accessing an n-bit register takes about n clocks of the test clock. A path of 4000 bits at 10 MHz needs 0.4 ms for every access. Keeping the shift paths **short** is a central goal of the IJTAG networks in Topic 6."
+        }
+      ]
+    }
+  ],
+  "quiz": {
+    "questions": [
+      {
+        "id": "q-instr",
+        "type": "multiple",
+        "text": "Which of these are embedded instruments? Select **all** correct answers.",
+        "options": ["An MBIST controller", "A temperature sensor", "Fuses that store repair data", "The package of the chip"],
+        "correct": [0, 1, 2],
+        "review": ["instruments"]
+      },
+      {
+        "id": "q-1149",
+        "type": "single",
+        "text": "Which standard defines the test access port (TAP) and boundary scan?",
+        "options": ["IEEE 1149.1", "IEEE 1500", "IEEE 1687", "IEEE 1838"],
+        "correct": [0],
+        "review": ["standards"]
+      },
+      {
+        "id": "q-1687",
+        "type": "single",
+        "text": "What does IEEE 1687 (IJTAG) add?",
+        "options": [
+          "Networks that connect many instruments behind the TAP, with languages to describe and operate them",
+          "A new set of test pins",
+          "Wrappers for analog circuits only",
+          "A faster version of TCK"
+        ],
+        "correct": [0],
+        "review": ["standards"]
+      },
+      {
+        "id": "q-order",
+        "type": "order",
+        "text": "Order the standards by publication year.",
+        "items": ["IEEE 1149.1", "IEEE 1500", "IEEE 1687"],
+        "review": ["standards"]
+      },
+      {
+        "id": "q-time",
+        "type": "single",
+        "text": "How long does it take to shift through a 2000-bit path with a 10 MHz test clock?",
+        "options": ["About 0.2 ms", "About 2 ms", "About 20 µs", "About 2 s"],
+        "correct": [0],
+        "review": ["serial"]
+      },
+      {
+        "id": "q-tdo",
+        "type": "truefalse",
+        "text": "While new bits are shifted in at TDI, the old content of the register comes out at TDO.",
+        "options": ["True", "False"],
+        "correct": [0],
+        "shuffle": false,
+        "review": ["serial"]
+      }
+    ]
+  }
+}

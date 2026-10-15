@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 260" font-family="Segoe UI, Arial, sans-serif">
+  <rect width="700" height="260" rx="14" fill="#ffffff"/>
+  <text x="350" y="30" text-anchor="middle" font-size="15" font-weight="700" fill="#1f4e79">Slow test clock: the late signal still arrives in time</text>
+  <g font-size="13" font-weight="600" fill="#34495e"><text x="20" y="85">clock</text><text x="20" y="150">good path</text><text x="20" y="215">slow path</text></g>
+  <!-- clock: rising edges at 140 and 580 -->
+  <path d="M110 95H140V65H360V95H580V65H660" fill="none" stroke="#1f4e79" stroke-width="2.5"/>
+  <line x1="580" y1="45" x2="580" y2="235" stroke="#c0392b" stroke-width="1.5" stroke-dasharray="6 4"/>
+  <text x="580" y="250" text-anchor="middle" font-size="12" fill="#c0392b">capture edge</text>
+  <!-- good path: changes at 200 -->
+  <path d="M110 160H200V130H660" fill="none" stroke="#27ae60" stroke-width="2.5"/>
+  <!-- slow path: changes at 420 (late, but before 580) -->
+  <path d="M110 225H420V195H660" fill="none" stroke="#e67e22" stroke-width="2.5"/>
+  <path d="M200 182H420" stroke="#e67e22" stroke-width="1.5" stroke-dasharray="4 3"/>
+  <text x="310" y="177" text-anchor="middle" font-size="12" fill="#b8641b">extra delay from the defect</text>
+  <rect x="440" y="160" width="240" height="30" rx="6" fill="#fdf3e4" stroke="#e67e22"/>
+  <text x="560" y="180" text-anchor="middle" font-size="13" font-weight="700" fill="#b8641b">PASS — defect missed ✗</text>
+</svg>

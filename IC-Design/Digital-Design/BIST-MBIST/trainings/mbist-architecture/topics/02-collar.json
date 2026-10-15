@@ -1,0 +1,287 @@
+{
+  "id": "collar",
+  "title": "The memory collar",
+  "duration": "30 min",
+  "summary": "The **collar** (also called wrapper or interface) is the small piece of logic that sits around every memory. It decides who talks to the memory — the functional logic or MBIST — and often checks the read data. It must do this without slowing the chip down.",
+  "objectives": [
+    "Draw the functional and test paths through a collar.",
+    "Explain where the comparator can sit and why.",
+    "Explain the bypass that lets scan test the logic around a memory.",
+    "Describe how pipelining keeps the test at full speed."
+  ],
+  "subsections": [
+    {
+      "id": "muxes",
+      "title": "Muxes: functional and test paths",
+      "blocks": [
+        {
+          "type": "stepper",
+          "src": "assets/collar.svg",
+          "interval": 3000,
+          "steps": [
+            {
+              "title": "Functional path",
+              "md": "In normal operation the functional logic drives the memory's address, data and write-enable through an **input mux**; the read data goes out to the functional logic."
+            },
+            {
+              "title": "Test path",
+              "md": "When **test_mode** is 1, the input mux takes address, data and commands from the **MBIST controller** instead."
+            },
+            {
+              "title": "Comparator",
+              "md": "The read data is compared with the **expected data** from the controller. A mismatch is a **fail**."
+            },
+            {
+              "title": "Bypass",
+              "md": "For **scan test** of the logic around the memory, an output mux can route the memory's inputs directly to its outputs, so the memory looks like a wire and the surrounding logic stays testable."
+            }
+          ]
+        },
+        {
+          "type": "callout",
+          "kind": "key",
+          "title": "The mux is on the functional path",
+          "md": "Every functional access passes through the collar's input mux, so it adds a little **delay** to timing-critical paths. Collars are designed to be as thin as possible, and memory compilers often offer memories with a built-in test port to avoid the extra mux."
+        }
+      ]
+    },
+    {
+      "id": "where-compare",
+      "title": "Where to compare",
+      "blocks": [
+        {
+          "type": "svg",
+          "src": "assets/compare-where.svg",
+          "caption": "Local compare sends one fail bit back; central compare sends every read bit back"
+        },
+        {
+          "type": "accordion",
+          "items": [
+            {
+              "title": "Comparator in the collar (local compare)",
+              "md": "The controller sends the **expected data** to the collar; the collar compares and sends back only a **fail bit**. Few wires go back to the controller — important when one controller serves many wide memories. This is the most common choice."
+            },
+            {
+              "title": "Comparator in the controller (central compare)",
+              "md": "The collar sends the **full read data** back to the controller. Simple collars, but many long wires (a 128-bit memory sends 128 bits), which costs area and makes at-speed timing harder."
+            },
+            {
+              "title": "Per-bit fail information",
+              "md": "For diagnosis and repair it is useful to know **which bit** failed, not just *that* a fail happened. Local comparators can keep a per-bit (or per-column) fail flag."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "bypass",
+      "title": "Bypass for logic test",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "Scan and ATPG test the **logic** of the chip. A memory is a black box for them: data written into it cannot be predicted by the ATPG tool, and the logic between the memory and the next flip-flops — the **shadow logic** — becomes hard to test.\n\nThe collar helps in one of two ways:\n\n- **Bypass**: in scan mode the memory's inputs are routed straight to its outputs, so ATPG sees a simple path.\n- **Observation flip-flops**: the memory's inputs are captured in extra scan flip-flops, and its outputs are driven by others."
+        },
+        {
+          "type": "categorize",
+          "prompt": "Practice: which path is active?",
+          "categories": [
+            {
+              "id": "func",
+              "label": "Functional mode"
+            },
+            {
+              "id": "mbist",
+              "label": "MBIST mode"
+            },
+            {
+              "id": "scan",
+              "label": "Scan / ATPG mode"
+            }
+          ],
+          "items": [
+            {
+              "text": "The CPU writes data into the cache memory",
+              "category": "func"
+            },
+            {
+              "text": "The controller writes background D into every address",
+              "category": "mbist"
+            },
+            {
+              "text": "The memory is bypassed so ATPG can test the logic behind it",
+              "category": "scan"
+            },
+            {
+              "text": "Read data is compared with expected data",
+              "category": "mbist"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "timing",
+      "title": "At-speed timing",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "MBIST must run at the memory's **full clock frequency** to catch dynamic and recovery faults. But the controller may sit far from the memory, and wires across a big chip are slow. The solution is **pipelining**: registers in the collar hold address, data and commands for one clock, and the comparison happens one or two clocks after the read."
+        },
+        {
+          "type": "stepper",
+          "src": "assets/pipeline.svg",
+          "interval": 2600,
+          "steps": [
+            {
+              "title": "Clock 1",
+              "md": "The controller sends *read address 5*. Nothing has reached the memory yet."
+            },
+            {
+              "title": "Clock 2",
+              "md": "Address 5 is read by the memory while the controller already sends *read address 6*."
+            },
+            {
+              "title": "Clock 3",
+              "md": "The collar compares the data of address 5 — two clocks after it was sent — while address 6 is read and address 7 sent."
+            },
+            {
+              "title": "Clock 4",
+              "md": "And so on: one operation per clock, every stage busy."
+            }
+          ]
+        },
+        {
+          "type": "callout",
+          "kind": "info",
+          "title": "The memory still sees back-to-back operations",
+          "md": "Pipelining delays the **commands and the compare**, not the memory: the memory still gets one operation per clock, as the March test requires. The controller only has to remember that a fail belongs to the operation sent two clocks earlier."
+        }
+      ]
+    }
+  ],
+  "quiz": {
+    "questions": [
+      {
+        "id": "q-mux",
+        "type": "single",
+        "text": "What selects whether the memory is driven by the functional logic or by MBIST?",
+        "options": [
+          "The input mux in the collar, controlled by test_mode",
+          "The comparator",
+          "The memory's sense amplifier",
+          "The JTAG clock"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "muxes"
+        ]
+      },
+      {
+        "id": "q-local",
+        "type": "single",
+        "text": "Why is the comparator usually placed **in the collar**?",
+        "options": [
+          "Only a fail bit has to go back to the controller instead of the full read data.",
+          "The controller cannot compute expected data.",
+          "It makes the memory larger.",
+          "It removes the need for test_mode."
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "where-compare"
+        ]
+      },
+      {
+        "id": "q-bypass",
+        "type": "single",
+        "text": "What is the bypass in the collar for?",
+        "options": [
+          "Making the logic around the memory testable by scan / ATPG",
+          "Speeding up the functional path",
+          "Skipping slow memories during MBIST",
+          "Repairing faulty rows"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "bypass"
+        ]
+      },
+      {
+        "id": "q-delay",
+        "type": "truefalse",
+        "text": "The collar's input mux lies on the functional path and adds a small delay to it.",
+        "options": [
+          "True",
+          "False"
+        ],
+        "correct": [
+          0
+        ],
+        "shuffle": false,
+        "review": [
+          "muxes"
+        ]
+      },
+      {
+        "id": "q-pipe",
+        "type": "single",
+        "text": "With a two-stage pipeline, the read of address 5 is sent in clock 1. When is its data compared?",
+        "options": [
+          "Clock 3",
+          "Clock 1",
+          "Clock 2",
+          "Clock 5"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "timing"
+        ]
+      },
+      {
+        "id": "q-modes",
+        "type": "match",
+        "text": "Match each action to the mode it belongs to.",
+        "categories": [
+          {
+            "id": "mbist",
+            "label": "MBIST mode"
+          },
+          {
+            "id": "scan",
+            "label": "Scan mode"
+          }
+        ],
+        "items": [
+          {
+            "text": "Controller drives address and data",
+            "category": "mbist"
+          },
+          {
+            "text": "Read data compared with expected data",
+            "category": "mbist"
+          },
+          {
+            "text": "Memory inputs routed straight to its outputs",
+            "category": "scan"
+          },
+          {
+            "text": "ATPG tests the shadow logic",
+            "category": "scan"
+          }
+        ],
+        "review": [
+          "muxes",
+          "bypass"
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 380" font-family="Segoe UI, Arial, sans-serif">
+  <rect width="700" height="380" rx="14" fill="#ffffff"/>
+  <text x="350" y="32" text-anchor="middle" font-size="16" font-weight="700" fill="#1f4e79">Cost of finding one bad chip (relative, logarithmic scale)</text>
+  <!-- axis -->
+  <g stroke="#9fb3c8" stroke-width="1.5">
+    <line x1="70" y1="320" x2="670" y2="320"/>
+    <line x1="70" y1="320" x2="70" y2="60"/>
+  </g>
+  <g stroke="#e5ecf3" stroke-width="1">
+    <line x1="70" y1="270" x2="670" y2="270"/><line x1="70" y1="220" x2="670" y2="220"/><line x1="70" y1="170" x2="670" y2="170"/><line x1="70" y1="120" x2="670" y2="120"/><line x1="70" y1="70" x2="670" y2="70"/>
+  </g>
+  <g font-size="12" fill="#6b7a8c" text-anchor="end">
+    <text x="62" y="324">0.1</text><text x="62" y="274">1</text><text x="62" y="224">10</text><text x="62" y="174">100</text><text x="62" y="124">1 000</text><text x="62" y="74">10 000</text>
+  </g>
+  <g font-size="13" font-weight="600" fill="#34495e" text-anchor="middle">
+    <text x="130" y="342">Wafer sort</text><text x="250" y="342">Packaged chip</text><text x="370" y="342">Board</text><text x="490" y="342">System</text><text x="610" y="342">In the field</text>
+  </g>
+
+  <g data-step="1">
+    <rect x="95" y="270" width="70" height="50" rx="4" fill="#27ae60"/>
+    <text x="130" y="262" text-anchor="middle" font-size="14" font-weight="700" fill="#1e8449">×1</text>
+  </g>
+  <g data-step="2">
+    <rect x="215" y="220" width="70" height="100" rx="4" fill="#7dbb3a"/>
+    <text x="250" y="212" text-anchor="middle" font-size="14" font-weight="700" fill="#5d8a2a">×10</text>
+  </g>
+  <g data-step="3">
+    <rect x="335" y="170" width="70" height="150" rx="4" fill="#e1b12c"/>
+    <text x="370" y="162" text-anchor="middle" font-size="14" font-weight="700" fill="#a7841f">×100</text>
+  </g>
+  <g data-step="4">
+    <rect x="455" y="120" width="70" height="200" rx="4" fill="#e67e22"/>
+    <text x="490" y="112" text-anchor="middle" font-size="14" font-weight="700" fill="#b8641b">×1 000</text>
+  </g>
+  <g data-step="5">
+    <rect x="575" y="70" width="70" height="250" rx="4" fill="#c0392b"/>
+    <text x="610" y="62" text-anchor="middle" font-size="14" font-weight="700" fill="#c0392b">×10 000</text>
+  </g>
+  <text x="350" y="370" text-anchor="middle" font-size="12" fill="#6b7a8c">Rule of thumb ("rule of ten"): each later stage costs about ten times more.</text>
+</svg>

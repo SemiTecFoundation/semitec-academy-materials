@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400" font-family="Segoe UI, Arial, sans-serif">
+  <style>
+    .pb-bit { animation: pb-move 2.4s linear infinite; }
+    .pb-d1 { animation-delay: -0.6s; } .pb-d2 { animation-delay: -1.2s; } .pb-d3 { animation-delay: -1.8s; }
+    @keyframes pb-move { from { transform: translateX(0); opacity: 1; } 85% { opacity: 1; } to { transform: translateX(250px); opacity: 0; } }
+    .pb-ff { animation: pb-blink 3s ease-in-out infinite; }
+    @keyframes pb-blink { 0%, 100% { fill: #eaf1f8; } 50% { fill: #cfe0f3; } }
+  </style>
+  <rect width="800" height="400" rx="14" fill="#ffffff"/>
+  <!-- tester -->
+  <rect x="30" y="80" width="170" height="240" rx="12" fill="#34495e"/>
+  <rect x="50" y="105" width="130" height="70" rx="6" fill="#1d2b38"/>
+  <g fill="#27ae60"><rect x="62" y="118" width="40" height="6"/><rect x="62" y="132" width="70" height="6"/><rect x="62" y="146" width="55" height="6"/><rect x="62" y="160" width="85" height="6"/></g>
+  <text x="115" y="215" text-anchor="middle" font-size="16" font-weight="700" fill="#ffffff">Tester (ATE)</text>
+  <text x="115" y="240" text-anchor="middle" font-size="12" fill="#c8d3de">pattern memory:</text>
+  <text x="115" y="258" text-anchor="middle" font-size="12" fill="#c8d3de">gigabytes of 0s and 1s</text>
+
+  <!-- pins -->
+  <g stroke="#7d93ab" stroke-width="3">
+    <line x1="200" y1="150" x2="470" y2="150"/><line x1="200" y1="190" x2="470" y2="190"/>
+    <line x1="200" y1="230" x2="470" y2="230"/><line x1="200" y1="270" x2="470" y2="270"/>
+  </g>
+  <text x="335" y="120" text-anchor="middle" font-size="14" font-weight="700" fill="#c0392b">only a few test pins</text>
+  <g font-size="12" font-weight="700" fill="#ffffff" text-anchor="middle">
+    <g class="pb-bit"><circle cx="215" cy="150" r="9" fill="#1f6feb"/><text x="215" y="154">1</text></g>
+    <g class="pb-bit pb-d1"><circle cx="215" cy="150" r="9" fill="#1f6feb"/><text x="215" y="154">0</text></g>
+    <g class="pb-bit pb-d2"><circle cx="215" cy="190" r="9" fill="#1f6feb"/><text x="215" y="194">1</text></g>
+    <g class="pb-bit pb-d3"><circle cx="215" cy="190" r="9" fill="#1f6feb"/><text x="215" y="194">1</text></g>
+    <g class="pb-bit pb-d1"><circle cx="215" cy="230" r="9" fill="#1f6feb"/><text x="215" y="234">0</text></g>
+    <g class="pb-bit pb-d3"><circle cx="215" cy="230" r="9" fill="#1f6feb"/><text x="215" y="234">0</text></g>
+    <g class="pb-bit"><circle cx="215" cy="270" r="9" fill="#1f6feb"/><text x="215" y="274">1</text></g>
+    <g class="pb-bit pb-d2"><circle cx="215" cy="270" r="9" fill="#1f6feb"/><text x="215" y="274">0</text></g>
+  </g>
+
+  <!-- chip -->
+  <rect x="470" y="40" width="300" height="320" rx="12" fill="#f6f9fc" stroke="#1f4e79" stroke-width="3"/>
+  <text x="620" y="66" text-anchor="middle" font-size="15" font-weight="700" fill="#1f4e79">Chip: millions of flip-flops</text>
+  <g class="pb-ff" fill="#eaf1f8" stroke="#9fb3c8">
+    <rect x="492" y="82" width="22" height="16"/><rect x="518" y="82" width="22" height="16"/><rect x="544" y="82" width="22" height="16"/><rect x="570" y="82" width="22" height="16"/><rect x="596" y="82" width="22" height="16"/><rect x="622" y="82" width="22" height="16"/><rect x="648" y="82" width="22" height="16"/><rect x="674" y="82" width="22" height="16"/><rect x="700" y="82" width="22" height="16"/><rect x="726" y="82" width="22" height="16"/>
+    <rect x="492" y="104" width="22" height="16"/><rect x="518" y="104" width="22" height="16"/><rect x="544" y="104" width="22" height="16"/><rect x="570" y="104" width="22" height="16"/><rect x="596" y="104" width="22" height="16"/><rect x="622" y="104" width="22" height="16"/><rect x="648" y="104" width="22" height="16"/><rect x="674" y="104" width="22" height="16"/><rect x="700" y="104" width="22" height="16"/><rect x="726" y="104" width="22" height="16"/>
+    <rect x="492" y="126" width="22" height="16"/><rect x="518" y="126" width="22" height="16"/><rect x="544" y="126" width="22" height="16"/><rect x="570" y="126" width="22" height="16"/><rect x="596" y="126" width="22" height="16"/><rect x="622" y="126" width="22" height="16"/><rect x="648" y="126" width="22" height="16"/><rect x="674" y="126" width="22" height="16"/><rect x="700" y="126" width="22" height="16"/><rect x="726" y="126" width="22" height="16"/>
+    <rect x="492" y="148" width="22" height="16"/><rect x="518" y="148" width="22" height="16"/><rect x="544" y="148" width="22" height="16"/><rect x="570" y="148" width="22" height="16"/><rect x="596" y="148" width="22" height="16"/><rect x="622" y="148" width="22" height="16"/><rect x="648" y="148" width="22" height="16"/><rect x="674" y="148" width="22" height="16"/><rect x="700" y="148" width="22" height="16"/><rect x="726" y="148" width="22" height="16"/>
+    <rect x="492" y="170" width="22" height="16"/><rect x="518" y="170" width="22" height="16"/><rect x="544" y="170" width="22" height="16"/><rect x="570" y="170" width="22" height="16"/><rect x="596" y="170" width="22" height="16"/><rect x="622" y="170" width="22" height="16"/><rect x="648" y="170" width="22" height="16"/><rect x="674" y="170" width="22" height="16"/><rect x="700" y="170" width="22" height="16"/><rect x="726" y="170" width="22" height="16"/>
+    <rect x="492" y="192" width="22" height="16"/><rect x="518" y="192" width="22" height="16"/><rect x="544" y="192" width="22" height="16"/><rect x="570" y="192" width="22" height="16"/><rect x="596" y="192" width="22" height="16"/><rect x="622" y="192" width="22" height="16"/><rect x="648" y="192" width="22" height="16"/><rect x="674" y="192" width="22" height="16"/><rect x="700" y="192" width="22" height="16"/><rect x="726" y="192" width="22" height="16"/>
+    <rect x="492" y="214" width="22" height="16"/><rect x="518" y="214" width="22" height="16"/><rect x="544" y="214" width="22" height="16"/><rect x="570" y="214" width="22" height="16"/><rect x="596" y="214" width="22" height="16"/><rect x="622" y="214" width="22" height="16"/><rect x="648" y="214" width="22" height="16"/><rect x="674" y="214" width="22" height="16"/><rect x="700" y="214" width="22" height="16"/><rect x="726" y="214" width="22" height="16"/>
+    <rect x="492" y="236" width="22" height="16"/><rect x="518" y="236" width="22" height="16"/><rect x="544" y="236" width="22" height="16"/><rect x="570" y="236" width="22" height="16"/><rect x="596" y="236" width="22" height="16"/><rect x="622" y="236" width="22" height="16"/><rect x="648" y="236" width="22" height="16"/><rect x="674" y="236" width="22" height="16"/><rect x="700" y="236" width="22" height="16"/><rect x="726" y="236" width="22" height="16"/>
+    <rect x="492" y="258" width="22" height="16"/><rect x="518" y="258" width="22" height="16"/><rect x="544" y="258" width="22" height="16"/><rect x="570" y="258" width="22" height="16"/><rect x="596" y="258" width="22" height="16"/><rect x="622" y="258" width="22" height="16"/><rect x="648" y="258" width="22" height="16"/><rect x="674" y="258" width="22" height="16"/><rect x="700" y="258" width="22" height="16"/><rect x="726" y="258" width="22" height="16"/>
+    <rect x="492" y="280" width="22" height="16"/><rect x="518" y="280" width="22" height="16"/><rect x="544" y="280" width="22" height="16"/><rect x="570" y="280" width="22" height="16"/><rect x="596" y="280" width="22" height="16"/><rect x="622" y="280" width="22" height="16"/><rect x="648" y="280" width="22" height="16"/><rect x="674" y="280" width="22" height="16"/><rect x="700" y="280" width="22" height="16"/><rect x="726" y="280" width="22" height="16"/>
+  </g>
+  <text x="620" y="330" text-anchor="middle" font-size="13" fill="#34495e">… and thousands more rows</text>
+  <text x="400" y="385" text-anchor="middle" font-size="13" fill="#6b7a8c">Every pattern must squeeze through the few pins, one bit per pin per clock.</text>
+</svg>

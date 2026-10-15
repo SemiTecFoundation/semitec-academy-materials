@@ -1,0 +1,433 @@
+{
+  "id": "sync-interface",
+  "title": "The synchronous memory interface",
+  "duration": "60 min",
+  "summary": "Almost every on-chip memory has the same interface: clock, enable, write enable, address, data in and data out. The details — read latency, byte enables, what happens on a read during a write, synchronous or asynchronous read — decide whether a design works. Every variant is shown in SystemVerilog and as a timing diagram.",
+  "objectives": [
+    "Name the signals of a synchronous memory and their timing.",
+    "Design for read latency 1 and 2.",
+    "Write byte-enabled memories in SystemVerilog.",
+    "Distinguish read-first, write-first and no-change behaviour from RTL and waveforms.",
+    "Predict the hardware inferred from synchronous and asynchronous reads."
+  ],
+  "subsections": [
+    {
+      "id": "signals",
+      "title": "The signals",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "Almost every on-chip memory — SRAM macro or FPGA block RAM — has the same synchronous interface. Everything is sampled at the **rising clock edge**:"
+        },
+        {
+          "type": "table",
+          "columns": [
+            "Signal",
+            "Meaning",
+            "Notes"
+          ],
+          "rows": [
+            [
+              "clk",
+              "clock",
+              "all inputs are sampled at its rising edge"
+            ],
+            [
+              "en (CE, ME)",
+              "access enable",
+              "0: the memory does nothing — saves power; often active-low (CEN) in macros"
+            ],
+            [
+              "we (WEN)",
+              "write enable",
+              "1: write, 0: read; often active-low in macros"
+            ],
+            [
+              "addr",
+              "address",
+              "AW = ⌈log₂ depth⌉ bits"
+            ],
+            [
+              "din (D)",
+              "write data",
+              "DW bits"
+            ],
+            [
+              "dout (Q)",
+              "read data",
+              "valid after the clock edge (read latency)"
+            ],
+            [
+              "be / wem",
+              "byte or bit write enables",
+              "write only parts of a word"
+            ]
+          ],
+          "caption": "The synchronous memory interface"
+        },
+        {
+          "type": "callout",
+          "kind": "info",
+          "title": "Active-low pins",
+          "md": "Memory macros often use active-low enables (CEN, WEN, with N for *negative*). A wrapper in RTL usually converts them, so the rest of the design uses clean active-high names."
+        }
+      ]
+    },
+    {
+      "id": "latency",
+      "title": "Read latency",
+      "blocks": [
+        {
+          "type": "stepper",
+          "src": "assets/sync-read.svg",
+          "interval": 3000,
+          "steps": [
+            {
+              "title": "Write",
+              "md": "Cycle 1: en = we = 1. At the clock edge, din is written into A0."
+            },
+            {
+              "title": "Read: latency 1",
+              "md": "Cycle 2: read A0. The memory samples the address at the edge; the data appears **after** that edge — one clock later."
+            },
+            {
+              "title": "Back-to-back reads",
+              "md": "A new address every clock gives a new word every clock. With en = 0 the output keeps its last value."
+            },
+            {
+              "title": "Latency 2",
+              "md": "An extra **output register** delays the data by one more clock but shortens the critical path: the clock can run faster."
+            }
+          ]
+        },
+        {
+          "type": "callout",
+          "kind": "key",
+          "title": "The consumer must know the latency",
+          "md": "Logic that uses dout must wait **exactly** the read latency. Changing a memory from latency 1 to 2 without changing the surrounding pipeline is one of the most common integration bugs."
+        }
+      ]
+    },
+    {
+      "id": "byte-enable",
+      "title": "Byte enables",
+      "blocks": [
+        {
+          "type": "svg",
+          "src": "assets/byte-en.svg",
+          "caption": "we = 0101 writes bytes 0 and 2; bytes 1 and 3 keep their content"
+        },
+        {
+          "type": "text",
+          "md": "Processors write single bytes or half-words into 32- or 64-bit memories. Instead of reading the word, changing a byte and writing it back, the memory gets one **write enable per byte**:"
+        },
+        {
+          "type": "callout",
+          "kind": "tip",
+          "title": "Bit-write masks",
+          "md": "Some macros go further and have a write-enable bit **per data bit** (bit-write mask): each bit is written only where its mask bit is 1."
+        }
+      ]
+    },
+    {
+      "id": "rdw",
+      "title": "Read-during-write",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "What does dout show in a cycle that **writes** an address? Three behaviours exist; the RTL (see *In SystemVerilog*) decides which one you get:"
+        },
+        {
+          "type": "stepper",
+          "src": "assets/rdw.svg",
+          "interval": 3000,
+          "steps": [
+            {
+              "title": "Read-first",
+              "md": "dout shows the **old** content (33) in the write cycle. This is what `dout <= mem[addr]` with non-blocking assignments gives."
+            },
+            {
+              "title": "Write-first",
+              "md": "dout shows the **new** data (77) at once — the written value is passed through."
+            },
+            {
+              "title": "No-change",
+              "md": "dout **keeps** its previous value during a write; it only changes on reads."
+            }
+          ]
+        },
+        {
+          "type": "callout",
+          "kind": "warning",
+          "title": "Match the target",
+          "md": "FPGA block RAMs usually support all three modes, selected by the way the RTL is written. An ASIC SRAM macro has **one** behaviour, given in its datasheet — the RTL model must match it, or simulation and silicon disagree."
+        }
+      ]
+    },
+    {
+      "id": "async-read",
+      "title": "Asynchronous read",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "If the read is described **outside** the clocked block, the data follows the address within the same cycle — the read multiplexer of Topic 4 without the output register. That choice decides which hardware you get:"
+        },
+        {
+          "type": "table",
+          "columns": [
+            "Read style",
+            "Becomes (FPGA)",
+            "Becomes (ASIC)",
+            "Use"
+          ],
+          "rows": [
+            [
+              "synchronous (registered)",
+              "block RAM",
+              "SRAM macro",
+              "everything larger than a few hundred bits"
+            ],
+            [
+              "asynchronous",
+              "distributed (LUT) RAM",
+              "flip-flops + multiplexer",
+              "small register files, FIFOs of a few words"
+            ]
+          ],
+          "caption": "The read style decides the hardware"
+        },
+        {
+          "type": "categorize",
+          "prompt": "Practice: which hardware does the RTL infer?",
+          "categories": [
+            {
+              "id": "macro",
+              "label": "SRAM macro / block RAM"
+            },
+            {
+              "id": "ff",
+              "label": "flip-flops / LUT RAM"
+            }
+          ],
+          "items": [
+            {
+              "text": "4096 × 32, dout <= mem[addr] in always_ff",
+              "category": "macro"
+            },
+            {
+              "text": "16 × 8, assign rd = mem[ra]",
+              "category": "ff"
+            },
+            {
+              "text": "32 × 64 register file with 2 asynchronous reads",
+              "category": "ff"
+            },
+            {
+              "text": "2048 × 72 with byte enables and registered read",
+              "category": "macro"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sv",
+      "title": "In SystemVerilog: interface variants",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "All variants of this topic as synthesizable code. Compare each one with its waveform above."
+        },
+        {
+          "type": "text",
+          "md": "**Read latency 1 or 2** — the parameter adds an output register:"
+        },
+        {
+          "type": "code",
+          "lang": "systemverilog",
+          "code": "module sp_ram_lat #(\n  parameter  int DW = 32, DEPTH = 1024,\n  parameter  int READ_LATENCY = 1,          // 1 or 2\n  localparam int AW = $clog2(DEPTH)\n) (\n  input  logic          clk, en, we,\n  input  logic [AW-1:0] addr,\n  input  logic [DW-1:0] din,\n  output logic [DW-1:0] dout\n);\n  logic [DW-1:0] mem [DEPTH];\n  logic [DW-1:0] q;\n\n  always_ff @(posedge clk)\n    if (en) begin\n      if (we) mem[addr] <= din;\n      q <= mem[addr];\n    end\n\n  if (READ_LATENCY == 2) begin : g_oreg\n    always_ff @(posedge clk) dout <= q;    // extra output register\n  end else begin : g_noreg\n    assign dout = q;\n  end\nendmodule"
+        },
+        {
+          "type": "text",
+          "md": "**Byte enables** — one write enable per byte:"
+        },
+        {
+          "type": "code",
+          "lang": "systemverilog",
+          "code": "module sp_ram_be #(\n  parameter  int DEPTH = 1024,\n  localparam int AW    = $clog2(DEPTH)\n) (\n  input  logic          clk, en,\n  input  logic [3:0]    we,              // one write enable per byte\n  input  logic [AW-1:0] addr,\n  input  logic [31:0]   din,\n  output logic [31:0]   dout\n);\n  logic [31:0] mem [DEPTH];\n\n  always_ff @(posedge clk)\n    if (en) begin\n      if (we[0]) mem[addr][ 7: 0] <= din[ 7: 0];   // byte 0\n      if (we[1]) mem[addr][15: 8] <= din[15: 8];   // byte 1\n      if (we[2]) mem[addr][23:16] <= din[23:16];   // byte 2\n      if (we[3]) mem[addr][31:24] <= din[31:24];   // byte 3\n      dout <= mem[addr];\n    end\nendmodule"
+        },
+        {
+          "type": "text",
+          "md": "**Read-during-write** — three ways to write the same RAM:"
+        },
+        {
+          "type": "code",
+          "lang": "systemverilog",
+          "code": "// read-first\nalways_ff @(posedge clk)\n  if (en) begin\n    if (we) mem[addr] <= din;\n    dout <= mem[addr];        // old value\n  end"
+        },
+        {
+          "type": "code",
+          "lang": "systemverilog",
+          "code": "// write-first\nalways_ff @(posedge clk)\n  if (en) begin\n    if (we) begin\n      mem[addr] <= din;\n      dout      <= din;       // new value\n    end else\n      dout <= mem[addr];\n  end"
+        },
+        {
+          "type": "code",
+          "lang": "systemverilog",
+          "code": "// no-change\nalways_ff @(posedge clk)\n  if (en) begin\n    if (we) mem[addr] <= din;\n    else    dout <= mem[addr]; // only on reads\n  end"
+        },
+        {
+          "type": "text",
+          "md": "**Asynchronous read** — becomes LUT RAM or flip-flops, not an SRAM macro:"
+        },
+        {
+          "type": "code",
+          "lang": "systemverilog",
+          "code": "always_ff @(posedge clk) if (we) mem[addr] <= din;   // synchronous write\nassign dout = mem[addr];                              // asynchronous read"
+        }
+      ]
+    }
+  ],
+  "quiz": {
+    "questions": [
+      {
+        "id": "q-lat",
+        "type": "single",
+        "text": "A memory with read latency 1 gets a read address in cycle 5. When is the data on dout?",
+        "options": [
+          "In cycle 6, after the next clock edge",
+          "In cycle 5",
+          "In cycle 7",
+          "When en goes low"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "latency"
+        ]
+      },
+      {
+        "id": "q-oreg",
+        "type": "single",
+        "text": "Why add an output register (latency 2)?",
+        "options": [
+          "The clock can run faster because the critical path is shorter",
+          "It saves memory cells",
+          "It removes the need for an address",
+          "Writes become faster"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "latency"
+        ]
+      },
+      {
+        "id": "q-be",
+        "type": "single",
+        "text": "The word holds 0xAABBCCDD. Byte enables are 4'b0011 and din is 0x11223344. What is stored after the write?",
+        "options": [
+          "0xAABB3344",
+          "0x1122CCDD",
+          "0x11223344",
+          "0xAABBCCDD"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "byte-enable"
+        ],
+        "explain": "Bytes 0 and 1 (the lowest) are written."
+      },
+      {
+        "id": "q-rf",
+        "type": "single",
+        "text": "Which read-during-write behaviour does this give?  `if (we) mem[addr] <= din;  dout <= mem[addr];`",
+        "options": [
+          "Read-first (old value)",
+          "Write-first (new value)",
+          "No-change",
+          "Undefined"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "rdw",
+          "sv"
+        ]
+      },
+      {
+        "id": "q-nc",
+        "type": "single",
+        "text": "In no-change mode, what does dout show during a write?",
+        "options": [
+          "Its previous value",
+          "The new data",
+          "The old content of the written address",
+          "X"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "rdw"
+        ]
+      },
+      {
+        "id": "q-async",
+        "type": "single",
+        "text": "What does `assign dout = mem[addr];` on a 16 × 8 array usually become in an FPGA?",
+        "options": [
+          "Distributed (LUT) RAM",
+          "Block RAM",
+          "An SRAM macro",
+          "Flash"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "async-read"
+        ]
+      },
+      {
+        "id": "q-match",
+        "type": "truefalse",
+        "text": "An ASIC SRAM model in RTL must use the same read-during-write behaviour as the macro's datasheet.",
+        "options": [
+          "True",
+          "False"
+        ],
+        "correct": [
+          0
+        ],
+        "shuffle": false,
+        "review": [
+          "rdw"
+        ]
+      },
+      {
+        "id": "q-sig",
+        "type": "multiple",
+        "text": "Which signals are sampled at the rising clock edge of a synchronous memory? Select **all** correct answers.",
+        "options": [
+          "addr",
+          "we",
+          "din",
+          "dout"
+        ],
+        "correct": [
+          0,
+          1,
+          2
+        ],
+        "review": [
+          "signals"
+        ]
+      }
+    ]
+  }
+}

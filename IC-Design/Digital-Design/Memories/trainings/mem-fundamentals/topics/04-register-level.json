@@ -1,0 +1,286 @@
+{
+  "id": "register-level",
+  "title": "Inside a memory: register-level read and write",
+  "duration": "45 min",
+  "summary": "What happens inside a memory when it is written or read? This topic opens a small memory at **register level**: a decoder chooses the word, registers store it at the clock edge, a multiplexer reads it out. You will follow both processes clock by clock, read them in waveforms, and then write the memory structurally and behaviourally in SystemVerilog.",
+  "objectives": [
+    "Name the three parts of a register-level memory.",
+    "Follow a write and a read clock by clock.",
+    "Read write and read operations in a timing diagram.",
+    "Relate the register-level view to an SRAM array.",
+    "Write the memory structurally and behaviourally in SystemVerilog."
+  ],
+  "subsections": [
+    {
+      "id": "structure",
+      "title": "A memory is registers, a decoder and a multiplexer",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "Before looking at SRAM cells, look at a memory the way a digital designer sees it — at **register level**. A small memory of 4 words × 8 bits consists of exactly three parts:\n\n1. a **write address decoder** that turns the 2-bit write address into four *word enable* signals — only one of them is 1, and only when *we* = 1;\n2. **four 8-bit registers**, each loaded with *din* at the clock edge if its word enable is 1;\n3. a **read multiplexer** that passes the register chosen by the read address to the output."
+        },
+        {
+          "type": "stepper",
+          "src": "assets/reg-write.svg",
+          "interval": 3000,
+          "steps": [
+            {
+              "title": "The parts",
+              "md": "Decoder, registers and read multiplexer. All registers hold 00."
+            },
+            {
+              "title": "Decode",
+              "md": "we = 1 and waddr = 2: the decoder raises **word_en[2]** only."
+            },
+            {
+              "title": "Clock edge",
+              "md": "At the rising edge, register 2 loads din = 0x5A."
+            },
+            {
+              "title": "The others",
+              "md": "All other registers had their enable at 0 and kept their values."
+            }
+          ]
+        },
+        {
+          "type": "callout",
+          "kind": "key",
+          "title": "An SRAM does the same — with cells instead of flip-flops",
+          "md": "The **row decoder** of an SRAM is the write decoder, the **word line** is the word enable, the **cells** are the registers, and the **column mux plus sense amplifiers** are the read multiplexer. Only the circuit technique differs."
+        }
+      ]
+    },
+    {
+      "id": "read",
+      "title": "The read process",
+      "blocks": [
+        {
+          "type": "stepper",
+          "src": "assets/reg-read.svg",
+          "interval": 3000,
+          "steps": [
+            {
+              "title": "Asynchronous read",
+              "md": "raddr = 2: the multiplexer passes register 2 to its output after a short combinational delay — no clock needed."
+            },
+            {
+              "title": "Synchronous read",
+              "md": "An **output register** behind the multiplexer captures the value at the next clock edge: the data arrives one clock later (read latency 1), but the timing is clean and predictable."
+            }
+          ]
+        },
+        {
+          "type": "table",
+          "columns": [
+            "",
+            "Asynchronous read",
+            "Synchronous read"
+          ],
+          "rows": [
+            [
+              "data valid",
+              "after the mux delay, same cycle",
+              "after the next clock edge"
+            ],
+            [
+              "timing path",
+              "address → mux → user logic, in one cycle",
+              "short: register → user logic"
+            ],
+            [
+              "typical hardware",
+              "flip-flops, LUT RAM, small register files",
+              "SRAM macros, block RAM"
+            ]
+          ],
+          "caption": "Two ways to read"
+        }
+      ]
+    },
+    {
+      "id": "waves",
+      "title": "Write and read in waveforms",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "The same two operations as a timing diagram — learn to read it, every memory datasheet uses this form:"
+        },
+        {
+          "type": "svg",
+          "src": "assets/reg-wave.svg",
+          "caption": "Cycle 1 writes 0x5A into word 2; cycle 2 reads word 2. Note when each signal changes."
+        },
+        {
+          "type": "accordion",
+          "items": [
+            {
+              "title": "Why does word 2 change only after the edge?",
+              "md": "Registers sample their input at the rising edge. During the write cycle the enable and the data are prepared; the edge at the end of the cycle stores them."
+            },
+            {
+              "title": "Why is the synchronous output one cycle later than the mux output?",
+              "md": "The mux output is ready during the read cycle; the output register samples it at the next edge."
+            },
+            {
+              "title": "What if we read and write the same word in one cycle?",
+              "md": "The asynchronous read shows the old value until the edge, then the new one. A synchronous read samples at the edge and therefore gets the **old** value — the read-first behaviour of Topic 5."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sv",
+      "title": "In SystemVerilog: structural and behavioural",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "The register-level memory written **structurally** — decoder, registers and multiplexer as separate pieces of code:"
+        },
+        {
+          "type": "code",
+          "lang": "systemverilog",
+          "code": "module mem4x8_struct (\n  input  logic       clk, we,\n  input  logic [1:0] waddr, raddr,\n  input  logic [7:0] din,\n  output logic [7:0] dout_async,\n  output logic [7:0] dout_sync\n);\n  logic [3:0] word_en;                     // one-hot write enables\n  logic [7:0] word0, word1, word2, word3;  // four 8-bit registers\n\n  // 1. write address decoder: 2 -> 4, active only when we = 1\n  assign word_en[0] = we && (waddr == 2'd0);\n  assign word_en[1] = we && (waddr == 2'd1);\n  assign word_en[2] = we && (waddr == 2'd2);\n  assign word_en[3] = we && (waddr == 2'd3);\n\n  // 2. storage: each register loads din only when its enable is 1\n  always_ff @(posedge clk) if (word_en[0]) word0 <= din;\n  always_ff @(posedge clk) if (word_en[1]) word1 <= din;\n  always_ff @(posedge clk) if (word_en[2]) word2 <= din;\n  always_ff @(posedge clk) if (word_en[3]) word3 <= din;\n\n  // 3. read multiplexer: 4 -> 1 (asynchronous read)\n  always_comb\n    case (raddr)\n      2'd0:    dout_async = word0;\n      2'd1:    dout_async = word1;\n      2'd2:    dout_async = word2;\n      default: dout_async = word3;\n    endcase\n\n  // 4. output register: synchronous read\n  always_ff @(posedge clk) dout_sync <= dout_async;\nendmodule"
+        },
+        {
+          "type": "text",
+          "md": "The **behavioural** version describes the same hardware in four lines. Synthesis builds the decoder and the multiplexer from the array index:"
+        },
+        {
+          "type": "code",
+          "lang": "systemverilog",
+          "code": "logic [7:0] word [4];\nalways_ff @(posedge clk) if (we) word[waddr] <= din;   // decoder + registers\nassign dout_async = word[raddr];                        // read multiplexer\nalways_ff @(posedge clk) dout_sync <= dout_async;       // output register"
+        },
+        {
+          "type": "callout",
+          "kind": "tip",
+          "title": "Use the behavioural style",
+          "md": "Both versions give the same hardware. The structural one shows **what** is built; in real designs the behavioural style is shorter, easier to read and lets the tools map large arrays onto SRAM or block RAM."
+        }
+      ]
+    }
+  ],
+  "quiz": {
+    "questions": [
+      {
+        "id": "q-dec",
+        "type": "single",
+        "text": "In a 4-word register-level memory, what does the write decoder do when we = 0?",
+        "options": [
+          "All word enables stay 0 — nothing is written",
+          "It enables word 0",
+          "It enables all words",
+          "It selects the read address"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "structure"
+        ]
+      },
+      {
+        "id": "q-onehot",
+        "type": "single",
+        "text": "waddr = 3 and we = 1. What is word_en[3:0]?",
+        "options": [
+          "1000",
+          "0011",
+          "0001",
+          "1111"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "structure"
+        ]
+      },
+      {
+        "id": "q-when",
+        "type": "single",
+        "text": "When does the selected register take the new value?",
+        "options": [
+          "At the rising clock edge at the end of the write cycle",
+          "As soon as we goes high",
+          "One clock after the edge",
+          "When the read address changes"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "structure",
+          "waves"
+        ]
+      },
+      {
+        "id": "q-sram",
+        "type": "single",
+        "text": "Which part of an SRAM corresponds to the word enable of the register-level memory?",
+        "options": [
+          "The word line",
+          "The sense amplifier",
+          "The bit line",
+          "The column mux"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "structure"
+        ]
+      },
+      {
+        "id": "q-async",
+        "type": "single",
+        "text": "With an asynchronous read, when is the data at the output?",
+        "options": [
+          "In the same cycle, after the multiplexer delay",
+          "After the next clock edge",
+          "Two cycles later",
+          "Only after a write"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "read"
+        ]
+      },
+      {
+        "id": "q-rfw",
+        "type": "single",
+        "text": "A synchronous read and a write hit the same word in one cycle. What does the read return?",
+        "options": [
+          "The old value",
+          "The new value",
+          "X",
+          "Nothing"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "waves"
+        ]
+      },
+      {
+        "id": "q-same",
+        "type": "truefalse",
+        "text": "The structural and the behavioural description of the 4 × 8 memory produce the same hardware.",
+        "options": [
+          "True",
+          "False"
+        ],
+        "correct": [
+          0
+        ],
+        "shuffle": false,
+        "review": [
+          "sv"
+        ]
+      }
+    ]
+  }
+}

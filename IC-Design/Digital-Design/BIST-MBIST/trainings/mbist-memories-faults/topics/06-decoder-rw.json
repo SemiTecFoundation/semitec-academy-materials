@@ -1,0 +1,202 @@
+{
+  "id": "decoder-rw",
+  "title": "Address-decoder and read/write faults",
+  "duration": "30 min",
+  "summary": "Not every fault sits in a cell. The **address decoder** can select the wrong cell, and the **read and write circuits** can disturb a cell while they access it. This topic covers these faults and the operations that catch them.",
+  "objectives": [
+    "Describe the four address-decoder faults AF1–AF4 and the March condition that detects them.",
+    "Tell RDF, DRDF and IRF apart and explain why a DRDF needs two reads.",
+    "Explain write-disturb faults and how sense-amplifier and precharge faults appear to a test."
+  ],
+  "subsections": [
+    {
+      "id": "address-faults",
+      "title": "The four address-decoder faults",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "The row and column decoders turn an address into **one** selected word. A defect in a decoder gate breaks this one-to-one link. Seen from outside, only four things can go wrong — the four **address-decoder faults (AF)**:"
+        },
+        {
+          "type": "stepper",
+          "src": "assets/af-steps.svg",
+          "interval": 2800,
+          "steps": [
+            { "title": "A good decoder", "md": "Every address selects **exactly one** cell, and every cell is selected by **exactly one** address." },
+            { "title": "AF1 — no cell", "md": "An address selects **nothing**. A write to it is lost; a read returns a value that depends on the circuit (often the precharge level), not on the data written." },
+            { "title": "AF2 — cell never reached", "md": "A cell has **no address**. It can never be written or read; it behaves as if stuck at whatever it powered up with." },
+            { "title": "AF3 — several cells", "md": "One address selects **two or more cells** at once. A write goes into all of them; a read returns a mix of their values (often the AND or OR of them)." },
+            { "title": "AF4 — several addresses", "md": "Two or more addresses select the **same cell**. Writing to one address overwrites what was written through the other." }
+          ]
+        },
+        {
+          "type": "callout",
+          "kind": "info",
+          "title": "They come in pairs",
+          "md": "A single AF rarely appears alone. In a decoder with a fixed number of addresses and cells, a lost cell (AF2) usually goes with an address that selects nothing (AF1) or an address that selects two cells (AF3). In the last picture, AF4 on cell 3 also leaves cell 2 unreached — an AF2."
+        },
+        {
+          "type": "callout",
+          "kind": "key",
+          "title": "The March condition for address faults",
+          "md": "A test detects all AFs if it contains both\n\n- **⇑(r x, …, w x̄)** — go **up** through the addresses, read the old value x, later write the opposite value, and\n- **⇓(r x̄, …, w x)** — go **down**, read x̄, later write x back.\n\nExample: **⇑(r0, w1) ⇓(r1, w0)**. When two addresses share a cell, the write through the *first* one is seen as a wrong value when the *second* one is read — in one direction or the other."
+        },
+        {
+          "type": "table",
+          "columns": ["Step (4 addresses, AF4: addresses 2 and 3 → cell 3)", "Address 2 reads", "Address 3 reads"],
+          "rows": [
+            ["Initialise: write 0 to all addresses", "—", "—"],
+            ["⇑ address 2: r0, w1 → cell 3 = 1", "0 ✓", "—"],
+            ["⇑ address 3: r0 …", "—", "**1 ✗ detected**"]
+          ],
+          "caption": "Going up, the write through address 2 is read back wrongly through address 3"
+        }
+      ]
+    },
+    {
+      "id": "read-faults",
+      "title": "Read-disturb faults: RDF, DRDF, IRF",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "A read is not completely harmless. During a read the bit lines are connected to the cell; a weak cell (for example with a too-small pull-down transistor) can be **flipped by its own read**. Three cases are distinguished, depending on **what the read returns** and **what the cell holds afterwards**:"
+        },
+        {
+          "type": "stepper",
+          "src": "assets/read-faults.svg",
+          "interval": 2800,
+          "steps": [
+            { "title": "A good read", "md": "The cell holds 0, **r0** returns 0, the cell still holds 0." },
+            { "title": "RDF — read destructive fault", "md": "The read **flips** the cell to 1 **and** returns the wrong value 1. Any read of the cell detects it." },
+            { "title": "DRDF — deceptive read destructive fault", "md": "The read returns the **correct** 0, but leaves the cell flipped to 1. The first read looks fine — only a **second read** of the same cell returns 1. A test needs **r0, r0** back to back." },
+            { "title": "IRF — incorrect read fault", "md": "The read returns the **wrong** value 1, but the cell is not changed. Usually a fault in the read path, not in the cell. One read detects it." }
+          ]
+        },
+        {
+          "type": "table",
+          "columns": ["Fault", "Cell after the read", "Value returned", "Detected by"],
+          "rows": [
+            ["**RDF**", "flipped", "wrong", "one read"],
+            ["**DRDF**", "flipped", "**correct**", "two reads in a row"],
+            ["**IRF**", "unchanged", "wrong", "one read"]
+          ],
+          "caption": "Each fault exists for a cell holding 0 and for a cell holding 1"
+        },
+        {
+          "type": "categorize",
+          "prompt": "Practice: can a single read of the cell detect the fault?",
+          "categories": [{ "id": "one", "label": "One read is enough" }, { "id": "two", "label": "Needs a second read" }],
+          "items": [
+            { "text": "RDF", "category": "one" },
+            { "text": "IRF", "category": "one" },
+            { "text": "DRDF", "category": "two" },
+            { "text": "Stuck-at fault", "category": "one" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "write-sa",
+      "title": "Write-disturb and sense-amplifier faults",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "Writes and the shared read circuitry can fail too. These faults look different from cell faults because they depend on the **operation** or affect a **whole column**:"
+        },
+        {
+          "type": "table",
+          "columns": ["Fault", "What goes wrong", "How a test sees it"],
+          "rows": [
+            ["**WDF** — write disturb", "A **non-transition** write (w0 into a cell that holds 0) flips the cell to 1.", "Write the same value twice or write x into a cell already holding x, then read: **w0, r0**."],
+            ["**Sense-amplifier fault**", "The sense amplifier of one column always decides 0 (or 1), or is too slow.", "Every cell of that **column** reads stuck at one value — looks like many stuck-at faults in one column."],
+            ["**Precharge fault**", "A bit line is not fully precharged before a read.", "The read result depends on the **previous** access in that column; seen as wrong reads after a read of the opposite value."],
+            ["**Write recovery fault**", "After a write, the bit lines are not restored in time.", "A read right **after a write** of the opposite value in the same column fails; needs at-speed back-to-back operations."]
+          ],
+          "caption": "Faults in the write path and in the shared read circuits"
+        },
+        {
+          "type": "callout",
+          "kind": "tip",
+          "title": "Why this matters for MBIST",
+          "md": "These faults explain several features of real March tests and MBIST hardware: **back-to-back reads** (DRDF), **non-transition writes** (WDF), **both address directions** (AF) and running at **full clock speed** (recovery and precharge faults). Topic 7 puts all of them into one notation."
+        }
+      ]
+    }
+  ],
+  "quiz": {
+    "questions": [
+      {
+        "id": "q-af3",
+        "type": "single",
+        "text": "One address writes and reads two cells at the same time. Which address-decoder fault is this?",
+        "options": ["AF3", "AF1", "AF2", "AF4"],
+        "correct": [0],
+        "review": ["address-faults"]
+      },
+      {
+        "id": "q-afmatch",
+        "type": "match",
+        "text": "Match each description to its address-decoder fault group.",
+        "categories": [{ "id": "a", "label": "Address side (AF1, AF3)" }, { "id": "c", "label": "Cell side (AF2, AF4)" }],
+        "items": [
+          { "text": "An address selects no cell", "category": "a" },
+          { "text": "An address selects several cells", "category": "a" },
+          { "text": "A cell is selected by no address", "category": "c" },
+          { "text": "A cell is selected by several addresses", "category": "c" }
+        ],
+        "review": ["address-faults"]
+      },
+      {
+        "id": "q-afcond",
+        "type": "single",
+        "text": "Which pair of March elements satisfies the condition for detecting address-decoder faults?",
+        "options": ["⇑(r0, w1) ⇓(r1, w0)", "⇑(w0) ⇑(r0)", "⇓(w1) ⇓(r1)", "⇑(r0, w1) ⇑(r1, w0)"],
+        "correct": [0],
+        "review": ["address-faults"]
+      },
+      {
+        "id": "q-drdf",
+        "type": "single",
+        "text": "A read returns the correct value but leaves the cell flipped. What is the fault, and what is needed to detect it?",
+        "options": [
+          "DRDF — a second read of the same cell",
+          "RDF — one read",
+          "IRF — one read",
+          "WDF — a non-transition write"
+        ],
+        "correct": [0],
+        "review": ["read-faults"]
+      },
+      {
+        "id": "q-irf",
+        "type": "truefalse",
+        "text": "With an incorrect read fault (IRF), the cell itself keeps the correct value.",
+        "options": ["True", "False"],
+        "correct": [0],
+        "shuffle": false,
+        "review": ["read-faults"]
+      },
+      {
+        "id": "q-wdf",
+        "type": "single",
+        "text": "Which operation sequence can reveal a write-disturb fault in a cell that holds 0?",
+        "options": ["w0, r0", "w1, r1", "r0 only", "w1, w0"],
+        "correct": [0],
+        "review": ["write-sa"]
+      },
+      {
+        "id": "q-sa",
+        "type": "single",
+        "text": "A column's sense amplifier always decides 0. What does a test see?",
+        "options": [
+          "Every cell in that column reads 0, like many stuck-at-0 faults in one column.",
+          "Only one cell fails.",
+          "The address decoder selects two cells.",
+          "Nothing — sense-amplifier faults cannot be detected."
+        ],
+        "correct": [0],
+        "review": ["write-sa"]
+      }
+    ]
+  }
+}

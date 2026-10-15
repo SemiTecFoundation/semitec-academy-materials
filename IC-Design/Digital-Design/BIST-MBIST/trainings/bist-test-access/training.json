@@ -1,0 +1,60 @@
+{
+  "id": "bist-test-access",
+  "version": "0.1",
+  "title": "Test Access: JTAG and IJTAG",
+  "subtitle": "SemiTec Foundation · BIST / MBIST",
+  "language": "en",
+  "layout": "sidebar",
+  "theme": "foundation",
+  "themes": [
+    "foundation",
+    "midnight",
+    "paper"
+  ],
+  "allowViewSwitch": true,
+  "passThreshold": 0.75,
+  "showCorrectAnswers": "afterPass",
+  "requireSequential": true,
+  "topicWord": "Topic",
+  "hours": "5",
+  "schedule": {
+    "weeks": 2,
+    "topics": [
+      {
+        "week": 1,
+        "topics": [
+          "why-access",
+          "tap",
+          "registers",
+          "boundary-scan"
+        ]
+      },
+      {
+        "week": 2,
+        "topics": [
+          "ieee1500",
+          "ijtag",
+          "icl-pdl",
+          "mbist-access"
+        ]
+      }
+    ]
+  },
+  "delivery": {
+    "mode": "standalone",
+    "urlParams": true,
+    "resume": true
+  },
+  "labels": {},
+  "topics": [
+    "01-why-access.json",
+    "02-tap.json",
+    "03-registers.json",
+    "04-boundary-scan.json",
+    "05-ieee1500.json",
+    "06-ijtag.json",
+    "07-icl-pdl.json",
+    "08-mbist-access.json"
+  ],
+  "certificate": "certificate.json"
+}

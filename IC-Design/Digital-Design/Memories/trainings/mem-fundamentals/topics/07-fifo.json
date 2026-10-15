@@ -1,0 +1,369 @@
+{
+  "id": "fifo",
+  "title": "FIFOs",
+  "duration": "55 min",
+  "summary": "The FIFO is the most common memory structure in digital design: a queue built from a dual-port memory and two pointers. This topic shows the ring buffer step by step, how full and empty are detected, how a FIFO looks in waveforms, why asynchronous FIFOs need Gray-code pointers — and a complete synchronous FIFO in SystemVerilog.",
+  "objectives": [
+    "Explain a FIFO as a ring buffer with write and read pointers.",
+    "Detect full and empty with a wrap bit.",
+    "Read FIFO behaviour in waveforms.",
+    "Explain why asynchronous FIFOs use Gray-code pointers and synchronisers.",
+    "Write a synchronous FIFO in SystemVerilog."
+  ],
+  "subsections": [
+    {
+      "id": "why-fifo",
+      "title": "Why FIFOs",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "A **FIFO** (first in, first out) is a queue: words leave in the order they arrived. FIFOs connect blocks that produce and consume data at **different moments or rates** — a network port and a processor, a camera and a frame buffer, two clock domains. Inside, a FIFO is a dual-port memory plus two counters."
+        },
+        {
+          "type": "table",
+          "columns": [
+            "Use",
+            "Why a FIFO"
+          ],
+          "rows": [
+            [
+              "between a fast producer and a slow consumer",
+              "absorbs bursts"
+            ],
+            [
+              "between two clock domains",
+              "safe transfer of data (asynchronous FIFO)"
+            ],
+            [
+              "in front of a bus or memory controller",
+              "queues requests while the slave is busy"
+            ],
+            [
+              "streaming pipelines (AXI-Stream)",
+              "decouples stages with back-pressure"
+            ]
+          ],
+          "caption": "Where FIFOs are used"
+        }
+      ]
+    },
+    {
+      "id": "ring",
+      "title": "A ring buffer with two pointers",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "A FIFO stores its words in a memory that is used as a **ring**: a **write pointer** shows where the next word goes, a **read pointer** where the oldest word is. Both only count up and wrap around."
+        },
+        {
+          "type": "stepper",
+          "src": "assets/fifo-ring.svg",
+          "interval": 3000,
+          "steps": [
+            {
+              "title": "Reset",
+              "md": "Both pointers point to slot 0: the FIFO is empty."
+            },
+            {
+              "title": "Push",
+              "md": "Three words are written; the write pointer moves on."
+            },
+            {
+              "title": "Pop",
+              "md": "The oldest word A leaves; the read pointer moves on."
+            },
+            {
+              "title": "Wrap around",
+              "md": "After slot 7 the write pointer continues at slot 0 — its extra **wrap bit** flips to 1."
+            },
+            {
+              "title": "Full",
+              "md": "The write pointer reaches the read pointer's slot with a different wrap bit: all 8 slots are used."
+            },
+            {
+              "title": "Empty again",
+              "md": "After 8 pops the pointers are equal again: empty."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "flags",
+      "title": "Full and empty",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "If pointers only counted slots 0–7, *equal pointers* could mean both **empty** and **full**. The trick is one **extra bit**:\n\n> empty = (wptr == rptr)  ·  full = same slot bits, different wrap bit"
+        },
+        {
+          "type": "table",
+          "columns": [
+            "wptr",
+            "rptr",
+            "state"
+          ],
+          "rows": [
+            [
+              "0 011",
+              "0 011",
+              "empty"
+            ],
+            [
+              "0 101",
+              "0 011",
+              "2 words"
+            ],
+            [
+              "1 011",
+              "0 011",
+              "full (8 words)"
+            ],
+            [
+              "1 000",
+              "0 011",
+              "5 words"
+            ]
+          ],
+          "caption": "Pointers with a wrap bit (depth 8)"
+        },
+        {
+          "type": "accordion",
+          "items": [
+            {
+              "title": "Almost-full and almost-empty",
+              "md": "Many FIFOs add flags that warn a few words **before** full or empty — so a pipelined producer can stop in time. They compare the pointer difference with a threshold."
+            },
+            {
+              "title": "Standard and first-word-fall-through",
+              "md": "A **standard** FIFO delivers the word one clock after the pop request. A **first-word-fall-through (FWFT)** FIFO already shows the oldest word on its output; the pop only removes it."
+            },
+            {
+              "title": "Overflow and underflow",
+              "md": "A push into a full FIFO or a pop from an empty one must be **ignored** (and often flagged as an error). The design below simply ignores them."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "waves",
+      "title": "A FIFO in waveforms",
+      "blocks": [
+        {
+          "type": "svg",
+          "src": "assets/fifo-wave.svg",
+          "caption": "Three pushes, then three pops; dout follows one clock after each pop"
+        },
+        {
+          "type": "callout",
+          "kind": "info",
+          "title": "Simultaneous push and pop",
+          "md": "A push and a pop in the same clock are allowed (when not full / not empty): the number of words stays the same, both pointers move."
+        }
+      ]
+    },
+    {
+      "id": "async",
+      "title": "Asynchronous FIFOs",
+      "blocks": [
+        {
+          "type": "svg",
+          "src": "assets/async-fifo.svg",
+          "caption": "Each domain owns its pointer; the other side sees a synchronised Gray-coded copy"
+        },
+        {
+          "type": "text",
+          "md": "When writer and reader have **different clocks**, each pointer must be passed to the other domain to compute full and empty. A binary counter changing from 0111 to 1000 flips four bits at once — sampled at the wrong moment it can be read as any value. **Gray code** changes only one bit per step, so after a two-flip-flop **synchroniser** the other side sees either the old or the new value — never a wrong one. Full and empty are then slightly **pessimistic** but always safe.\n\nThe full design is covered in *Designing with Memories* (training 4)."
+        },
+        {
+          "type": "categorize",
+          "prompt": "Practice: which FIFO is needed?",
+          "categories": [
+            {
+              "id": "sync",
+              "label": "synchronous FIFO"
+            },
+            {
+              "id": "async",
+              "label": "asynchronous FIFO"
+            }
+          ],
+          "items": [
+            {
+              "text": "buffer between a 100 MHz camera interface and a 250 MHz processor bus",
+              "category": "async"
+            },
+            {
+              "text": "queue of requests inside one 500 MHz controller",
+              "category": "sync"
+            },
+            {
+              "text": "data from a USB PHY clock to the system clock",
+              "category": "async"
+            },
+            {
+              "text": "skid buffer between two pipeline stages",
+              "category": "sync"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sv",
+      "title": "In SystemVerilog: a synchronous FIFO",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "A complete synchronous FIFO: storage in a memory array (a simple dual-port RAM), two pointers with a wrap bit, and the flags:"
+        },
+        {
+          "type": "code",
+          "lang": "systemverilog",
+          "code": "module sync_fifo #(\n  parameter  int DW    = 8,\n  parameter  int DEPTH = 16,               // a power of two\n  localparam int AW    = $clog2(DEPTH)\n) (\n  input  logic          clk, rst_n,\n  input  logic          wr_en,             // push\n  input  logic [DW-1:0] din,\n  output logic          full,\n  input  logic          rd_en,             // pop\n  output logic [DW-1:0] dout,              // valid one clock after a pop\n  output logic          empty\n);\n  logic [DW-1:0] mem [DEPTH];\n  logic [AW:0]   wptr, rptr;               // one extra bit = wrap flag\n  logic          do_wr, do_rd;\n\n  assign do_wr = wr_en && !full;           // ignore a push when full\n  assign do_rd = rd_en && !empty;          // ignore a pop when empty\n\n  always_ff @(posedge clk or negedge rst_n)\n    if (!rst_n) begin\n      wptr <= '0;\n      rptr <= '0;\n    end else begin\n      if (do_wr) wptr <= wptr + 1'b1;\n      if (do_rd) rptr <= rptr + 1'b1;\n    end\n\n  always_ff @(posedge clk) begin\n    if (do_wr) mem[wptr[AW-1:0]] <= din;\n    if (do_rd) dout <= mem[rptr[AW-1:0]];\n  end\n\n  // equal pointers: empty; equal addresses but different wrap bits: full\n  assign empty = (wptr == rptr);\n  assign full  = (wptr[AW-1:0] == rptr[AW-1:0]) && (wptr[AW] != rptr[AW]);\nendmodule"
+        },
+        {
+          "type": "accordion",
+          "items": [
+            {
+              "title": "Where is the memory?",
+              "md": "`mem` with one write (`do_wr`) and one registered read (`do_rd`) per clock — exactly the simple dual-port RAM of Topic 6, so synthesis can use block RAM or an SRAM macro."
+            },
+            {
+              "title": "Why `wptr[AW-1:0]` as address?",
+              "md": "The lower bits are the slot; the top bit is only the wrap flag for full/empty."
+            },
+            {
+              "title": "How would you add a word counter?",
+              "md": "count = wptr − rptr (with AW+1 bits). It gives almost-full / almost-empty flags by comparison."
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "quiz": {
+    "questions": [
+      {
+        "id": "q-order",
+        "type": "single",
+        "text": "Words A, B, C are pushed in this order. Which word does the first pop return?",
+        "options": [
+          "A",
+          "C",
+          "B",
+          "the newest one"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "why-fifo"
+        ]
+      },
+      {
+        "id": "q-empty",
+        "type": "single",
+        "text": "When is a FIFO empty?",
+        "options": [
+          "When the write and read pointers are equal, including the wrap bit",
+          "When the write pointer is 0",
+          "When the slot bits are equal but the wrap bits differ",
+          "When dout is 0"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "flags"
+        ]
+      },
+      {
+        "id": "q-full",
+        "type": "single",
+        "text": "Depth 8, wptr = 1 010, rptr = 0 010. What is the state?",
+        "options": [
+          "full",
+          "empty",
+          "2 words",
+          "6 words"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "flags"
+        ]
+      },
+      {
+        "id": "q-count",
+        "type": "single",
+        "text": "Depth 8, wptr = 0 110, rptr = 0 011. How many words are stored?",
+        "options": [
+          "3",
+          "6",
+          "5",
+          "9"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "flags"
+        ],
+        "explain": "6 − 3 = 3."
+      },
+      {
+        "id": "q-gray",
+        "type": "single",
+        "text": "Why are pointers of an asynchronous FIFO passed between clock domains in Gray code?",
+        "options": [
+          "Only one bit changes per step, so a synchronised copy is either the old or the new value",
+          "Gray code is shorter",
+          "It makes the FIFO deeper",
+          "Binary counters cannot wrap"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "async"
+        ]
+      },
+      {
+        "id": "q-fwft",
+        "type": "single",
+        "text": "What is special about a first-word-fall-through FIFO?",
+        "options": [
+          "The oldest word is already visible at the output; the pop only removes it",
+          "It has no read pointer",
+          "It can only hold one word",
+          "It ignores the empty flag"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "flags"
+        ]
+      },
+      {
+        "id": "q-both",
+        "type": "truefalse",
+        "text": "A push and a pop in the same clock leave the number of stored words unchanged.",
+        "options": [
+          "True",
+          "False"
+        ],
+        "correct": [
+          0
+        ],
+        "shuffle": false,
+        "review": [
+          "waves"
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,185 @@
+{
+  "id": "why-test",
+  "title": "Why test chips?",
+  "duration": "25 min",
+  "summary": "Every chip that leaves the factory has been **tested**, because manufacturing is never perfect. This topic explains what can go wrong inside a chip, why finding bad chips early saves money, and how chips are tested today.",
+  "objectives": [
+    "Tell a **defect**, a **fault** and a **failure** apart.",
+    "Explain **yield** and why a bad chip found late costs much more.",
+    "Describe the test steps from wafer to customer and the job of the **tester (ATE)**."
+  ],
+  "subsections": [
+    {
+      "id": "defects-faults",
+      "title": "Defects, faults and failures",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "A modern chip has billions of transistors and kilometres of wiring, made with structures far smaller than a dust particle. The factory is extremely clean, but not perfect: a few chips on every wafer come out **broken**.\n\nThe design was correct — verification proved that. The problem is the **manufactured copy**. So every single chip must be checked. This is called **manufacturing test**, or simply **test**."
+        },
+        {
+          "type": "reveal",
+          "src": "assets/die-defects.svg",
+          "hint": "Click the five areas to see typical manufacturing defects.",
+          "caption": "Typical defects inside a chip",
+          "spots": [
+            { "x": 10, "y": 14, "w": 25, "h": 30, "label": "1", "title": "Short (bridge)", "md": "A tiny particle connects two wires that should be separate. Now one wire can pull the other to its value." },
+            { "x": 38.75, "y": 14, "w": 22.5, "h": 30, "label": "2", "title": "Open", "md": "A wire is cracked or a **via** (the vertical connection between metal layers) is missing. The signal never arrives." },
+            { "x": 65, "y": 14, "w": 26.25, "h": 30, "label": "3", "title": "Transistor defect", "md": "A pinhole in the thin **gate oxide** lets current leak. The transistor may stay always on or always off." },
+            { "x": 10, "y": 52, "w": 31.25, "h": 36, "label": "4", "title": "Slow path (delay defect)", "md": "A wire is thinner than planned or a contact has high resistance. The logic is still correct, but the signal arrives **too late** for the next clock edge. Only a test at full speed finds it." },
+            { "x": 45, "y": 52, "w": 46.25, "h": 36, "label": "5", "title": "Bad memory cell", "md": "Memories are the densest part of a chip, so they collect many defects. One cell cannot store a 1, or flips when its neighbour is written. Memories get their own tests — this is what **MBIST** is about." }
+          ]
+        },
+        {
+          "type": "text",
+          "md": "Test engineers use three words carefully:"
+        },
+        {
+          "type": "table",
+          "columns": ["Word", "Meaning", "Example"],
+          "rows": [
+            ["**Defect**", "the physical flaw in the silicon", "a particle shorts two wires"],
+            ["**Fault**", "a simple **model** of how the defect changes the logic", "wire A is *stuck at 0*"],
+            ["**Failure**", "the chip gives a wrong result that someone can observe", "the adder outputs 6 instead of 7"]
+          ],
+          "caption": "From defect to failure"
+        },
+        {
+          "type": "callout",
+          "kind": "key",
+          "title": "Why we need fault models",
+          "md": "There are endless kinds of physical defects, but only a few **fault models** (stuck-at, transition, bridging, memory cell faults …). Tests are written to detect the fault models. If a test detects the model, it detects most of the real defects behind it."
+        },
+        {
+          "type": "callout",
+          "kind": "info",
+          "title": "Verification ≠ test",
+          "md": "**Verification** checks the *design* once, before manufacturing: is the RTL correct? **Test** checks *every manufactured chip*: was this copy built correctly?"
+        }
+      ]
+    },
+    {
+      "id": "yield-cost",
+      "title": "Yield and the cost of a test escape",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "The share of good dies on a wafer is called **yield**:\n\n> yield = good dies ÷ all dies\n\nIf a wafer has 600 dies and the yield is 90 %, about **60 dies are bad**. Test must find all of them. A bad chip that passes the test and is shipped is called a **test escape**. Quality is measured in **DPPM** — defective parts per million shipped."
+        },
+        {
+          "type": "stepper",
+          "src": "assets/rule-of-ten.svg",
+          "interval": 2200,
+          "steps": [
+            { "title": "Wafer sort", "md": "A bad die found on the wafer costs only a few seconds of tester time. It is simply not packaged." },
+            { "title": "Packaged chip", "md": "Found after packaging: the package and the assembly work are already paid for — about **10×** more." },
+            { "title": "On a board", "md": "Found at the customer's factory: the board must be debugged and repaired — about **100×**." },
+            { "title": "In a system", "md": "Found in a finished product: a server, a phone, a control unit — about **1 000×**." },
+            { "title": "In the field", "md": "Found by the end user: returns, recalls, lost trust; in a car or a plane even safety risks — **10 000×** and more." }
+          ]
+        },
+        {
+          "type": "callout",
+          "kind": "warning",
+          "title": "The quality targets are strict",
+          "md": "Car makers ask chip suppliers for **near-zero defects** — single-digit DPPM or better. Missing even a few faults in the test is not acceptable."
+        },
+        {
+          "type": "text",
+          "md": "So test has two goals that pull in opposite directions:\n\n- **high quality** — detect (almost) every fault, so very few bad chips escape;\n- **low cost** — every second on the tester costs money, for every chip produced.\n\nBIST, as you will see in the next topic, helps with both."
+        }
+      ]
+    },
+    {
+      "id": "test-flow",
+      "title": "How chips are tested today",
+      "blocks": [
+        {
+          "type": "scrolly",
+          "src": "assets/test-flow.svg",
+          "steps": [
+            { "title": "1. Wafer fabrication", "md": "The factory builds hundreds of dies on one silicon wafer. Some of them carry defects — nobody knows which yet." },
+            { "title": "2. Wafer sort", "md": "A **probe card** with fine needles touches the pads of each die. A **tester** applies test patterns and compares the answers. Failing dies are marked and later thrown away." },
+            { "title": "3. Dicing and packaging", "md": "The wafer is cut into dies. Only the good ones are put into packages — packaging bad dies would waste money." },
+            { "title": "4. Burn-in and final test", "md": "Some products (cars, servers) are first **stressed** at high temperature and voltage so that weak chips fail now, not later. Then every package is tested again, often at several temperatures and at full speed." },
+            { "title": "5. Board and system test", "md": "The customer solders the chips on boards and tests the boards. A bad chip found here is already expensive." },
+            { "title": "6. In the field", "md": "The chip works in a product for years. Some chips must also **test themselves** during their life — a car checks its safety chips every time it starts." }
+          ]
+        },
+        {
+          "type": "accordion",
+          "items": [
+            { "title": "What is a tester (ATE)?", "md": "**Automatic Test Equipment** is a large, expensive machine with hundreds of digital channels. Each channel drives or reads one chip pin with exact timing. It stores the test patterns in its memory and compares every response with the expected value." },
+            { "title": "What does a test pattern look like?", "blocks": [
+              { "type": "text", "md": "A pattern is a list of values to apply to the inputs and the values expected on the outputs, cycle by cycle:" },
+              { "type": "code", "language": "text", "code": "cycle  inputs (a b c)   expected out (y)\n  1        0 0 1              1\n  2        1 0 1              0\n  3        1 1 0              1\n  …       (millions of cycles for a large chip)", "caption": "A tiny piece of a test program" }
+            ] },
+            { "title": "Why test time is money", "md": "A tester costs millions of dollars, so its time is expensive — test cost is often counted in cents per second. Multiply the seconds per chip by millions of chips per year: shortening the test by one second saves real money." }
+          ]
+        },
+        {
+          "type": "sort",
+          "prompt": "Practice: put the steps in the order a chip goes through them.",
+          "items": ["Wafer fabrication", "Wafer sort", "Dicing and packaging", "Final test", "Board test", "Use in the field"]
+        }
+      ]
+    }
+  ],
+  "quiz": {
+    "questions": [
+      {
+        "id": "q-defect",
+        "type": "single",
+        "text": "A tiny metal particle connects two neighbouring wires on a die. In test language this particle is …",
+        "options": ["a defect", "a fault", "a failure", "a design bug"],
+        "correct": [0],
+        "review": ["defects-faults"],
+        "explain": "The particle is the **physical flaw** — a defect. \"Wire A stuck at 0\" would be the fault that models it."
+      },
+      {
+        "id": "q-fault",
+        "type": "single",
+        "text": "\"The output of gate G is stuck at 0\" is an example of …",
+        "options": ["a fault model", "a defect", "a test pattern", "a yield value"],
+        "correct": [0],
+        "review": ["defects-faults"],
+        "explain": "Stuck-at-0 is a **logical model** of what a defect does to the circuit."
+      },
+      {
+        "id": "q-verif",
+        "type": "truefalse",
+        "text": "Manufacturing test checks whether the RTL design is correct.",
+        "options": ["True", "False"],
+        "correct": [1],
+        "shuffle": false,
+        "review": ["defects-faults"],
+        "explain": "That is **verification**. Test checks whether each manufactured copy was **built** correctly."
+      },
+      {
+        "id": "q-yield",
+        "type": "single",
+        "text": "A wafer has 500 dies; 450 pass the test. What is the yield?",
+        "options": ["90 %", "50 %", "10 %", "45 %"],
+        "correct": [0],
+        "review": ["yield-cost"],
+        "explain": "450 ÷ 500 = 0.9 = **90 %**."
+      },
+      {
+        "id": "q-cost",
+        "type": "single",
+        "text": "Where is it cheapest to find a bad chip?",
+        "options": ["At wafer sort", "In final test", "On the customer's board", "In the field"],
+        "correct": [0],
+        "review": ["yield-cost"],
+        "explain": "Each later stage costs roughly **ten times** more (the rule of ten)."
+      },
+      {
+        "id": "q-flow",
+        "type": "order",
+        "text": "Put the test steps in the right order.",
+        "items": ["Wafer sort", "Packaging", "Final test", "Board test", "In the field"],
+        "review": ["test-flow"]
+      }
+    ]
+  }
+}

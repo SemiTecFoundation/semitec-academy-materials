@@ -1,0 +1,359 @@
+{
+  "id": "integration",
+  "title": "Integration in a chip",
+  "duration": "35 min",
+  "summary": "A real chip needs dozens of controllers for hundreds of memories, scheduled so the test is short but the chip does not draw too much power. This topic covers grouping, scheduling, the tool flow that inserts MBIST, and its cost.",
+  "objectives": [
+    "Group memories onto shared controllers.",
+    "Schedule memory tests under a power budget and compute the test time.",
+    "Describe the steps of the MBIST insertion flow.",
+    "Explain where MBIST area goes and when small memories are tested differently."
+  ],
+  "subsections": [
+    {
+      "id": "grouping",
+      "title": "Sharing controllers",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": [
+            "Group memories that …",
+            "Because …"
+          ],
+          "rows": [
+            [
+              "use the **same clock**",
+              "the controller must run at that clock for at-speed test"
+            ],
+            [
+              "are **physically close**",
+              "short wires between controller and collars keep timing and area low"
+            ],
+            [
+              "belong to the **same power domain**",
+              "a domain that is switched off cannot be tested from a controller in another one"
+            ],
+            [
+              "have **similar type and test needs**",
+              "one algorithm and one data generator fit all of them"
+            ]
+          ],
+          "caption": "Rules for sharing an MBIST controller"
+        },
+        {
+          "type": "svg",
+          "src": "assets/floorplan.svg",
+          "caption": "Four controllers: three in the CPU clock domain, one in the accelerator domain — each for a group of nearby memories"
+        },
+        {
+          "type": "callout",
+          "kind": "info",
+          "title": "The result",
+          "md": "A typical SoC ends up with **tens of controllers**, each serving a few to a few dozen memories — one per clock domain and region of the floorplan."
+        }
+      ]
+    },
+    {
+      "id": "scheduling",
+      "title": "Scheduling under a power budget",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "Testing many memories at once is fast — but every active memory draws current, and during a March test **every clock** is an access. Too much switching at once can drop the supply voltage and make good memories fail. So the tests are **scheduled** under a power budget.\n\nExample: six memories, a 10N test at 100 MHz, power budget 10 units."
+        },
+        {
+          "type": "table",
+          "columns": [
+            "Memory",
+            "Size",
+            "Test time",
+            "Power"
+          ],
+          "rows": [
+            [
+              "A",
+              "1 Mi words",
+              "105 ms",
+              "6"
+            ],
+            [
+              "B",
+              "512 Ki words",
+              "52 ms",
+              "4"
+            ],
+            [
+              "C",
+              "256 Ki words",
+              "26 ms",
+              "3"
+            ],
+            [
+              "D",
+              "256 Ki words",
+              "26 ms",
+              "3"
+            ],
+            [
+              "E",
+              "256 Ki words (narrow)",
+              "26 ms",
+              "2"
+            ],
+            [
+              "F",
+              "256 Ki words (narrow)",
+              "26 ms",
+              "2"
+            ]
+          ],
+          "caption": "All six together would need 20 units — twice the budget"
+        },
+        {
+          "type": "svg",
+          "src": "assets/schedule.svg",
+          "caption": "Session 1: A + B (power 10, 105 ms). Session 2: C + D + E + F (power 10, 26 ms). Total 131 ms."
+        },
+        {
+          "type": "callout",
+          "kind": "key",
+          "title": "Compare the options",
+          "md": "- All in parallel: 105 ms — but 20 units, **not allowed**.\n- One after another: 105 + 52 + 4 × 26 = **261 ms**.\n- Two sessions within the budget: **131 ms**.\n\nThe longest memory sets the floor; good scheduling packs the short tests around it."
+        }
+      ]
+    },
+    {
+      "id": "flow",
+      "title": "The insertion flow",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "Nobody writes MBIST by hand for a large chip. Commercial DFT tools generate and insert it from a description of the memories and the test plan:"
+        },
+        {
+          "type": "stepper",
+          "src": "assets/flow.svg",
+          "interval": 2600,
+          "steps": [
+            {
+              "title": "Memory library",
+              "md": "Describe every memory type: ports, size, width, scrambling."
+            },
+            {
+              "title": "Plan",
+              "md": "Group memories, choose algorithms, diagnosis and schedule."
+            },
+            {
+              "title": "Generate and insert",
+              "md": "The tool writes controllers and collars and adds them to the design."
+            },
+            {
+              "title": "Verify",
+              "md": "Simulate with and without injected faults; check timing at speed."
+            },
+            {
+              "title": "Tester patterns",
+              "md": "Produce the sequences that configure, start and read every controller."
+            }
+          ]
+        },
+        {
+          "type": "accordion",
+          "items": [
+            {
+              "title": "1. Memory library",
+              "md": "For every memory type: ports, size, word width, test port if any, address/data scrambling, recommended algorithms — usually delivered by the memory compiler."
+            },
+            {
+              "title": "2. Plan",
+              "md": "Group memories onto controllers, choose algorithms, diagnosis and repair options, schedule and power budget."
+            },
+            {
+              "title": "3. Generate and insert",
+              "md": "The tool writes controllers and collars and inserts them into the RTL or gate-level netlist, connecting them to the IJTAG network."
+            },
+            {
+              "title": "4. Verify",
+              "md": "Simulate the MBIST runs on the design — fault-free, and with injected faults to prove the fails are seen. Check timing at speed."
+            },
+            {
+              "title": "5. Patterns for the tester",
+              "md": "Generate the tester sequences that configure, start and read every controller through JTAG/IJTAG."
+            }
+          ]
+        },
+        {
+          "type": "sort",
+          "prompt": "Practice: put the steps of the MBIST flow in order.",
+          "items": [
+            "Describe the memories (library)",
+            "Plan groups, algorithms and schedule",
+            "Generate and insert controllers and collars",
+            "Verify by simulation and timing",
+            "Generate tester patterns"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cost-next",
+      "title": "Area cost and what comes next",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "The controller is shared, so its area is spread over many memories. What every memory pays for is its **collar**: muxes, comparator and pipeline registers. For a large memory this is tiny compared with the array; for a **very small** memory — a few dozen words — the collar can be as large as the memory itself. Such memories are often grouped behind one collar, or built from flip-flops and tested by **scan** instead."
+        },
+        {
+          "type": "flipcards",
+          "md": "Check yourself before the quiz: say the meaning, then flip the card.",
+          "cards": [
+            {
+              "front": "**Collar**",
+              "back": "Logic around one memory: test/functional muxes, comparator, bypass, pipeline."
+            },
+            {
+              "front": "**Address generator**",
+              "back": "Up/down counter with a last-address compare: ⇑ and ⇓."
+            },
+            {
+              "front": "**Data generator**",
+              "back": "Background register, inversion, XOR with address bits for patterns."
+            },
+            {
+              "front": "**Programmable controller**",
+              "back": "Runs a March algorithm loaded as a short program through IJTAG."
+            },
+            {
+              "front": "**Sticky fail flag**",
+              "back": "Set by the first mismatch, kept until the next test: go/no-go."
+            },
+            {
+              "front": "**Failure bitmap**",
+              "back": "Map of failing cells at physical positions — points to the defect."
+            },
+            {
+              "front": "**ECC bypass**",
+              "back": "MBIST tests data and check bits directly so ECC cannot hide faults."
+            },
+            {
+              "front": "**Test scheduling**",
+              "back": "Running memory tests in sessions so the power budget is kept."
+            }
+          ]
+        },
+        {
+          "type": "callout",
+          "kind": "tip",
+          "title": "Next trainings",
+          "md": "**Test Access: JTAG and IJTAG** shows how the tester reaches all these controllers. **Memory Repair** uses the fail information to replace bad rows and columns with spares. Pass the quiz of this topic to complete *MBIST Architecture* and open your certificate."
+        }
+      ]
+    }
+  ],
+  "quiz": {
+    "questions": [
+      {
+        "id": "q-group",
+        "type": "multiple",
+        "text": "Which memories should share one MBIST controller? Select **all** correct answers.",
+        "options": [
+          "Memories on the same clock",
+          "Memories that are physically close",
+          "Memories in the same power domain",
+          "Memories that are as far apart as possible"
+        ],
+        "correct": [
+          0,
+          1,
+          2
+        ],
+        "review": [
+          "grouping"
+        ]
+      },
+      {
+        "id": "q-power",
+        "type": "single",
+        "text": "Why can't all memories of a big chip simply be tested at the same time?",
+        "options": [
+          "The total power and current would be too high and could make good memories fail.",
+          "The tester has too few pins.",
+          "March tests cannot run in parallel.",
+          "All memories share one address bus."
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "scheduling"
+        ]
+      },
+      {
+        "id": "q-sched",
+        "type": "single",
+        "text": "Session 1 tests memories taking 80 ms and 40 ms; session 2 tests memories taking 30 ms and 30 ms. What is the total test time?",
+        "options": [
+          "110 ms",
+          "180 ms",
+          "80 ms",
+          "140 ms"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "scheduling"
+        ],
+        "explain": "Each session lasts as long as its longest test: 80 ms + 30 ms = 110 ms."
+      },
+      {
+        "id": "q-flow",
+        "type": "order",
+        "text": "Put the steps of the MBIST insertion flow in order.",
+        "items": [
+          "Memory library",
+          "Plan",
+          "Generate and insert",
+          "Verify",
+          "Tester patterns"
+        ],
+        "review": [
+          "flow"
+        ]
+      },
+      {
+        "id": "q-small",
+        "type": "single",
+        "text": "Why are very small memories sometimes not given their own MBIST collar?",
+        "options": [
+          "The collar can be as large as the memory itself.",
+          "Small memories never fail.",
+          "MBIST cannot address fewer than 1000 words.",
+          "Small memories have no clock."
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "cost-next"
+        ]
+      },
+      {
+        "id": "q-verify",
+        "type": "truefalse",
+        "text": "Inserted MBIST is verified by simulation with injected faults, to prove that fails are really detected.",
+        "options": [
+          "True",
+          "False"
+        ],
+        "correct": [
+          0
+        ],
+        "shuffle": false,
+        "review": [
+          "flow"
+        ]
+      }
+    ]
+  }
+}

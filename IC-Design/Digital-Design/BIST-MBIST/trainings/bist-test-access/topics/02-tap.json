@@ -1,0 +1,477 @@
+{
+  "id": "tap",
+  "title": "The JTAG test access port",
+  "duration": "45 min",
+  "summary": "The **test access port** (TAP) of IEEE 1149.1 is the door into the chip: four or five pins, a 16-state controller driven by one pin (TMS), an instruction register and a set of data registers. Everything else in this training builds on it.",
+  "objectives": [
+    "Name the TAP signals and their roles.",
+    "Describe the parts of the TAP: controller, instruction register, data registers.",
+    "Follow the TAP state machine and reset it from any state.",
+    "Explain capture, shift and update.",
+    "Name the control signals the TAP sends to the registers."
+  ],
+  "subsections": [
+    {
+      "id": "signals",
+      "title": "The TAP signals",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": [
+            "Signal",
+            "Direction",
+            "Role"
+          ],
+          "rows": [
+            [
+              "**TCK**",
+              "in",
+              "test clock — independent of the chip's functional clocks"
+            ],
+            [
+              "**TMS**",
+              "in",
+              "test mode select — steers the TAP state machine"
+            ],
+            [
+              "**TDI**",
+              "in",
+              "test data in — serial data into the selected register"
+            ],
+            [
+              "**TDO**",
+              "out",
+              "test data out — serial data from the selected register; driven only while shifting"
+            ],
+            [
+              "**TRST*** (optional)",
+              "in",
+              "asynchronous reset of the TAP controller, active low"
+            ]
+          ],
+          "caption": "TAP signals of IEEE 1149.1"
+        },
+        {
+          "type": "callout",
+          "kind": "info",
+          "title": "Timing rule",
+          "md": "TMS and TDI are sampled on the **rising** edge of TCK; TDO changes on the **falling** edge. That gives half a clock period for the signal to travel from one chip to the next in a chain."
+        }
+      ]
+    },
+    {
+      "id": "inside",
+      "title": "Inside the TAP",
+      "blocks": [
+        {
+          "type": "svg",
+          "src": "assets/tap-arch.svg",
+          "caption": "TAP controller, instruction register and data registers"
+        },
+        {
+          "type": "text",
+          "md": "- The **TAP controller** is a 16-state machine clocked by TCK and steered by TMS. It produces the control signals *capture*, *shift* and *update* for the registers.\n- The **instruction register (IR)** holds the current instruction. The instruction decides **which data register** sits between TDI and TDO and what the chip does (normal operation, drive pins, run a test …).\n- The **data registers (DR)**: BYPASS, IDCODE, the boundary-scan register, and any number of user-defined **test data registers (TDRs)** — for example the registers of the MBIST controllers.\n\nOnly **one** register is between TDI and TDO at a time: the IR during an IR scan, the selected DR during a DR scan."
+        }
+      ]
+    },
+    {
+      "id": "fsm",
+      "title": "The TAP state machine",
+      "blocks": [
+        {
+          "type": "stepper",
+          "src": "assets/tap-fsm.svg",
+          "interval": 3000,
+          "steps": [
+            {
+              "title": "Reset and idle",
+              "md": "**Test-Logic-Reset**: test logic off, the chip works normally. With TMS = 0 the controller moves to **Run-Test/Idle**, where it can wait — and where instruments such as BIST can run."
+            },
+            {
+              "title": "Select and capture",
+              "md": "TMS = 1 goes to **Select-DR-Scan**, TMS = 0 to **Capture-DR**: the selected data register loads (captures) a value in parallel — for example a status bit or the pin values."
+            },
+            {
+              "title": "Shift",
+              "md": "In **Shift-DR** each TCK moves the register one bit from TDI towards TDO. The controller stays here as long as TMS = 0."
+            },
+            {
+              "title": "Exit and pause",
+              "md": "TMS = 1 leaves the shift. **Pause-DR** lets the tester stop shifting for a while — for example to reload its buffer — and **Exit2-DR** returns to shifting."
+            },
+            {
+              "title": "Update",
+              "md": "**Update-DR** copies the shifted value to the register's parallel outputs in one step. Then TMS = 0 returns to Run-Test/Idle, TMS = 1 starts the next scan."
+            },
+            {
+              "title": "The same for instructions",
+              "md": "The right column is identical, but works on the **instruction register**. From Select-DR-Scan, TMS = 1 leads to **Select-IR-Scan**; another 1 returns to Test-Logic-Reset."
+            }
+          ]
+        },
+        {
+          "type": "callout",
+          "kind": "key",
+          "title": "Five ones reset everything",
+          "md": "From **any** state, five TCK clocks with TMS = 1 bring the controller to Test-Logic-Reset. A tester therefore always knows how to get the TAP into a known state, even without TRST*."
+        },
+        {
+          "type": "categorize",
+          "prompt": "Practice: what does the register do in each state?",
+          "categories": [
+            {
+              "id": "cap",
+              "label": "Load in parallel"
+            },
+            {
+              "id": "sh",
+              "label": "Move one bit per clock"
+            },
+            {
+              "id": "up",
+              "label": "Copy to the outputs"
+            }
+          ],
+          "items": [
+            {
+              "text": "Capture-DR",
+              "category": "cap"
+            },
+            {
+              "text": "Shift-DR",
+              "category": "sh"
+            },
+            {
+              "text": "Update-DR",
+              "category": "up"
+            },
+            {
+              "text": "Shift-IR",
+              "category": "sh"
+            },
+            {
+              "text": "Update-IR",
+              "category": "up"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "csu",
+      "title": "Capture, shift, update",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "Every test register — IR, BYPASS, boundary scan or an instrument's TDR — is built from the same kind of bit. Click its parts:"
+        },
+        {
+          "type": "reveal",
+          "src": "assets/csu-cell.svg",
+          "hint": "Click the parts of the register bit.",
+          "caption": "One bit of a test data register",
+          "spots": [
+            {
+              "x": 24.5,
+              "y": 31.6,
+              "w": 7,
+              "h": 30.0,
+              "label": "1",
+              "title": "Capture / shift mux",
+              "md": "Controlled by **ShiftDR**. In Capture-DR it passes the instrument's **status** into the flip-flop; in Shift-DR it passes the bit from the **previous** stage (or TDI)."
+            },
+            {
+              "x": 36.2,
+              "y": 34.6,
+              "w": 15.6,
+              "h": 25.2,
+              "label": "2",
+              "title": "Shift flip-flop",
+              "md": "Clocked by **ClockDR** (TCK, gated in Capture-DR and Shift-DR). All shift flip-flops together form the shift register between TDI and TDO."
+            },
+            {
+              "x": 75,
+              "y": 32.8,
+              "w": 22,
+              "h": 15.6,
+              "label": "3",
+              "title": "Scan path",
+              "md": "The flip-flop's output goes to the **next bit** — the last bit drives TDO."
+            },
+            {
+              "x": 48.3,
+              "y": 70.0,
+              "w": 15.6,
+              "h": 22.8,
+              "label": "4",
+              "title": "Update latch",
+              "md": "Loaded only in **Update-DR** (UpdateDR). It holds the value the instrument uses, so the instrument never sees the bits moving during shift."
+            },
+            {
+              "x": 66,
+              "y": 71.2,
+              "w": 31,
+              "h": 14.4,
+              "label": "5",
+              "title": "To the instrument",
+              "md": "The update latch drives the instrument's **configuration** inputs — for example *start* or the algorithm number of an MBIST controller."
+            },
+            {
+              "x": 3,
+              "y": 71.2,
+              "w": 26,
+              "h": 16.8,
+              "label": "6",
+              "title": "From the instrument",
+              "md": "The instrument's **status** (done, pass, a sensor value) enters through the capture mux in Capture-DR."
+            }
+          ]
+        },
+        {
+          "type": "stepper",
+          "src": "assets/csu-chain.svg",
+          "interval": 3000,
+          "steps": [
+            {
+              "title": "Before",
+              "md": "A 3-bit register. The **update latches** hold the configuration 010 that the instrument is using; the instrument reports a status 101."
+            },
+            {
+              "title": "Capture",
+              "md": "In **Capture-DR** the shift flip-flops load the status 101 in parallel (green arrows)."
+            },
+            {
+              "title": "Shift",
+              "md": "In **Shift-DR** every TCK moves the bits one place: a new bit enters from TDI, a status bit leaves at TDO. The update latches — and so the instrument — do **not** change."
+            },
+            {
+              "title": "Shift complete",
+              "md": "After 3 clocks the new value 110 is in the shift flip-flops, and the tester has received the status 1 0 1 at TDO."
+            },
+            {
+              "title": "Update",
+              "md": "In **Update-DR** the latches copy 110 in one step. The instrument switches directly from 010 to 110 — no intermediate values."
+            }
+          ]
+        },
+        {
+          "type": "accordion",
+          "items": [
+            {
+              "title": "Why capture?",
+              "md": "Capture loads a **new** value into the shift register before it is shifted out — the result of a test, a sensor reading, the values on the pins. Shifting then brings that value to TDO."
+            },
+            {
+              "title": "Why a separate update stage?",
+              "md": "While bits travel through the shift register, its outputs change every clock. If an instrument were connected directly, it would see garbage. So most registers have a second, **update** (shadow) stage that changes only in Update-DR — the instrument sees only complete, final values."
+            },
+            {
+              "title": "Read and write in one scan",
+              "md": "Capture → shift → update reads the old (captured) value at TDO and writes the new one from TDI in the same scan. Testers use this all the time: write the next configuration and read the last status together."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "control",
+      "title": "Control signals to the registers",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "The TAP controller turns its states into a few **control signals** that go to every test register. The instruction decides which register is **selected**; only that one reacts."
+        },
+        {
+          "type": "svg",
+          "src": "assets/tap-ctrl-wave.svg",
+          "caption": "A DR scan of 3 bits: CaptureDR, ShiftDR and UpdateDR follow the TAP states"
+        },
+        {
+          "type": "table",
+          "columns": [
+            "Signal",
+            "Active in",
+            "Effect on the selected register"
+          ],
+          "rows": [
+            [
+              "**ClockDR**",
+              "Capture-DR, Shift-DR",
+              "clock of the shift flip-flops"
+            ],
+            [
+              "**ShiftDR**",
+              "Shift-DR",
+              "mux chooses the previous bit instead of the capture value"
+            ],
+            [
+              "**UpdateDR**",
+              "Update-DR",
+              "update latches load the shifted value"
+            ],
+            [
+              "**Select**",
+              "whole DR scan",
+              "from the instruction decoder: is this register between TDI and TDO?"
+            ],
+            [
+              "**Reset**",
+              "Test-Logic-Reset",
+              "bring the register to its reset value"
+            ]
+          ],
+          "caption": "TAP-to-register control (names as in the 1149.1 reference design)"
+        },
+        {
+          "type": "callout",
+          "kind": "info",
+          "title": "Which edge?",
+          "md": "In the reference design the capture and every shift happen on the **rising** edge of TCK, while the update latches load on the **falling** edge in Update-DR. The update therefore happens half a clock after the last shift — after the shift register has settled."
+        },
+        {
+          "type": "callout",
+          "kind": "tip",
+          "title": "The same signals everywhere",
+          "md": "Exactly these signals — select, capture, shift, update, reset, clock — reappear as the **wrapper serial control** of IEEE 1500 and as the **scan interface** of IEEE 1687 instruments."
+        }
+      ]
+    }
+  ],
+  "quiz": {
+    "questions": [
+      {
+        "id": "q-tms",
+        "type": "single",
+        "text": "Which signal steers the TAP state machine?",
+        "options": [
+          "TMS",
+          "TDI",
+          "TDO",
+          "TCK alone"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "signals"
+        ]
+      },
+      {
+        "id": "q-edge",
+        "type": "single",
+        "text": "On which TCK edge does TDO change?",
+        "options": [
+          "Falling edge",
+          "Rising edge",
+          "Both edges",
+          "It does not depend on TCK"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "signals"
+        ]
+      },
+      {
+        "id": "q-reset",
+        "type": "single",
+        "text": "How can a tester reset the TAP controller without TRST*?",
+        "options": [
+          "Hold TMS = 1 for five TCK clocks",
+          "Hold TDI = 0 for one clock",
+          "Stop TCK",
+          "Shift all ones into the IR"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "fsm"
+        ]
+      },
+      {
+        "id": "q-update",
+        "type": "single",
+        "text": "Why do many test registers have an update (shadow) stage?",
+        "options": [
+          "So the instrument sees only the final value, not the bits moving during shift",
+          "To make shifting faster",
+          "To store the instruction",
+          "Because TDO needs two registers"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "csu"
+        ]
+      },
+      {
+        "id": "q-order",
+        "type": "order",
+        "text": "Put the states of a DR scan in order, starting from Run-Test/Idle.",
+        "items": [
+          "Select-DR-Scan",
+          "Capture-DR",
+          "Shift-DR",
+          "Exit1-DR",
+          "Update-DR"
+        ],
+        "review": [
+          "fsm"
+        ]
+      },
+      {
+        "id": "q-one",
+        "type": "truefalse",
+        "text": "During a DR scan, the instruction decides which data register is connected between TDI and TDO.",
+        "options": [
+          "True",
+          "False"
+        ],
+        "correct": [
+          0
+        ],
+        "shuffle": false,
+        "review": [
+          "inside"
+        ]
+      },
+      {
+        "id": "q-latch",
+        "type": "single",
+        "text": "During Shift-DR, what does the instrument connected to a TDR see?",
+        "options": [
+          "Its old configuration — the update latches do not change until Update-DR",
+          "Every bit as it moves past",
+          "All zeros",
+          "The value on TDI"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "csu"
+        ]
+      },
+      {
+        "id": "q-shiftdr",
+        "type": "single",
+        "text": "Which control signal makes a register bit take its input from the previous bit instead of the capture value?",
+        "options": [
+          "ShiftDR",
+          "UpdateDR",
+          "Reset",
+          "Select"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "control"
+        ]
+      }
+    ]
+  }
+}

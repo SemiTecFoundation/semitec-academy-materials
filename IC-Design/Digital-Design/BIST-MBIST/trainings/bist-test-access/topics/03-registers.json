@@ -1,0 +1,171 @@
+{
+  "id": "registers",
+  "title": "Instructions and data registers",
+  "duration": "35 min",
+  "summary": "The TAP becomes useful through its **instructions**: they choose a data register and a mode of the chip. This topic covers the standard instructions, the BYPASS and IDCODE registers, the exact TMS sequence that loads an instruction, and how several chips share one JTAG chain.",
+  "objectives": [
+    "List the mandatory and common optional 1149.1 instructions.",
+    "Explain BYPASS and the fields of IDCODE.",
+    "Write the TMS sequence that loads an instruction or shifts a data register.",
+    "Compute the scan length of a chain of several chips."
+  ],
+  "subsections": [
+    {
+      "id": "instructions",
+      "title": "Instructions",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": ["Instruction", "Required?", "Register between TDI and TDO", "Effect"],
+          "rows": [
+            ["**BYPASS**", "mandatory (code all 1s)", "BYPASS, 1 bit", "chip is passed through with one clock delay"],
+            ["**SAMPLE / PRELOAD**", "mandatory", "boundary scan", "capture pin values while the chip runs; preload values for EXTEST"],
+            ["**EXTEST**", "mandatory", "boundary scan", "drive pins from the boundary-scan cells — board interconnect test"],
+            ["**IDCODE**", "optional", "IDCODE, 32 bits", "read the chip's identity"],
+            ["INTEST, CLAMP, HIGHZ", "optional", "boundary scan / BYPASS", "test the core through its pins; hold or tri-state outputs"],
+            ["user / private", "optional", "user TDRs", "access BIST, debug, IJTAG networks …"]
+          ],
+          "caption": "IEEE 1149.1 instructions"
+        },
+        {
+          "type": "callout",
+          "kind": "info",
+          "title": "A check built into the IR",
+          "md": "During Capture-IR the instruction register always loads a pattern ending in **…01**. A tester shifting out the IR sees this 01 for every chip — a quick check that the chain is connected and of the expected length."
+        }
+      ]
+    },
+    {
+      "id": "bypass-idcode",
+      "title": "BYPASS and IDCODE",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "**BYPASS** is a single flip-flop. With BYPASS selected, a chip adds only **one bit** to the scan path, so a tester can reach one chip on a board without shifting through all the others.\n\n**IDCODE** is a 32-bit read-only register that tells the tester which chip it is talking to:"
+        },
+        {
+          "type": "svg",
+          "src": "assets/idcode.svg",
+          "caption": "IDCODE fields: version, part number, JEDEC manufacturer code, and a constant 1"
+        },
+        {
+          "type": "callout",
+          "kind": "key",
+          "title": "After reset",
+          "md": "Test-Logic-Reset selects IDCODE if the chip has one, otherwise BYPASS. BYPASS captures 0, IDCODE starts with bit 0 = 1. So after a reset the tester can shift out the whole chain and **discover** every chip on the board."
+        }
+      ]
+    },
+    {
+      "id": "sequences",
+      "title": "TMS sequences",
+      "blocks": [
+        {
+          "type": "svg",
+          "src": "assets/tms-sequence.svg",
+          "caption": "Loading a 2-bit instruction: TMS = 1 1 0 0 0 1 1 0"
+        },
+        {
+          "type": "table",
+          "columns": ["Goal (starting in Run-Test/Idle)", "TMS sequence"],
+          "rows": [
+            ["go to Shift-IR", "1 1 0 0"],
+            ["go to Shift-DR", "1 0 0"],
+            ["shift n bits and leave", "n−1 times 0, then 1 on the last bit (→ Exit1)"],
+            ["update and return to idle", "1 0 (Exit1 → Update → Run-Test/Idle)"],
+            ["reset from anywhere", "1 1 1 1 1"]
+          ],
+          "caption": "TMS recipes every JTAG driver uses"
+        },
+        {
+          "type": "sort",
+          "prompt": "Practice: starting in Run-Test/Idle, put the states of an instruction load in order.",
+          "items": ["Select-DR-Scan", "Select-IR-Scan", "Capture-IR", "Shift-IR", "Exit1-IR", "Update-IR", "Run-Test/Idle"]
+        }
+      ]
+    },
+    {
+      "id": "chain",
+      "title": "Several chips in one chain",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "On a board, all chips share **TCK** and **TMS**; their TDI and TDO are connected in a **daisy chain**: TDO of one chip goes to TDI of the next. All TAP controllers walk through the same states together; the instruction and data registers of all chips form one long shift path."
+        },
+        {
+          "type": "table",
+          "columns": ["", "Chip 1", "Chip 2", "Chip 3", "Total path"],
+          "rows": [
+            ["IR length", "4", "5", "8", "IR scan: **17 bits**"],
+            ["Instruction loaded", "BYPASS", "IDCODE", "BYPASS", ""],
+            ["DR selected", "1 bit", "32 bits", "1 bit", "DR scan: **34 bits**"]
+          ],
+          "caption": "Reading the IDCODE of chip 2: the other chips are bypassed"
+        },
+        {
+          "type": "callout",
+          "kind": "tip",
+          "title": "The same idea inside a chip",
+          "md": "Choosing which registers are in the path — and keeping the others out — is exactly what IJTAG does **inside** a chip with its segment insertion bits (Topic 6)."
+        }
+      ]
+    }
+  ],
+  "quiz": {
+    "questions": [
+      {
+        "id": "q-mand",
+        "type": "multiple",
+        "text": "Which instructions are mandatory in IEEE 1149.1? Select **all** correct answers.",
+        "options": ["BYPASS", "SAMPLE / PRELOAD", "EXTEST", "IDCODE"],
+        "correct": [0, 1, 2],
+        "review": ["instructions"]
+      },
+      {
+        "id": "q-bypass",
+        "type": "single",
+        "text": "How many bits does a chip add to the scan path when BYPASS is selected?",
+        "options": ["1", "0", "32", "the length of its IR"],
+        "correct": [0],
+        "review": ["bypass-idcode"]
+      },
+      {
+        "id": "q-idbit",
+        "type": "single",
+        "text": "Why is bit 0 of IDCODE always 1?",
+        "options": [
+          "So that after reset a tester can tell IDCODE (first bit 1) from BYPASS (first bit 0)",
+          "It is the parity of the other bits",
+          "It marks the end of the chain",
+          "It enables the chip"
+        ],
+        "correct": [0],
+        "review": ["bypass-idcode"]
+      },
+      {
+        "id": "q-tms",
+        "type": "single",
+        "text": "From Run-Test/Idle, which TMS sequence reaches Shift-DR?",
+        "options": ["1 0 0", "1 1 0 0", "0 0 0", "1 1 1 1 1"],
+        "correct": [0],
+        "review": ["sequences"]
+      },
+      {
+        "id": "q-chain",
+        "type": "single",
+        "text": "Three chips with IR lengths 6, 4 and 4 are in one chain. How long is the IR scan?",
+        "options": ["14 bits", "6 bits", "4 bits", "12 bits"],
+        "correct": [0],
+        "review": ["chain"]
+      },
+      {
+        "id": "q-dr",
+        "type": "single",
+        "text": "In the same chain, chips 1 and 3 are in BYPASS and chip 2 has a 32-bit IDCODE selected. How long is the DR scan?",
+        "options": ["34 bits", "32 bits", "36 bits", "3 bits"],
+        "correct": [0],
+        "review": ["chain"]
+      }
+    ]
+  }
+}

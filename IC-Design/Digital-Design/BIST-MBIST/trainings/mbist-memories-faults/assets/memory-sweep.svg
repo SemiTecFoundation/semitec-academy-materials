@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 340" font-family="Segoe UI, Arial, sans-serif">
+<style>.ms-w{animation:ms-down 8s steps(1) infinite}.ms-r{animation:ms-up 8s steps(1) infinite}@keyframes ms-down{0%{transform:translateY(0px);opacity:1}6%{transform:translateY(26px);opacity:1}12%{transform:translateY(52px);opacity:1}18%{transform:translateY(78px);opacity:1}24%{transform:translateY(104px);opacity:1}30%{transform:translateY(130px);opacity:1}36%{transform:translateY(156px);opacity:1}42%{transform:translateY(182px);opacity:1}49%{opacity:1;transform:translateY(182px)}50%,100%{opacity:0;transform:translateY(182px)}}@keyframes ms-up{0%,51%{opacity:0;transform:translateY(182px)}52%{transform:translateY(182px);opacity:1}58%{transform:translateY(156px);opacity:1}64%{transform:translateY(130px);opacity:1}70%{transform:translateY(104px);opacity:1}76%{transform:translateY(78px);opacity:1}82%{transform:translateY(52px);opacity:1}88%{transform:translateY(26px);opacity:1}94%{transform:translateY(0px);opacity:1}100%{opacity:1;transform:translateY(0)}}.ms-lw{animation:ms-lw 8s steps(1) infinite}.ms-lr{animation:ms-lr 8s steps(1) infinite}@keyframes ms-lw{0%{opacity:1}50%{opacity:0}}@keyframes ms-lr{0%{opacity:0}50%{opacity:1}}</style>
+<rect width="760" height="340" rx="14" fill="#ffffff"/>
+<text x="380" y="34" text-anchor="middle" font-size="16" font-weight="700" fill="#1f4e79">A memory test walks through every address, in a fixed order</text>
+<text x="218" y="88" text-anchor="end" font-size="12" fill="#6b7a8c" font-family="Consolas, monospace">addr 0</text>
+<rect x="230" y="70" width="30" height="22" rx="3" fill="#eaf1f8" stroke="#9fb3c8"/>
+<rect x="264" y="70" width="30" height="22" rx="3" fill="#eaf1f8" stroke="#9fb3c8"/>
+<rect x="298" y="70" width="30" height="22" rx="3" fill="#eaf1f8" stroke="#9fb3c8"/>
+<rect x="332" y="70" width="30" height="22" rx="3" fill="#eaf1f8" stroke="#9fb3c8"/>
+<rect x="366" y="70" width="30" height="22" rx="3" fill="#eaf1f8" stroke="#9fb3c8"/>
+<rect x="400" y="70" width="30" height="22" rx="3" fill="#eaf1f8" stroke="#9fb3c8"/>
+<rect x="434" y="70" width="30" height="22" rx="3" fill="#eaf1f8" stroke="#9fb3c8"/>
+<rect x="468" y="70" width="30" height="22" rx="3" fill="#eaf1f8" stroke="#9fb3c8"/>
+<text x="218" y="114" text-anchor="end" font-size="12" fill="#6b7a8c" font-family="Consolas, monospace">addr 1</text>
+<rect x="230" y="96" width="30" height="22" rx="3" fill="#eaf1f8" stroke="#9fb3c8"/>
+<rect x="264" y="96" width="30" height="22" rx="3" fill="#eaf1f8" stroke="#9fb3c8"/>
+<rect x="298" y="96" width="30" height="22" rx="3" fill="#eaf1f8" stroke="#9fb3c8"/>
+<rect x="332" y="96" width="30" height="22" rx="3" fill="#eaf1f8" stroke="#9fb3c8"/>
+<rect x="366" y="96" width="30" height="22" rx="3" fill="#eaf1f8" stroke="#9fb3c8"/>
+<rect x="400" y="96" width="30" height="22" rx="3" fill="#eaf1f8" stroke="#9fb3c8"/>
+<rect x="434" y="96" width="30" height="22" rx="3" fill="#eaf1f8" stroke="#9fb3c8"/>
+<rect x="468" y="96" width="30" height="22" rx="3" fill="#eaf1f8" stroke="#9fb3c8"/>
+<text x="218" y="140" text-anchor="end" font-size="12" fill="#6b7a8c" font-family="Consolas, monospace">addr 2</text>
+<rect x="230" y="122" width="30" height="22" rx="3" fill="#eaf1f8" stroke="#9fb3c8"/>
+<rect x="264" y="122" width="30" height="22" rx="3" fill="#eaf1f8" stroke="#9fb3c8"/>
+<rect x="298" y="122" width="30" height="22" rx="3" fill="#eaf1f8" stroke="#9fb3c8"/>
+<rect x="332" y="122" width="30" height="22" rx="3" fill="#eaf1f8" stroke="#9fb3c8"/>
+<rect x="366" y="122" width="30" height="22" rx="3" fill="#eaf1f8" stroke="#9fb3c8"/>
+<rect x="400" y="122" width="30" height="22" rx="3" fill="#eaf1f8" stroke="#9fb3c8"/>
+<rect x="434" y="122" width="30" height="22" rx="3" fill="#eaf1f8" stroke="#9fb3c8"/>
+<rect x="468" y="122" width="30" height="22" rx="3" fill="#eaf1f8" stroke="#9fb3c8"/>
+<text x="218" y="166" text-anchor="end" font-size="12" fill="#6b7a8c" font-family="Consolas, monospace">addr 3</text>
+<rect x="230" y="148" width="30" height="22" rx="3" fill="#eaf1f8" stroke="#9fb3c8"/>
+<rect x="264" y="148" width="30" height="22" rx="3" fill="#eaf1f8" stroke="#9fb3c8"/>
+<rect x="298" y="148" width="30" height="22" rx="3" fill="#eaf1f8" stroke="#9fb3c8"/>
+<rect x="332" y="148" width="30" height="22" rx="3" fill="#eaf1f8" stroke="#9fb3c8"/>
+<rect x="366" y="148" width="30" height="22" rx="3" fill="#eaf1f8" stroke="#9fb3c8"/>
+<rect x="400" y="148" width="30" height="22" rx="3" fill="#eaf1f8" stroke="#9fb3c8"/>
+<rect x="434" y="148" width="30" height="22" rx="3" fill="#eaf1f8" stroke="#9fb3c8"/>
+<rect x="468" y="148" width="30" height="22" rx="3" fill="#eaf1f8" stroke="#9fb3c8"/>
+<text x="218" y="192" text-anchor="end" font-size="12" fill="#6b7a8c" font-family="Consolas, monospace">addr 4</text>
+<rect x="230" y="174" width="30" height="22" rx="3" fill="#eaf1f8" stroke="#9fb3c8"/>
+<rect x="264" y="174" width="30" height="22" rx="3" fill="#eaf1f8" stroke="#9fb3c8"/>
+<rect x="298" y="174" width="30" height="22" rx="3" fill="#eaf1f8" stroke="#9fb3c8"/>
+<rect x="332" y="174" width="30" height="22" rx="3" fill="#eaf1f8" stroke="#9fb3c8"/>
+<rect x="366" y="174" width="30" height="22" rx="3" fill="#eaf1f8" stroke="#9fb3c8"/>
+<rect x="400" y="174" width="30" height="22" rx="3" fill="#eaf1f8" stroke="#9fb3c8"/>
+<rect x="434" y="174" width="30" height="22" rx="3" fill="#eaf1f8" stroke="#9fb3c8"/>
+<rect x="468" y="174" width="30" height="22" rx="3" fill="#eaf1f8" stroke="#9fb3c8"/>
+<text x="218" y="218" text-anchor="end" font-size="12" fill="#6b7a8c" font-family="Consolas, monospace">addr 5</text>
+<rect x="230" y="200" width="30" height="22" rx="3" fill="#eaf1f8" stroke="#9fb3c8"/>
+<rect x="264" y="200" width="30" height="22" rx="3" fill="#eaf1f8" stroke="#9fb3c8"/>
+<rect x="298" y="200" width="30" height="22" rx="3" fill="#eaf1f8" stroke="#9fb3c8"/>
+<rect x="332" y="200" width="30" height="22" rx="3" fill="#eaf1f8" stroke="#9fb3c8"/>
+<rect x="366" y="200" width="30" height="22" rx="3" fill="#eaf1f8" stroke="#9fb3c8"/>
+<rect x="400" y="200" width="30" height="22" rx="3" fill="#eaf1f8" stroke="#9fb3c8"/>
+<rect x="434" y="200" width="30" height="22" rx="3" fill="#eaf1f8" stroke="#9fb3c8"/>
+<rect x="468" y="200" width="30" height="22" rx="3" fill="#eaf1f8" stroke="#9fb3c8"/>
+<text x="218" y="244" text-anchor="end" font-size="12" fill="#6b7a8c" font-family="Consolas, monospace">addr 6</text>
+<rect x="230" y="226" width="30" height="22" rx="3" fill="#eaf1f8" stroke="#9fb3c8"/>
+<rect x="264" y="226" width="30" height="22" rx="3" fill="#eaf1f8" stroke="#9fb3c8"/>
+<rect x="298" y="226" width="30" height="22" rx="3" fill="#eaf1f8" stroke="#9fb3c8"/>
+<rect x="332" y="226" width="30" height="22" rx="3" fill="#eaf1f8" stroke="#9fb3c8"/>
+<rect x="366" y="226" width="30" height="22" rx="3" fill="#eaf1f8" stroke="#9fb3c8"/>
+<rect x="400" y="226" width="30" height="22" rx="3" fill="#eaf1f8" stroke="#9fb3c8"/>
+<rect x="434" y="226" width="30" height="22" rx="3" fill="#eaf1f8" stroke="#9fb3c8"/>
+<rect x="468" y="226" width="30" height="22" rx="3" fill="#eaf1f8" stroke="#9fb3c8"/>
+<text x="218" y="270" text-anchor="end" font-size="12" fill="#6b7a8c" font-family="Consolas, monospace">addr 7</text>
+<rect x="230" y="252" width="30" height="22" rx="3" fill="#eaf1f8" stroke="#9fb3c8"/>
+<rect x="264" y="252" width="30" height="22" rx="3" fill="#eaf1f8" stroke="#9fb3c8"/>
+<rect x="298" y="252" width="30" height="22" rx="3" fill="#eaf1f8" stroke="#9fb3c8"/>
+<rect x="332" y="252" width="30" height="22" rx="3" fill="#eaf1f8" stroke="#9fb3c8"/>
+<rect x="366" y="252" width="30" height="22" rx="3" fill="#eaf1f8" stroke="#9fb3c8"/>
+<rect x="400" y="252" width="30" height="22" rx="3" fill="#eaf1f8" stroke="#9fb3c8"/>
+<rect x="434" y="252" width="30" height="22" rx="3" fill="#eaf1f8" stroke="#9fb3c8"/>
+<rect x="468" y="252" width="30" height="22" rx="3" fill="#eaf1f8" stroke="#9fb3c8"/>
+<rect class="ms-w" x="224" y="67" width="280" height="28" rx="5" fill="#1f6feb" fill-opacity=".18" stroke="#1f6feb" stroke-width="2.5"/>
+<rect class="ms-r" x="224" y="67" width="280" height="28" rx="5" fill="#27ae60" fill-opacity=".18" stroke="#27ae60" stroke-width="2.5"/>
+<g class="ms-lw"><text x="532" y="140" font-size="18" font-weight="800" fill="#1f6feb">⇓ write 0</text><text x="532" y="164" font-size="13" fill="#34495e">address 0 → 7</text></g>
+<g class="ms-lr"><text x="532" y="140" font-size="18" font-weight="800" fill="#1e8449">⇑ read 0, write 1</text><text x="532" y="164" font-size="13" fill="#34495e">address 7 → 0</text></g>
+<text x="380" y="300" text-anchor="middle" font-size="13" fill="#34495e">Order matters: many memory faults appear only for a certain sequence of writes and reads.</text>
+</svg>

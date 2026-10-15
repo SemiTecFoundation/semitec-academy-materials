@@ -1,0 +1,482 @@
+{
+  "id": "lfsr",
+  "title": "LFSR: patterns made on chip",
+  "duration": "35 min",
+  "summary": "The heart of almost every BIST pattern generator is the **linear feedback shift register (LFSR)**: a few flip-flops and XOR gates that step through a long, random-looking but fully repeatable sequence of patterns.",
+  "objectives": [
+    "Build a Fibonacci LFSR and compute its next states by hand.",
+    "Explain the Galois form and why it is faster.",
+    "Explain primitive polynomials, maximal length 2ⁿ − 1 and the all-zero lock-up state.",
+    "Explain why LFSR patterns are useful as test patterns."
+  ],
+  "subsections": [
+    {
+      "id": "fibonacci",
+      "title": "A shift register with feedback",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "Take a shift register of 4 flip-flops, Q1 → Q2 → Q3 → Q4. On every clock edge each bit moves one place to the right. Now **feed back** into Q1 the XOR of some of the outputs — here Q3 and Q4. This is a **Fibonacci LFSR**:"
+        },
+        {
+          "type": "image",
+          "src": "assets/lfsr-fib.svg",
+          "alt": "4-bit Fibonacci LFSR with feedback Q3 XOR Q4 into Q1",
+          "caption": "Four flip-flops and one XOR gate"
+        },
+        {
+          "type": "text",
+          "md": "The rule for the next state is simple:\n\n- new **Q1** = Q3 ⊕ Q4 (the feedback)\n- new **Q2** = old Q1, new **Q3** = old Q2, new **Q4** = old Q3\n\nStart it with the **seed** 1000 and step through the clocks:"
+        },
+        {
+          "type": "stepper",
+          "src": "assets/lfsr-steps.svg",
+          "interval": 1800,
+          "steps": [
+            {
+              "title": "Clock 0 — seed 1000",
+              "md": "Q3 ⊕ Q4 = 0 ⊕ 0 = **0**. On the next edge 0 enters Q1 and everything shifts right."
+            },
+            {
+              "title": "Clock 1 — 0100",
+              "md": "Q3 ⊕ Q4 = 0 ⊕ 0 = **0** → next state 0010."
+            },
+            {
+              "title": "Clock 2 — 0010",
+              "md": "Now Q3 = 1: Q3 ⊕ Q4 = 1 ⊕ 0 = **1** → a 1 enters Q1: next state 1001."
+            },
+            {
+              "title": "Clock 3 — 1001",
+              "md": "Q3 ⊕ Q4 = 0 ⊕ 1 = **1** → 1100."
+            },
+            {
+              "title": "Clock 4 — 1100",
+              "md": "Q3 ⊕ Q4 = 0 ⊕ 0 = **0** → 0110."
+            },
+            {
+              "title": "Clock 5 — 0110",
+              "md": "Q3 ⊕ Q4 = 1 ⊕ 0 = **1** → 1011."
+            },
+            {
+              "title": "Clock 6 — 1011",
+              "md": "Q3 ⊕ Q4 = 1 ⊕ 1 = **0** → 0101."
+            },
+            {
+              "title": "Clock 7 — 0101",
+              "md": "Q3 ⊕ Q4 = 0 ⊕ 1 = **1** → 1010 … and so on. After **15** clocks the register is back at 1000."
+            }
+          ]
+        },
+        {
+          "type": "table",
+          "columns": [
+            "Clock",
+            "Q1Q2Q3Q4",
+            "Clock",
+            "Q1Q2Q3Q4"
+          ],
+          "rows": [
+            [
+              "0",
+              "1000",
+              "8",
+              "1010"
+            ],
+            [
+              "1",
+              "0100",
+              "9",
+              "1101"
+            ],
+            [
+              "2",
+              "0010",
+              "10",
+              "1110"
+            ],
+            [
+              "3",
+              "1001",
+              "11",
+              "1111"
+            ],
+            [
+              "4",
+              "1100",
+              "12",
+              "0111"
+            ],
+            [
+              "5",
+              "0110",
+              "13",
+              "0011"
+            ],
+            [
+              "6",
+              "1011",
+              "14",
+              "0001"
+            ],
+            [
+              "7",
+              "0101",
+              "15",
+              "**1000** (repeats)"
+            ]
+          ],
+          "caption": "The complete sequence: all 15 non-zero states, then it repeats"
+        },
+        {
+          "type": "callout",
+          "kind": "key",
+          "title": "Only 4 flip-flops and 1 XOR",
+          "md": "This tiny circuit produces 15 different patterns without any memory. A 32-bit LFSR with 4 taps produces over **4 billion** patterns before it repeats."
+        }
+      ]
+    },
+    {
+      "id": "galois",
+      "title": "The Galois form",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "There is a second way to build an LFSR. Instead of collecting many outputs into one XOR at the input, the last output Q4 is sent back and **XORed into the shift path** between stages:"
+        },
+        {
+          "type": "tabs",
+          "tabs": [
+            {
+              "label": "Fibonacci (external XOR)",
+              "blocks": [
+                {
+                  "type": "image",
+                  "src": "assets/lfsr-fib.svg",
+                  "alt": "Fibonacci LFSR"
+                },
+                {
+                  "type": "text",
+                  "md": "All taps meet in **one XOR tree** that drives Q1. With many taps the tree has several levels of XOR gates — a long path."
+                }
+              ]
+            },
+            {
+              "label": "Galois (internal XOR)",
+              "blocks": [
+                {
+                  "type": "image",
+                  "src": "assets/lfsr-galois.svg",
+                  "alt": "Galois LFSR"
+                },
+                {
+                  "type": "text",
+                  "md": "Q4 goes back to Q1 **and** into a 2-input XOR placed in front of Q4. Rule: new Q1 = Q4, new Q2 = Q1, new Q3 = Q2, new Q4 = Q3 ⊕ Q4. Started from 1000 it also runs through **all 15** non-zero states, in a different order: 1000, 0100, 0010, 0001, 1001, 1101, 1111, …"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "table",
+          "columns": [
+            "",
+            "Fibonacci",
+            "Galois"
+          ],
+          "rows": [
+            [
+              "Where the XORs are",
+              "one XOR tree at the input",
+              "single 2-input XORs between stages"
+            ],
+            [
+              "Longest logic path",
+              "grows with the number of taps",
+              "always just one XOR"
+            ],
+            [
+              "Speed",
+              "slower for many taps",
+              "**faster** — good for at-speed BIST"
+            ],
+            [
+              "Sequence length",
+              "2ⁿ − 1 with a primitive polynomial",
+              "2ⁿ − 1 with a primitive polynomial"
+            ]
+          ],
+          "caption": "Same family, different wiring"
+        }
+      ]
+    },
+    {
+      "id": "polynomials",
+      "title": "Polynomials and maximal length",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "Which taps should we use? Every LFSR is described by a **characteristic polynomial**. The exponents tell where the taps are. Our first LFSR uses taps Q4 and Q3, so its polynomial is\n\n> p(x) = x⁴ + x³ + 1\n\nAn n-bit register has 2ⁿ states. One of them — **all zeros** — is special: 0 ⊕ 0 = 0, so the register stays at 0000 forever. That leaves at most **2ⁿ − 1** states in the cycle. An LFSR that visits all of them is called **maximal-length**, and it is maximal-length exactly when its polynomial is **primitive**."
+        },
+        {
+          "type": "tabs",
+          "tabs": [
+            {
+              "label": "Primitive: x⁴ + x³ + 1",
+              "md": "Taps Q4, Q3. From **any** non-zero seed the register runs through **all 15** non-zero states before it repeats. Good for test: no state is missed."
+            },
+            {
+              "label": "Not primitive: x⁴ + x² + 1",
+              "md": "Taps Q4, Q2. The 15 non-zero states split into **three short cycles**:\n\n- 1000 → 0100 → 1010 → 0101 → 0010 → 0001 → (6 states)\n- 1001 → 1100 → 1110 → 1111 → 0111 → 0011 → (6 states)\n- 1011 → 1101 → 0110 → (3 states)\n\nWhich cycle you get depends on the seed — and most patterns are **never** produced. Bad for test."
+            }
+          ]
+        },
+        {
+          "type": "callout",
+          "kind": "warning",
+          "title": "The lock-up state",
+          "md": "Never seed an XOR-based LFSR with all zeros — it will stay at zero forever. BIST controllers load a non-zero seed at reset, and some designs add a little logic to escape from 0…0."
+        },
+        {
+          "type": "table",
+          "columns": [
+            "n",
+            "Primitive polynomial",
+            "Taps",
+            "Sequence length 2ⁿ − 1"
+          ],
+          "rows": [
+            [
+              "3",
+              "x³ + x² + 1",
+              "3, 2",
+              "7"
+            ],
+            [
+              "4",
+              "x⁴ + x³ + 1",
+              "4, 3",
+              "15"
+            ],
+            [
+              "5",
+              "x⁵ + x³ + 1",
+              "5, 3",
+              "31"
+            ],
+            [
+              "6",
+              "x⁶ + x⁵ + 1",
+              "6, 5",
+              "63"
+            ],
+            [
+              "7",
+              "x⁷ + x⁶ + 1",
+              "7, 6",
+              "127"
+            ],
+            [
+              "8",
+              "x⁸ + x⁶ + x⁵ + x⁴ + 1",
+              "8, 6, 5, 4",
+              "255"
+            ],
+            [
+              "16",
+              "x¹⁶ + x¹⁵ + x¹³ + x⁴ + 1",
+              "16, 15, 13, 4",
+              "65 535"
+            ],
+            [
+              "32",
+              "x³² + x²² + x² + x + 1",
+              "32, 22, 2, 1",
+              "4 294 967 295"
+            ]
+          ],
+          "caption": "Some primitive polynomials (Fibonacci taps: XOR the outputs of these stages into Q1)"
+        },
+        {
+          "type": "text",
+          "md": "You do not need to find primitive polynomials yourself — tables for every length up to hundreds of bits are published. Note that some lengths (like 8) need **four** taps; no two-tap primitive polynomial exists for them."
+        }
+      ]
+    },
+    {
+      "id": "patterns",
+      "title": "Seeds and pseudo-random patterns",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "The **seed** is the state the LFSR starts from. Because the next state depends only on the current state, the same seed always gives **exactly the same sequence**. The patterns look random, but they are fully **repeatable** — that is why they are called **pseudo-random**."
+        },
+        {
+          "type": "accordion",
+          "items": [
+            {
+              "title": "Why repeatable matters",
+              "md": "The expected responses of the circuit can be computed once by simulation. Every chip, in the factory or in a car years later, runs the **same** patterns and must give the **same** result (the *golden signature*, Topic 5)."
+            },
+            {
+              "title": "Why random-looking matters",
+              "md": "Neighbouring bits are hardly related, ones and zeros are balanced (a maximal-length sequence has 2ⁿ⁻¹ ones and 2ⁿ⁻¹ − 1 zeros), and many different combinations reach the logic quickly. For many circuits, a few thousand random patterns already detect most stuck-at faults."
+            },
+            {
+              "title": "Exhaustive test of small blocks",
+              "md": "An n-bit maximal-length LFSR applies **every** non-zero n-bit pattern. For a block with few inputs this is an exhaustive test: all input combinations except 0…0 (which can be added with a little extra logic)."
+            },
+            {
+              "title": "Why not just a counter?",
+              "md": "A binary counter also visits all states, but its low bits toggle all the time and its high bits almost never — the patterns are strongly correlated. It also needs an adder chain, while an LFSR needs only a few XORs."
+            }
+          ]
+        },
+        {
+          "type": "code",
+          "language": "systemverilog",
+          "code": "// 4-bit Fibonacci LFSR, p(x) = x^4 + x^3 + 1\nmodule lfsr4 (\n  input  logic       clk, rst_n,\n  output logic [4:1] q          // q[1] = Q1 ... q[4] = Q4\n);\n  always_ff @(posedge clk or negedge rst_n)\n    if (!rst_n) q <= 4'b0001;            // seed: Q1 = 1, never all zeros\n    else        q <= {q[3:1], q[3] ^ q[4]}; // shift right, feedback into Q1\nendmodule",
+          "caption": "The same LFSR in SystemVerilog — you will build and simulate it in Lab 1"
+        },
+        {
+          "type": "sort",
+          "prompt": "Practice: a 3-bit LFSR has feedback Q2 ⊕ Q3 into Q1. Put its first states in order, starting from the seed 100.",
+          "items": [
+            "100",
+            "010",
+            "101",
+            "110",
+            "111",
+            "011",
+            "001"
+          ]
+        }
+      ]
+    }
+  ],
+  "quiz": {
+    "questions": [
+      {
+        "id": "q-next",
+        "type": "single",
+        "text": "The 4-bit LFSR of this topic (new Q1 = Q3 ⊕ Q4, then shift right) is in state Q1Q2Q3Q4 = **1101**. What is the next state?",
+        "options": [
+          "1110",
+          "0110",
+          "1011",
+          "1111"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "fibonacci"
+        ],
+        "explain": "Q3 ⊕ Q4 = 0 ⊕ 1 = 1 enters Q1; the old Q1Q2Q3 = 110 move right → **1110**."
+      },
+      {
+        "id": "q-len",
+        "type": "single",
+        "text": "A 5-bit LFSR has a primitive polynomial. How many different states does it go through before repeating?",
+        "options": [
+          "31",
+          "32",
+          "5",
+          "25"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "polynomials"
+        ],
+        "explain": "Maximal length is 2⁵ − 1 = **31**: every state except all zeros."
+      },
+      {
+        "id": "q-zero",
+        "type": "single",
+        "text": "Why must an LFSR never be started with the all-zero seed?",
+        "options": [
+          "The XOR of zeros is zero, so the register stays at 0…0 forever.",
+          "All-zero is not allowed in SystemVerilog.",
+          "The flip-flops cannot store zeros after reset.",
+          "It would produce the sequence in reverse order."
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "polynomials"
+        ]
+      },
+      {
+        "id": "q-prim",
+        "type": "truefalse",
+        "text": "Any choice of taps gives an n-bit LFSR that visits all 2ⁿ − 1 non-zero states.",
+        "options": [
+          "True",
+          "False"
+        ],
+        "correct": [
+          1
+        ],
+        "shuffle": false,
+        "review": [
+          "polynomials"
+        ],
+        "explain": "Only a **primitive** polynomial gives maximal length. x⁴ + x² + 1, for example, splits into cycles of 6, 6 and 3 states."
+      },
+      {
+        "id": "q-galois",
+        "type": "single",
+        "text": "What is the main advantage of the Galois form over the Fibonacci form?",
+        "options": [
+          "Only a single 2-input XOR lies between any two flip-flops, so it can run faster.",
+          "It produces a longer sequence for the same number of flip-flops.",
+          "It can start from the all-zero state.",
+          "It needs no flip-flops."
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "galois"
+        ]
+      },
+      {
+        "id": "q-seq3",
+        "type": "order",
+        "text": "A 3-bit LFSR has new Q1 = Q2 ⊕ Q3. Put the first five states in order, starting from the seed 100.",
+        "items": [
+          "100",
+          "010",
+          "101",
+          "110",
+          "111"
+        ],
+        "review": [
+          "fibonacci",
+          "patterns"
+        ]
+      },
+      {
+        "id": "q-why",
+        "type": "multiple",
+        "text": "Why is an LFSR a good BIST pattern generator? Select **all** correct answers.",
+        "options": [
+          "It needs only a few flip-flops and XOR gates.",
+          "The same seed always gives the same sequence.",
+          "Its patterns look random and reach many combinations quickly.",
+          "It produces every pattern including all zeros without extra logic."
+        ],
+        "correct": [
+          0,
+          1,
+          2
+        ],
+        "review": [
+          "patterns"
+        ]
+      }
+    ]
+  }
+}

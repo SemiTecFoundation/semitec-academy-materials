@@ -1,0 +1,338 @@
+{
+  "id": "choosing",
+  "title": "Choosing a test",
+  "duration": "30 min",
+  "summary": "There is no single best memory test. Engineers choose by **coverage**, **test time** and **where** the test runs: in the factory, at every power-on, or in the lab for diagnosis. This topic puts the pieces together and leads to the MBIST hardware that runs the algorithms.",
+  "objectives": [
+    "Weigh test time against fault coverage for a given memory.",
+    "Choose suitable tests for production, power-on and diagnosis.",
+    "Explain how a March algorithm maps onto MBIST hardware, hard-wired or programmable."
+  ],
+  "subsections": [
+    {
+      "id": "time-coverage",
+      "title": "Test time versus coverage",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": [
+            "Test",
+            "Length",
+            "1 Mi words at 100 MHz",
+            "Covers"
+          ],
+          "rows": [
+            [
+              "MATS+",
+              "5N",
+              "52 ms",
+              "SAF, AF"
+            ],
+            [
+              "March C−",
+              "10N",
+              "105 ms",
+              "+ TF, all unlinked CFs"
+            ],
+            [
+              "March C− × 4 backgrounds",
+              "40N",
+              "0.42 s",
+              "+ intra-word CFs (8-bit words)"
+            ],
+            [
+              "March SS",
+              "22N",
+              "0.23 s",
+              "all static simple faults"
+            ],
+            [
+              "March SL",
+              "41N",
+              "0.43 s",
+              "all static linked faults"
+            ],
+            [
+              "+ retention (2 pauses)",
+              "+ Del",
+              "+ 0.2 s",
+              "data-retention faults"
+            ]
+          ],
+          "caption": "Example times for one 1 Mi-word memory; a chip tests many memories in parallel"
+        },
+        {
+          "type": "text",
+          "md": "A big SoC has hundreds or thousands of memories. MBIST tests many of them **in parallel**, so the chip's test time is set by the **largest** memories — and by the **power** the chip may draw while all of them run. Tester time costs money on every chip, so a few hundred milliseconds matter."
+        }
+      ]
+    },
+    {
+      "id": "where",
+      "title": "Production, power-on and diagnosis",
+      "blocks": [
+        {
+          "type": "tabs",
+          "tabs": [
+            {
+              "label": "Production",
+              "md": "At **wafer sort** and **final test**: the strongest test the time budget allows — typically a March C− or March SS class algorithm, several data backgrounds, retention pauses, run **at speed** and at several voltage / temperature corners. Fails are logged for **repair** (spare rows and columns)."
+            },
+            {
+              "label": "Power-on / in field",
+              "md": "At every start-up, for example in cars: a **short** test (milliseconds), often a March C−-type algorithm, run before the software uses the memory — because a March test **destroys the content**. Periodic tests during operation must save and restore the data or test one block at a time."
+            },
+            {
+              "label": "Diagnosis",
+              "md": "On a few failing chips in the lab: long tests, many algorithms, and a **failure bitmap** (which cells failed in which element). The pattern of fails points to the defect — a whole row, a column, a pair of cells — and helps the factory improve the process."
+            }
+          ]
+        },
+        {
+          "type": "categorize",
+          "prompt": "Practice: where does each test choice belong?",
+          "categories": [
+            {
+              "id": "prod",
+              "label": "Production test"
+            },
+            {
+              "id": "field",
+              "label": "Power-on / in field"
+            },
+            {
+              "id": "diag",
+              "label": "Diagnosis in the lab"
+            }
+          ],
+          "items": [
+            {
+              "text": "March SS with 4 backgrounds and retention pauses at high temperature",
+              "category": "prod"
+            },
+            {
+              "text": "A 10N test that must finish in a few ms before the software starts",
+              "category": "field"
+            },
+            {
+              "text": "GALPAT on one failing chip to build a failure bitmap",
+              "category": "diag"
+            },
+            {
+              "text": "Logging failing addresses to program spare rows",
+              "category": "prod"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "to-hardware",
+      "title": "From algorithm to hardware",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "Every March test maps onto the same few hardware parts:"
+        },
+        {
+          "type": "table",
+          "columns": [
+            "In the March test",
+            "MBIST hardware"
+          ],
+          "rows": [
+            [
+              "element order ⇑ / ⇓",
+              "**address generator**: an up/down counter"
+            ],
+            [
+              "0 / 1, data backgrounds",
+              "**data generator**: background register + inverter"
+            ],
+            [
+              "r x",
+              "**comparator**: read data vs expected data → fail flag"
+            ],
+            [
+              "list of elements",
+              "**controller**: a state machine that steps through the elements"
+            ]
+          ],
+          "caption": "From algorithm to hardware"
+        },
+        {
+          "type": "text",
+          "md": "A **hard-wired** controller runs one fixed algorithm — small, but it cannot change after the chip is made. A **programmable** controller reads the algorithm from a small instruction memory or registers, so engineers can switch to a stronger test after silicon if a new fault type shows up. Commercial MBIST tools ship a library of algorithms and offer both kinds."
+        },
+        {
+          "type": "flipcards",
+          "md": "Check yourself before the quiz: say the meaning, then flip the card.",
+          "cards": [
+            {
+              "front": "**⇑ ⇓ ⇕**",
+              "back": "Address order up, down (exact reverse), or either."
+            },
+            {
+              "front": "**kN**",
+              "back": "Test length: k operations per address, N addresses."
+            },
+            {
+              "front": "**MATS+**",
+              "back": "{⇕(w0); ⇑(r0, w1); ⇓(r1, w0)} — 5N, stuck-at and address faults."
+            },
+            {
+              "front": "**March C−**",
+              "back": "{⇕(w0); ⇑(r0,w1); ⇑(r1,w0); ⇓(r0,w1); ⇓(r1,w0); ⇕(r0)} — 10N."
+            },
+            {
+              "front": "**March SS**",
+              "back": "22N — all static simple faults, including DRDF and WDF."
+            },
+            {
+              "front": "**Data background**",
+              "back": "The B-bit pattern written as '0'; log₂(B) + 1 of them for intra-word faults."
+            },
+            {
+              "front": "**Del**",
+              "back": "A pause in a March test, for data-retention faults."
+            },
+            {
+              "front": "**At speed**",
+              "back": "Running the test at the memory's functional clock — needed for dynamic faults."
+            }
+          ]
+        },
+        {
+          "type": "callout",
+          "kind": "tip",
+          "title": "Next: MBIST Architecture",
+          "md": "The next training builds this hardware: the MBIST controller, address and data generators, comparators and the **collar** around each memory. Pass the quiz of this topic to complete *March Tests* and open your certificate."
+        }
+      ]
+    }
+  ],
+  "quiz": {
+    "questions": [
+      {
+        "id": "q-parallel",
+        "type": "single",
+        "text": "A chip has 500 memories tested in parallel by MBIST. What mainly sets the chip's memory test time?",
+        "options": [
+          "The largest memories and the power limit for running many tests at once",
+          "The number of memories times 10N",
+          "The smallest memory",
+          "The number of pins of the chip"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "time-coverage"
+        ]
+      },
+      {
+        "id": "q-time",
+        "type": "single",
+        "text": "March C− with 4 backgrounds on a 1 Mi-word memory at 100 MHz takes about …",
+        "options": [
+          "0.4 s",
+          "4 ms",
+          "4 s",
+          "40 s"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "time-coverage"
+        ]
+      },
+      {
+        "id": "q-destroy",
+        "type": "single",
+        "text": "Why must a power-on March test run before the software uses the memory?",
+        "options": [
+          "A March test overwrites the memory content.",
+          "The memory is not powered later.",
+          "March tests only work at low temperature.",
+          "The software would make the test longer."
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "where"
+        ]
+      },
+      {
+        "id": "q-where",
+        "type": "match",
+        "text": "Match each activity to where it happens.",
+        "categories": [
+          {
+            "id": "prod",
+            "label": "Production test"
+          },
+          {
+            "id": "diag",
+            "label": "Diagnosis"
+          }
+        ],
+        "items": [
+          {
+            "text": "Strong test at voltage/temperature corners",
+            "category": "prod"
+          },
+          {
+            "text": "Collect fail addresses for repair",
+            "category": "prod"
+          },
+          {
+            "text": "Failure bitmap of one bad chip",
+            "category": "diag"
+          },
+          {
+            "text": "Long N² tests on a few chips",
+            "category": "diag"
+          }
+        ],
+        "review": [
+          "where"
+        ]
+      },
+      {
+        "id": "q-hw",
+        "type": "single",
+        "text": "Which MBIST part implements the ⇑ / ⇓ address order?",
+        "options": [
+          "An up/down address counter",
+          "The comparator",
+          "The data background register",
+          "The fuse box"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "to-hardware"
+        ]
+      },
+      {
+        "id": "q-prog",
+        "type": "truefalse",
+        "text": "A programmable MBIST controller can run a new, stronger algorithm after the chip is made.",
+        "options": [
+          "True",
+          "False"
+        ],
+        "correct": [
+          0
+        ],
+        "shuffle": false,
+        "review": [
+          "to-hardware"
+        ]
+      }
+    ]
+  }
+}

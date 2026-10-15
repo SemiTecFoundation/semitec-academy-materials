@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 380" font-family="Segoe UI, Arial, sans-serif">
+  <style>.dc-leak { animation: dc-leak 2.4s ease-in infinite; } @keyframes dc-leak { 0% { transform: translateY(0); opacity: 1 } 100% { transform: translateY(46px); opacity: 0 } }</style>
+  <rect width="760" height="380" rx="14" fill="#ffffff"/>
+  <text x="380" y="32" text-anchor="middle" font-size="18" font-weight="700" fill="#1f4e79">The DRAM cell: one transistor, one capacitor</text>
+  <g stroke="#34495e" stroke-width="3" fill="none">
+    <line x1="60" y1="80" x2="460" y2="80"/>
+    <line x1="120" y1="60" x2="120" y2="330"/>
+    <path d="M120 170H200"/><path d="M260 170H330V215"/>
+    <path d="M230 80V140"/>
+    <line x1="295" y1="215" x2="365" y2="215"/><line x1="295" y1="231" x2="365" y2="231"/>
+    <path d="M330 231V290"/><line x1="305" y1="290" x2="355" y2="290"/><line x1="314" y1="298" x2="346" y2="298"/><line x1="323" y1="306" x2="337" y2="306"/>
+  </g>
+  <rect x="200" y="140" width="60" height="60" rx="6" fill="#eef4fb" stroke="#1f4e79" stroke-width="3"/>
+  <text x="230" y="176" text-anchor="middle" font-size="15" font-weight="800" fill="#1f4e79">T</text>
+  <rect x="297" y="217" width="66" height="12" fill="#1f6feb" opacity=".35"/>
+  <g class="dc-leak" fill="#1f6feb"><circle cx="315" cy="240" r="4"/><circle cx="345" cy="244" r="4"/></g>
+  <g font-size="16" font-weight="700" fill="#34495e">
+    <text x="140" y="70">word line</text><text x="132" y="320">bit line</text>
+    <text x="380" y="222" fill="#1f4e79">capacitor C</text><text x="380" y="244" font-size="14" font-weight="400">charged = 1</text><text x="380" y="264" font-size="14" font-weight="400">empty = 0</text>
+    <text x="250" y="130" font-size="14" font-weight="400">access transistor</text>
+  </g>
+  <rect x="500" y="80" width="240" height="250" rx="10" fill="#f6f9fc" stroke="#9fb3c8"/>
+  <g font-size="15" fill="#34495e">
+    <text x="515" y="110" font-weight="800" fill="#c0392b">Charge leaks away</text>
+    <text x="515" y="132">→ every row is <tspan font-weight="700">refreshed</tspan></text><text x="515" y="152">(typically every 64 ms)</text>
+    <text x="515" y="192" font-weight="800" fill="#c0392b">Reading destroys the value</text>
+    <text x="515" y="214">→ the sense amplifier</text><text x="515" y="234"><tspan font-weight="700">writes it back</tspan> after every read</text>
+    <text x="515" y="274" font-weight="800" fill="#1e8449">Very dense</text>
+    <text x="515" y="296">→ cheap main memory,</text><text x="515" y="316">usually a separate chip</text>
+  </g>
+</svg>

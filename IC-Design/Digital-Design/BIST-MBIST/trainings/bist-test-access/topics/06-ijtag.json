@@ -1,0 +1,391 @@
+{
+  "id": "ijtag",
+  "title": "IEEE 1687: networks of instruments",
+  "duration": "45 min",
+  "summary": "With hundreds of instruments, giving each one its own TAP instruction or putting all their registers in one long chain does not scale. **IEEE 1687 (IJTAG)** builds a reconfigurable **network** behind the TAP. This topic covers the network: the scan interface of an instrument, segment insertion bits, scan multiplexers, hierarchy and the link to the TAP. The next topic covers the languages ICL and PDL.",
+  "objectives": [
+    "Explain why IJTAG networks are needed.",
+    "Name the signals of an instrument's IJTAG scan interface.",
+    "Explain how a SIB is built and how it changes the length of the scan path.",
+    "Design a hierarchical network and compute its path lengths.",
+    "Describe how the network is connected to the TAP."
+  ],
+  "subsections": [
+    {
+      "id": "why-network",
+      "title": "Why a network?",
+      "blocks": [
+        {
+          "type": "accordion",
+          "items": [
+            {
+              "title": "One instruction per instrument?",
+              "md": "Possible for a few instruments, but with hundreds the instruction register and its decoder grow, and every new instrument changes the TAP."
+            },
+            {
+              "title": "One long chain of all registers?",
+              "md": "Simple, but every access shifts through **all** registers: 100 instruments with 40-bit registers mean 4000 bits for every read or write — even to change one bit."
+            },
+            {
+              "title": "IJTAG: a reconfigurable path",
+              "md": "One TAP instruction connects the network. Inside, small switches decide which instrument registers are **in** the path right now. Only what is needed is shifted."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "interface",
+      "title": "The instrument's scan interface",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "Every instrument in a 1687 network is reached through a **TDR** with a small, fixed set of signals — the same ones the TAP sends to its own registers (Topic 2). Any register that speaks this interface can be plugged into any network."
+        },
+        {
+          "type": "svg",
+          "src": "assets/ijtag-client.svg",
+          "caption": "The scan-side ports of an instrument TDR, and the data ports to the instrument logic"
+        },
+        {
+          "type": "table",
+          "columns": [
+            "Port",
+            "ICL port type",
+            "Role"
+          ],
+          "rows": [
+            [
+              "SI",
+              "ScanInPort",
+              "serial data in"
+            ],
+            [
+              "SO",
+              "ScanOutPort",
+              "serial data out"
+            ],
+            [
+              "SEL",
+              "SelectPort",
+              "this register is on the active path"
+            ],
+            [
+              "SE",
+              "ShiftEnPort",
+              "shift one bit per TCK"
+            ],
+            [
+              "CE",
+              "CaptureEnPort",
+              "capture into the shift register"
+            ],
+            [
+              "UE",
+              "UpdateEnPort",
+              "copy into the update stage"
+            ],
+            [
+              "RST",
+              "ResetPort",
+              "reset to the reset value"
+            ],
+            [
+              "TCK",
+              "TCKPort",
+              "test clock"
+            ],
+            [
+              "DataOut / DataIn",
+              "DataOutPort / DataInPort",
+              "parallel connection to the instrument logic"
+            ]
+          ],
+          "caption": "IEEE 1687 scan interface — note how it mirrors the TAP control signals"
+        },
+        {
+          "type": "callout",
+          "kind": "key",
+          "title": "The instrument itself is not standardised",
+          "md": "IEEE 1687 standardises the **access** — the registers, the network and how they are described — not what the instrument does. An MBIST controller, a sensor and a PLL all look the same to the network: a TDR with these ports."
+        }
+      ]
+    },
+    {
+      "id": "sib",
+      "title": "Segment insertion bits",
+      "blocks": [
+        {
+          "type": "stepper",
+          "src": "assets/sib.svg",
+          "interval": 3000,
+          "steps": [
+            {
+              "title": "All closed",
+              "md": "Each **SIB** (segment insertion bit) is a one-bit register on the path. Closed, it adds only itself: the whole network is 3 bits long."
+            },
+            {
+              "title": "Open one",
+              "md": "Writing 1 into SIB 2 (and updating) **inserts** the MBIST 2 register into the path for the next scan: 3 + 32 = 35 bits."
+            },
+            {
+              "title": "Open others",
+              "md": "Any combination can be opened. SIBs can be nested, building a **hierarchy**: open a SIB for a whole core, then a SIB inside it for one instrument."
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "md": "How is a SIB built? There is no special SIB primitive in the standard — it is made from two ordinary network elements: a **1-bit scan register (SR)** and a **ScanMux** that SR controls. The segment hangs between the ports *toSI* and *fromSO*."
+        },
+        {
+          "type": "svg",
+          "src": "assets/sib-icl.svg",
+          "caption": "A SIB is a 1-bit ScanRegister plus a ScanMux selected by it"
+        }
+      ]
+    },
+    {
+      "id": "hierarchy",
+      "title": "Scan muxes and hierarchy",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": [
+            "Element",
+            "What it does"
+          ],
+          "rows": [
+            [
+              "**TDR** (test data register)",
+              "the instrument's register: configuration in, status out"
+            ],
+            [
+              "**SIB**",
+              "one bit that includes or skips a segment of the path"
+            ],
+            [
+              "**ScanMux**",
+              "a mux, controlled by a register bit, that chooses between paths"
+            ]
+          ],
+          "caption": "Building blocks of an IJTAG network"
+        },
+        {
+          "type": "svg",
+          "src": "assets/hierarchy.svg",
+          "caption": "SIBs inside SIBs: open a core, then one instrument in it"
+        },
+        {
+          "type": "accordion",
+          "items": [
+            {
+              "title": "Hierarchy follows the design",
+              "md": "Each core gets a SIB at the top level; instruments inside the core sit behind further SIBs. Opening a path is done step by step: one scan opens the core's SIB, the next opens the instrument's SIB."
+            },
+            {
+              "title": "ScanMux beyond SIBs",
+              "md": "A ScanMux can also select between **different** segments — for example a short status register or a long diagnosis register of the same MBIST controller — controlled by a bit in another register."
+            },
+            {
+              "title": "Plug and play",
+              "md": "Because every segment uses the same interface and is described in ICL, a core with its network can be reused in another chip; the tools rebuild the chip-level paths automatically."
+            }
+          ]
+        },
+        {
+          "type": "sort",
+          "prompt": "Practice: to reach MBIST 2 in the picture, put the scans in order.",
+          "items": [
+            "Scan 1: write 1 into SIB core A",
+            "Scan 2: write 1 into SIB MBIST 2",
+            "Scan 3: shift the MBIST 2 TDR"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "access-link",
+      "title": "Connecting the network to the TAP",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "The network needs an entry point. Usually a TAP **instruction** connects the network's top-level scan input and output between TDI and TDO; the TAP's capture/shift/update states drive the network's enables. In ICL this connection is described by an **AccessLink**.\n\nOther entry points are possible: the network can be reached through an IEEE 1500 wrapper, or from **inside** the chip — a processor or a test controller drives the same signals through an on-chip bus. That is how software runs instruments in the field."
+        },
+        {
+          "type": "callout",
+          "kind": "info",
+          "title": "One network, many access paths",
+          "md": "Because the network is described once in ICL, the tools can generate access sequences for the tester (through the TAP) and for on-chip software (through the bus) from the same description."
+        }
+      ]
+    },
+    {
+      "id": "access-time",
+      "title": "Access time",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": [
+            "Network for 100 instruments, 40-bit TDRs",
+            "Bits per access",
+            "Time at TCK = 10 MHz"
+          ],
+          "rows": [
+            [
+              "one flat chain",
+              "4000",
+              "400 µs"
+            ],
+            [
+              "one SIB per instrument, one open",
+              "100 + 40 = 140",
+              "14 µs"
+            ],
+            [
+              "two-level hierarchy (10 groups of 10), one open",
+              "10 + 10 + 40 = 60",
+              "6 µs"
+            ]
+          ],
+          "caption": "Hierarchy keeps the path short (plus one extra scan to open the SIBs)"
+        },
+        {
+          "type": "sort",
+          "prompt": "Practice: order the networks from shortest to longest access path.",
+          "items": [
+            "two-level SIB hierarchy, one instrument open",
+            "one SIB per instrument, one open",
+            "one flat chain of all registers"
+          ]
+        }
+      ]
+    }
+  ],
+  "quiz": {
+    "questions": [
+      {
+        "id": "q-sib",
+        "type": "single",
+        "text": "What does a segment insertion bit (SIB) do?",
+        "options": [
+          "Includes or skips a segment of the scan path, depending on its value",
+          "Stores the IDCODE",
+          "Resets the TAP",
+          "Generates the test clock"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "sib"
+        ]
+      },
+      {
+        "id": "q-len",
+        "type": "single",
+        "text": "A network has 4 SIBs in a row. Behind SIB 3 there is a 24-bit register. SIB 3 is opened. How long is the path?",
+        "options": [
+          "28 bits",
+          "24 bits",
+          "4 bits",
+          "96 bits"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "sib"
+        ]
+      },
+      {
+        "id": "q-time",
+        "type": "single",
+        "text": "Why are IJTAG networks built hierarchically?",
+        "options": [
+          "To keep the shifted path short and the access time low",
+          "To use more pins",
+          "Because PDL requires it",
+          "To slow down TCK"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "access-time"
+        ]
+      },
+      {
+        "id": "q-ports",
+        "type": "multiple",
+        "text": "Which ports belong to the scan interface of an IJTAG instrument TDR? Select **all** correct answers.",
+        "options": [
+          "ScanIn / ScanOut",
+          "Select",
+          "Shift, capture and update enables",
+          "TMS"
+        ],
+        "correct": [
+          0,
+          1,
+          2
+        ],
+        "review": [
+          "interface"
+        ]
+      },
+      {
+        "id": "q-sibbuild",
+        "type": "single",
+        "text": "How is a SIB built in IEEE 1687?",
+        "options": [
+          "From a 1-bit scan register and a ScanMux selected by it",
+          "From a TAP controller",
+          "From a boundary-scan cell",
+          "It is a special primitive with no inner structure"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "sib"
+        ]
+      },
+      {
+        "id": "q-hier",
+        "type": "single",
+        "text": "A top level has 3 SIBs. Behind one of them are 4 SIBs, and behind one of those a 20-bit TDR. Both are opened. How long is the path?",
+        "options": [
+          "27 bits",
+          "20 bits",
+          "7 bits",
+          "24 bits"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "hierarchy"
+        ],
+        "explain": "3 + 4 + 20 = 27."
+      },
+      {
+        "id": "q-link",
+        "type": "single",
+        "text": "What connects the IJTAG network to the chip's TAP?",
+        "options": [
+          "A TAP instruction that puts the network between TDI and TDO (AccessLink in ICL)",
+          "A separate set of pins",
+          "The MBIST controller",
+          "The boundary-scan register"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "access-link"
+        ]
+      }
+    ]
+  }
+}

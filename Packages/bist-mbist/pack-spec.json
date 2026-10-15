@@ -1,0 +1,33 @@
+{
+  "specVersion": 1,
+  "pack": {
+    "id": "org.semitec.bist-mbist",
+    "version": "1.0.0",
+    "title": "BIST and MBIST",
+    "description": "How chips test themselves: LFSRs and signatures, memory fault models, March tests, MBIST architecture, and test access with JTAG, IEEE 1500 and IJTAG.",
+    "language": "en",
+    "publisher": "SemiTec Foundation",
+    "publisherLogo": "publisher-logo.svg",
+    "authors": ["Arman Manukyan, PhD"],
+    "cover": "cover.svg",
+    "certificate": "certificate.json"
+  },
+  "schedule": {
+    "weeks": 10,
+    "entries": [
+      { "weeks": [1, 2], "title": "BIST foundations", "items": ["bist-foundations"], "note": "Why self-test; LFSRs and MISRs; a tiny BIST." },
+      { "weeks": [3, 4], "title": "Memories and their faults", "items": ["mbist-memories-faults"], "note": "Revise Memory Fundamentals first if needed." },
+      { "weeks": [5, 6], "title": "March tests", "items": ["mbist-march-tests"] },
+      { "weeks": [7, 8], "title": "MBIST architecture", "items": ["mbist-architecture"] },
+      { "weeks": [9, 10], "title": "Test access: JTAG, IEEE 1500, IJTAG", "items": ["bist-test-access"] }
+    ]
+  },
+  "trainings": [
+    { "id": "mem-fundamentals", "title": "Memory Fundamentals", "source": "../../IC-Design/Digital-Design/Memories/trainings/mem-fundamentals", "description": "Refresher: memory organisation, register-level read/write, interfaces, FIFOs, ECC modules", "estimatedTime": "10 h", "prerequisite": true },
+    { "id": "bist-foundations", "title": "BIST Foundations: Why Chips Test Themselves", "source": "../../IC-Design/Digital-Design/BIST-MBIST/trainings/bist-foundations", "description": "Why self-test, LFSRs, MISRs and a tiny BIST", "estimatedTime": "3 h" },
+    { "id": "mbist-memories-faults", "title": "Memories and Their Faults", "source": "../../IC-Design/Digital-Design/BIST-MBIST/trainings/mbist-memories-faults", "description": "SRAM for testers and memory fault models", "estimatedTime": "3.5 h" },
+    { "id": "mbist-march-tests", "title": "March Tests", "source": "../../IC-Design/Digital-Design/BIST-MBIST/trainings/mbist-march-tests", "description": "March notation, MATS+, March C− and beyond; choosing a test", "estimatedTime": "3.5 h" },
+    { "id": "mbist-architecture", "title": "MBIST Architecture", "source": "../../IC-Design/Digital-Design/BIST-MBIST/trainings/mbist-architecture", "description": "Collars, generators, controllers, results and integration", "estimatedTime": "4 h" },
+    { "id": "bist-test-access", "title": "Test Access: JTAG and IJTAG", "source": "../../IC-Design/Digital-Design/BIST-MBIST/trainings/bist-test-access", "description": "IEEE 1149.1 TAP, IEEE 1500 wrappers, IEEE 1687 networks, ICL/PDL", "estimatedTime": "5 h" }
+  ]
+}

@@ -1,0 +1,71 @@
+{
+  "id": "mem-fundamentals",
+  "version": "0.2",
+  "title": "Memory Fundamentals",
+  "subtitle": "SemiTec Foundation · Digital Design · Memories",
+  "language": "en",
+  "layout": "sidebar",
+  "theme": "foundation",
+  "themes": [
+    "foundation",
+    "midnight",
+    "paper"
+  ],
+  "allowViewSwitch": true,
+  "passThreshold": 0.75,
+  "showCorrectAnswers": "afterPass",
+  "requireSequential": true,
+  "topicWord": "Topic",
+  "hours": "10",
+  "schedule": {
+    "weeks": 3,
+    "topics": [
+      {
+        "week": 1,
+        "topics": [
+          "why-memory",
+          "types",
+          "organisation",
+          "register-level"
+        ]
+      },
+      {
+        "week": 2,
+        "topics": [
+          "sync-interface",
+          "multi-port",
+          "fifo",
+          "ecc-memory"
+        ]
+      },
+      {
+        "week": 3,
+        "topics": [
+          "controllers-amba",
+          "metrics",
+          "timing"
+        ]
+      }
+    ]
+  },
+  "delivery": {
+    "mode": "standalone",
+    "urlParams": true,
+    "resume": true
+  },
+  "labels": {},
+  "topics": [
+    "01-why-memory.json",
+    "02-types.json",
+    "03-organisation.json",
+    "04-register-level.json",
+    "05-sync-interface.json",
+    "06-multi-port.json",
+    "07-fifo.json",
+    "08-ecc-memory.json",
+    "09-controllers-amba.json",
+    "10-metrics.json",
+    "11-timing.json"
+  ],
+  "certificate": "certificate.json"
+}

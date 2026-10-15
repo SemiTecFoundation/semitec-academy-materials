@@ -1,0 +1,336 @@
+{
+  "id": "controllers-amba",
+  "title": "Memory controllers and AMBA",
+  "duration": "50 min",
+  "summary": "Memories are reached through buses. This topic explains what a **memory controller** does, how memories sit in an SoC behind an interconnect, and gives a high-level map of Arm's **AMBA** protocols — APB, AHB, AXI, AXI-Lite and AXI-Stream — with their handshakes. It ends with a small APB memory controller in SystemVerilog.",
+  "objectives": [
+    "List the jobs of a memory controller and compare SRAM and DRAM controllers.",
+    "Describe how memories, controllers and bridges sit on an SoC bus.",
+    "Name the AMBA protocols and their typical uses.",
+    "Read an APB transfer and an AXI VALID/READY handshake.",
+    "Read an APB slave that controls an SRAM."
+  ],
+  "subsections": [
+    {
+      "id": "controller",
+      "title": "What a memory controller does",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "Processors and DMA engines do not drive memory pins directly. They issue **bus transfers** — *read 4 bytes at 0x2000_0A4C* — and a **memory controller** turns them into memory operations. Its jobs:"
+        },
+        {
+          "type": "table",
+          "columns": [
+            "Job",
+            "Example"
+          ],
+          "rows": [
+            [
+              "protocol conversion",
+              "bus handshake ↔ en / we / addr / din / dout of the RAM"
+            ],
+            [
+              "address mapping",
+              "byte address → bank, row, column, byte strobes (Topic 3)"
+            ],
+            [
+              "arbitration",
+              "several masters want the same memory: who goes first?"
+            ],
+            [
+              "wait states",
+              "the memory is slower than the bus → stretch the transfer"
+            ],
+            [
+              "data width / bursts",
+              "a 64-bit bus on a 32-bit memory, or bursts of 8 words"
+            ],
+            [
+              "ECC and repair",
+              "encode, decode, scrub, report errors (Topic 8)"
+            ],
+            [
+              "DRAM-specific",
+              "open and close rows, refresh, timing rules such as tRCD, tRP"
+            ]
+          ],
+          "caption": "Jobs of a memory controller"
+        },
+        {
+          "type": "tabs",
+          "tabs": [
+            {
+              "label": "SRAM controller",
+              "md": "Simple: one bus transfer = one memory access. Often only a protocol bridge with an address decoder, byte strobes and perhaps one wait state."
+            },
+            {
+              "label": "DRAM controller",
+              "md": "Complex: requests are queued and **reordered** to hit open rows, refresh must be inserted every few microseconds, and a **PHY** handles the high-speed DDR signalling. Covered in *DRAM and External Memory*."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "soc",
+      "title": "Memories on an SoC bus",
+      "blocks": [
+        {
+          "type": "svg",
+          "src": "assets/soc-bus.svg",
+          "caption": "A typical structure: masters, an AXI interconnect, memory controllers and an APB bridge"
+        },
+        {
+          "type": "text",
+          "md": "Masters (CPU, DMA) start transfers; the **interconnect** decodes the address with the system address map (Topic 3), arbitrates between masters and routes the transfer to the right **slave**. Fast memories sit on the high-performance bus; slow peripheral registers sit behind a **bridge** on a simple bus."
+        }
+      ]
+    },
+    {
+      "id": "amba",
+      "title": "The AMBA family at a glance",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "Most SoCs use Arm's **AMBA** (Advanced Microcontroller Bus Architecture) protocols. They are free to use and supported by every EDA and IP vendor."
+        },
+        {
+          "type": "table",
+          "columns": [
+            "Protocol",
+            "Typical use",
+            "Key features"
+          ],
+          "rows": [
+            [
+              "**APB**",
+              "peripheral registers",
+              "simple, unpipelined: setup + access phase; PREADY for wait states; PSTRB (APB4)"
+            ],
+            [
+              "**AHB / AHB-Lite**",
+              "simple processors, on-chip memory",
+              "pipelined address and data phases, bursts, one transfer at a time"
+            ],
+            [
+              "**AXI4**",
+              "high-performance memories and interconnects",
+              "5 independent channels, VALID/READY handshakes, bursts up to 256 beats, IDs and out-of-order completion, many outstanding transactions"
+            ],
+            [
+              "**AXI4-Lite**",
+              "control registers",
+              "AXI handshakes without bursts or IDs — single 32/64-bit transfers"
+            ],
+            [
+              "**AXI4-Stream**",
+              "data streams (video, network, DSP)",
+              "no addresses: TVALID/TREADY, TDATA, TLAST"
+            ],
+            [
+              "ACE, CHI",
+              "cache-coherent multi-core systems",
+              "coherency messages; beyond this course"
+            ]
+          ],
+          "caption": "The AMBA family"
+        },
+        {
+          "type": "sort",
+          "prompt": "Practice: order by complexity, simplest first.",
+          "items": [
+            "APB",
+            "AHB-Lite",
+            "AXI4-Lite",
+            "AXI4"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "handshakes",
+      "title": "Two handshakes in one picture",
+      "blocks": [
+        {
+          "type": "stepper",
+          "src": "assets/handshakes.svg",
+          "interval": 3000,
+          "steps": [
+            {
+              "title": "APB transfer",
+              "md": "A **setup** cycle with PSEL = 1, then an **access** cycle with PENABLE = 1. The transfer completes when PREADY = 1; a slave holds PREADY low to insert wait states."
+            },
+            {
+              "title": "AXI handshake",
+              "md": "On every AXI channel the source drives **VALID** and the data; the destination drives **READY**. A beat is transferred in every clock where both are 1 — either side can stall."
+            }
+          ]
+        },
+        {
+          "type": "callout",
+          "kind": "info",
+          "title": "More in the AMBA trainings",
+          "md": "The full protocols — all APB, AHB and AXI signals, bursts, IDs, responses and interconnects — are taught in the *AMBA* trainings of the Interfaces topic, each with labs."
+        }
+      ]
+    },
+    {
+      "id": "sv",
+      "title": "In SystemVerilog: an APB slave in front of an SRAM",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "The smallest useful memory controller: an **APB4 slave** that maps the bus onto a word-addressed memory with byte strobes, and answers bad addresses with an error. The SRAM read is started in the setup phase, so no wait state is needed:"
+        },
+        {
+          "type": "code",
+          "lang": "systemverilog",
+          "code": "module apb_sram #(\n  parameter  int DEPTH = 1024,               // 32-bit words\n  localparam int AW    = $clog2(DEPTH)\n) (\n  input  logic        pclk, presetn,\n  input  logic        psel, penable, pwrite,\n  input  logic [31:0] paddr,                 // byte address\n  input  logic [31:0] pwdata,\n  input  logic [3:0]  pstrb,                 // byte strobes (APB4)\n  output logic [31:0] prdata,\n  output logic        pready,\n  output logic        pslverr\n);\n  logic [31:0]   mem [DEPTH];\n  logic [AW-1:0] widx;\n  logic          setup, access, bad_addr;\n\n  assign widx     = paddr[AW+1:2];           // byte address -> word index\n  assign setup    = psel && !penable;        // 1st cycle of a transfer\n  assign access   = psel &&  penable;        // 2nd cycle of a transfer\n  assign bad_addr = (paddr[31:AW+2] != '0);  // outside this memory\n\n  // read: start the SRAM read in the setup phase,\n  // so the data is ready in the access phase (no wait state)\n  always_ff @(posedge pclk)\n    if (setup && !pwrite) prdata <= mem[widx];\n\n  // write: in the access phase, only the bytes enabled by pstrb\n  always_ff @(posedge pclk)\n    if (access && pwrite && !bad_addr) begin\n      if (pstrb[0]) mem[widx][ 7: 0] <= pwdata[ 7: 0];\n      if (pstrb[1]) mem[widx][15: 8] <= pwdata[15: 8];\n      if (pstrb[2]) mem[widx][23:16] <= pwdata[23:16];\n      if (pstrb[3]) mem[widx][31:24] <= pwdata[31:24];\n    end\n\n  assign pready  = 1'b1;                     // always ready: zero wait states\n  assign pslverr = access && bad_addr;\nendmodule"
+        },
+        {
+          "type": "accordion",
+          "items": [
+            {
+              "title": "Where is the address mapping?",
+              "md": "`widx = paddr[AW+1:2]` drops the byte bits (Topic 3); `bad_addr` checks that the upper bits are 0 inside this slave's region."
+            },
+            {
+              "title": "Where are the byte strobes?",
+              "md": "Each of the four byte lanes is written only when its `pstrb` bit is 1 — the byte enables of Topic 5."
+            },
+            {
+              "title": "What would need a wait state?",
+              "md": "A memory with read latency 2, or an ECC decoder with a pipeline register: the slave would hold `pready` low for one extra cycle."
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "quiz": {
+    "questions": [
+      {
+        "id": "q-jobs",
+        "type": "multiple",
+        "text": "Which are jobs of a memory controller? Select **all** correct answers.",
+        "options": [
+          "Converting bus transfers into memory operations",
+          "Arbitrating between several masters",
+          "Inserting refresh for DRAM",
+          "Choosing the processor's instruction set"
+        ],
+        "correct": [
+          0,
+          1,
+          2
+        ],
+        "review": [
+          "controller"
+        ]
+      },
+      {
+        "id": "q-apb",
+        "type": "single",
+        "text": "Which bus is typically used for slow peripheral registers?",
+        "options": [
+          "APB",
+          "AXI4",
+          "AXI4-Stream",
+          "CHI"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "amba"
+        ]
+      },
+      {
+        "id": "q-stream",
+        "type": "single",
+        "text": "Which AMBA protocol has no addresses at all?",
+        "options": [
+          "AXI4-Stream",
+          "APB",
+          "AHB-Lite",
+          "AXI4-Lite"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "amba"
+        ]
+      },
+      {
+        "id": "q-hs",
+        "type": "single",
+        "text": "When is a beat transferred on an AXI channel?",
+        "options": [
+          "In a clock where VALID and READY are both 1",
+          "When VALID rises",
+          "When READY rises",
+          "One clock after VALID"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "handshakes"
+        ]
+      },
+      {
+        "id": "q-wait",
+        "type": "single",
+        "text": "How does an APB slave insert a wait state?",
+        "options": [
+          "It keeps PREADY low in the access phase",
+          "It lowers PSEL",
+          "It raises PSLVERR",
+          "It changes PADDR"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "handshakes",
+          "sv"
+        ]
+      },
+      {
+        "id": "q-bridge",
+        "type": "single",
+        "text": "Why are peripherals usually placed behind an AXI-to-APB bridge?",
+        "options": [
+          "APB is simple and cheap for slow registers; the bridge keeps them off the fast bus",
+          "APB is faster than AXI",
+          "AXI cannot address registers",
+          "Peripherals need bursts"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "soc"
+        ]
+      },
+      {
+        "id": "q-err",
+        "type": "truefalse",
+        "text": "In apb_sram, an access outside the memory's region returns PSLVERR = 1 in the access phase.",
+        "options": [
+          "True",
+          "False"
+        ],
+        "correct": [
+          0
+        ],
+        "shuffle": false,
+        "review": [
+          "sv"
+        ]
+      }
+    ]
+  }
+}

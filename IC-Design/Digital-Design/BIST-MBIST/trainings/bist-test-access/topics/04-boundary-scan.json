@@ -1,0 +1,154 @@
+{
+  "id": "boundary-scan",
+  "title": "Boundary scan",
+  "duration": "30 min",
+  "summary": "The original purpose of JTAG: testing the **solder joints and wires** of a printed circuit board without probes. Every pin of a chip gets a boundary-scan cell; together they let the tester drive and observe the board's nets.",
+  "objectives": [
+    "Describe a boundary-scan cell and its modes.",
+    "Explain how EXTEST finds opens and shorts between chips.",
+    "Compute the number of patterns for a counting-sequence interconnect test.",
+    "Explain the role of the BSDL file."
+  ],
+  "subsections": [
+    {
+      "id": "cells",
+      "title": "Boundary-scan cells",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "A **boundary-scan cell** sits between a pin and the chip's core. It has a **capture/shift** flip-flop, an **update** latch and a mux. All cells of a chip form the **boundary-scan register** (BSR)."
+        },
+        {
+          "type": "table",
+          "columns": ["Mode", "Instruction", "What the cell does"],
+          "rows": [
+            ["Normal", "BYPASS, IDCODE …", "transparent: core ↔ pin, the chip works normally"],
+            ["Sample", "SAMPLE / PRELOAD", "captures the pin value **without** disturbing operation"],
+            ["Preload", "SAMPLE / PRELOAD", "loads values into the update latches, ready for EXTEST"],
+            ["Drive", "EXTEST", "output pins are driven from the update latches; input pins are captured"]
+          ],
+          "caption": "Modes of a boundary-scan cell"
+        }
+      ]
+    },
+    {
+      "id": "board-test",
+      "title": "Testing a board",
+      "blocks": [
+        {
+          "type": "stepper",
+          "src": "assets/board-test.svg",
+          "interval": 3200,
+          "steps": [
+            { "title": "Normal operation", "md": "Two chips connected by four nets. In normal mode the boundary-scan cells are transparent." },
+            { "title": "Drive", "md": "With **EXTEST**, chip A drives a pattern — 1 0 1 0 — from its boundary-scan cells onto the nets." },
+            { "title": "Capture and compare", "md": "Chip B captures the nets in its cells. The tester shifts the whole chain out and compares: everything matches." },
+            { "title": "A short", "md": "Solder bridges nets 2 and 3. The driver of net 2 (0) wins in this example, so chip B reads **0** on net 3 instead of 1 — the short is found." },
+            { "title": "An open", "md": "Net 4 is not soldered. Chip B's input floats (here to 1) instead of following the driven 0 — the open is found." }
+          ]
+        },
+        {
+          "type": "callout",
+          "kind": "info",
+          "title": "Why it changed board test",
+          "md": "Before boundary scan, boards were tested with a **bed of nails** — a fixture with a probe for every net. Fine-pitch packages such as BGAs hide their pins under the chip, so probes cannot reach them. Boundary scan tests the same nets through four wires."
+        }
+      ]
+    },
+    {
+      "id": "patterns",
+      "title": "How many patterns?",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "Give every net a **unique binary code** and apply the codes bit by bit, one pattern per bit. A short makes two nets read the same, an open makes a net read a constant — both break the codes. Codes of all 0s and all 1s are not used (a stuck net would look like them), so for N nets:\n\n> number of patterns = ⌈log₂(N + 2)⌉"
+        },
+        {
+          "type": "table",
+          "columns": ["Nets N", "Patterns ⌈log₂(N + 2)⌉"],
+          "rows": [["4", "3"], ["100", "7"], ["1000", "10"], ["10 000", "14"]],
+          "caption": "The counting-sequence test grows only with log N"
+        }
+      ]
+    },
+    {
+      "id": "bsdl",
+      "title": "BSDL: describing a chip's boundary scan",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "Test tools need to know each chip's IR length, instruction codes, IDCODE and the order of its boundary-scan cells. This comes in a **BSDL** file (Boundary Scan Description Language), written in a subset of VHDL and supplied by the chip vendor. A tool combines the BSDL files with the board netlist and generates the board test automatically."
+        },
+        {
+          "type": "code",
+          "lang": "vhdl",
+          "code": "-- simplified BSDL excerpt (illustration)\nentity my_chip is\n  attribute INSTRUCTION_LENGTH of my_chip : entity is 4;\n  attribute INSTRUCTION_OPCODE of my_chip : entity is\n    \"BYPASS (1111), EXTEST (0000), SAMPLE (0001), IDCODE (0010)\";\n  attribute INSTRUCTION_CAPTURE of my_chip : entity is \"0101\";\n  attribute BOUNDARY_LENGTH of my_chip : entity is 64;\nend my_chip;"
+        }
+      ]
+    }
+  ],
+  "quiz": {
+    "questions": [
+      {
+        "id": "q-extest",
+        "type": "single",
+        "text": "Which instruction drives the chip's output pins from the boundary-scan cells?",
+        "options": ["EXTEST", "BYPASS", "IDCODE", "SAMPLE"],
+        "correct": [0],
+        "review": ["cells"]
+      },
+      {
+        "id": "q-sample",
+        "type": "single",
+        "text": "What does SAMPLE do?",
+        "options": [
+          "Captures the pin values without disturbing normal operation",
+          "Drives all outputs to 0",
+          "Resets the chip",
+          "Reads the IDCODE"
+        ],
+        "correct": [0],
+        "review": ["cells"]
+      },
+      {
+        "id": "q-short",
+        "type": "single",
+        "text": "Chip A drives 0 on net 2 and 1 on net 3; chip B reads 0 on both. What is the most likely fault?",
+        "options": ["A short between nets 2 and 3", "An open on net 2", "A broken TCK", "A wrong IDCODE"],
+        "correct": [0],
+        "review": ["board-test"]
+      },
+      {
+        "id": "q-pat",
+        "type": "single",
+        "text": "How many patterns does a counting-sequence test need for 60 nets?",
+        "options": ["6", "60", "5", "62"],
+        "correct": [0],
+        "review": ["patterns"],
+        "explain": "log₂(62) ≈ 5.95, rounded up → 6."
+      },
+      {
+        "id": "q-bsdl",
+        "type": "single",
+        "text": "What is a BSDL file?",
+        "options": [
+          "A vendor description of a chip's boundary scan: IR length, opcodes, cell order",
+          "The board netlist",
+          "A tester program",
+          "The chip's RTL"
+        ],
+        "correct": [0],
+        "review": ["bsdl"]
+      },
+      {
+        "id": "q-nails",
+        "type": "truefalse",
+        "text": "Boundary scan can test nets that a bed-of-nails fixture cannot reach, such as pins under a BGA package.",
+        "options": ["True", "False"],
+        "correct": [0],
+        "shuffle": false,
+        "review": ["board-test"]
+      }
+    ]
+  }
+}

@@ -1,0 +1,607 @@
+{
+  "id": "ieee1500",
+  "title": "IEEE 1500: wrapping cores",
+  "duration": "50 min",
+  "summary": "An SoC is built from **cores** — processors, interfaces, accelerators — often designed by different teams or bought from vendors. IEEE 1500 puts a standard **wrapper** around each core so it can be tested on its own, with its own tests, and so the wiring between cores can be tested too. This topic goes through the wrapper's interface signal by signal.",
+  "objectives": [
+    "Explain why cores in an SoC need their own test wrappers.",
+    "Name the parts of an IEEE 1500 wrapper and its serial-port signals.",
+    "Describe a wrapper boundary cell and its modes.",
+    "Explain the standard instructions and which register each puts between WSI and WSO.",
+    "Describe the parallel port and how wrappers are controlled and documented in an SoC."
+  ],
+  "subsections": [
+    {
+      "id": "why-cores",
+      "title": "Why wrap cores?",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "A core vendor ships the core **with its test patterns**. Inside an SoC, however, the core's terminals are not chip pins — they are connected to other logic. To reuse the patterns, the core must be **isolated** from its neighbours and reachable by the tester. That is the job of the IEEE 1500 wrapper: it does for a core what boundary scan does for a chip."
+        },
+        {
+          "type": "svg",
+          "src": "assets/soc-1500.svg",
+          "caption": "Three wrapped cores: a serial path WSI → WSO through all wrappers, control from the TAP, and a wide parallel port for one core"
+        },
+        {
+          "type": "callout",
+          "kind": "key",
+          "title": "Divide and conquer",
+          "md": "Test each core in isolation (**inward-facing**), then test the wires between cores (**outward-facing**). Patterns are generated core by core — smaller problems for ATPG — and cores can be tested in parallel."
+        }
+      ]
+    },
+    {
+      "id": "wrapper",
+      "title": "The wrapper at a glance",
+      "blocks": [
+        {
+          "type": "svg",
+          "src": "assets/wrapper-1500.svg",
+          "caption": "Wrapper boundary cells around the core, instruction and bypass registers, serial and parallel ports"
+        },
+        {
+          "type": "table",
+          "columns": [
+            "Part",
+            "Function",
+            "Like in 1149.1"
+          ],
+          "rows": [
+            [
+              "**WBR** — wrapper boundary register",
+              "a cell on every core terminal: isolate, drive or capture it",
+              "boundary-scan register"
+            ],
+            [
+              "**WIR** — wrapper instruction register",
+              "holds the wrapper instruction (test mode)",
+              "instruction register"
+            ],
+            [
+              "**WBY** — wrapper bypass",
+              "one bit to skip this wrapper on the serial path",
+              "BYPASS"
+            ],
+            [
+              "**WSP** — wrapper serial port",
+              "WSI, WSO and the wrapper serial control (WSC); mandatory",
+              "TDI, TDO + TAP signals"
+            ],
+            [
+              "**WPP** — wrapper parallel port",
+              "optional wide access for high-volume scan data",
+              "—"
+            ]
+          ],
+          "caption": "Parts of an IEEE 1500 wrapper"
+        }
+      ]
+    },
+    {
+      "id": "wsp",
+      "title": "The wrapper serial port",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "The wrapper has **no state machine** of its own. Instead of TMS, it receives the decoded control signals directly — the chip-level controller (usually the TAP) produces them."
+        },
+        {
+          "type": "table",
+          "columns": [
+            "Terminal",
+            "Direction",
+            "Meaning"
+          ],
+          "rows": [
+            [
+              "**WSI**",
+              "in",
+              "wrapper serial input — data into the selected register"
+            ],
+            [
+              "**WSO**",
+              "out",
+              "wrapper serial output"
+            ],
+            [
+              "**WRCK**",
+              "in",
+              "wrapper clock for all serial operations"
+            ],
+            [
+              "**WRSTN**",
+              "in",
+              "wrapper reset, active low — puts the wrapper in functional mode"
+            ],
+            [
+              "**SelectWIR**",
+              "in",
+              "1: the WIR is between WSI and WSO; 0: the data register chosen by the instruction"
+            ],
+            [
+              "**CaptureWR**",
+              "in",
+              "capture into the selected register"
+            ],
+            [
+              "**ShiftWR**",
+              "in",
+              "shift the selected register one bit per WRCK"
+            ],
+            [
+              "**UpdateWR**",
+              "in",
+              "copy shifted values to the update stage"
+            ],
+            [
+              "TransferDR (optional)",
+              "in",
+              "move data inside the WBR, e.g. for launch-capture tests"
+            ],
+            [
+              "AUXCK*n* (optional)",
+              "in",
+              "auxiliary clocks for the wrapper cells"
+            ]
+          ],
+          "caption": "Wrapper serial port (WSI, WSO and the wrapper serial control WSC)"
+        },
+        {
+          "type": "svg",
+          "src": "assets/wsp-wave.svg",
+          "caption": "SelectWIR = 1 for the instruction scan, 0 for the data scan; capture, shift and update follow the same pattern as in JTAG"
+        },
+        {
+          "type": "categorize",
+          "prompt": "Practice: match each WSP signal to its JTAG counterpart.",
+          "categories": [
+            {
+              "id": "tdi",
+              "label": "like TDI / TDO"
+            },
+            {
+              "id": "clk",
+              "label": "like TCK"
+            },
+            {
+              "id": "ctl",
+              "label": "like a TAP state"
+            }
+          ],
+          "items": [
+            {
+              "text": "WSI",
+              "category": "tdi"
+            },
+            {
+              "text": "WSO",
+              "category": "tdi"
+            },
+            {
+              "text": "WRCK",
+              "category": "clk"
+            },
+            {
+              "text": "ShiftWR",
+              "category": "ctl"
+            },
+            {
+              "text": "UpdateWR",
+              "category": "ctl"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cell",
+      "title": "The wrapper boundary cell",
+      "blocks": [
+        {
+          "type": "reveal",
+          "src": "assets/wbr-cell.svg",
+          "hint": "Click the parts of the cell.",
+          "caption": "A wrapper boundary cell on a core input",
+          "spots": [
+            {
+              "x": 3,
+              "y": 25,
+              "w": 60,
+              "h": 14,
+              "label": "1",
+              "title": "Functional path CFI → CFO",
+              "md": "**C**ell **F**unctional **I**nput and **O**utput. In functional mode the signal passes straight through the output mux — the core works normally."
+            },
+            {
+              "x": 15,
+              "y": 33,
+              "w": 8,
+              "h": 32,
+              "label": "2",
+              "title": "Capture",
+              "md": "In a capture, the value on CFI is loaded into the cell. For a core **input** cell this observes what the neighbouring logic sends — used in outward-facing (EXTEST) tests."
+            },
+            {
+              "x": 23.5,
+              "y": 57,
+              "w": 6,
+              "h": 26,
+              "label": "3",
+              "title": "Capture / shift mux",
+              "md": "Chooses what the flip-flop loads: the value on **CFI** (capture) or the bit from the previous cell on **CTI** (shift). **C**ell **T**est **I**nput and **O**utput connect the cells into the WBR chain between WSI and WSO."
+            },
+            {
+              "x": 33,
+              "y": 61,
+              "w": 14,
+              "h": 18,
+              "label": "4",
+              "title": "Shift flip-flop",
+              "md": "Clocked by WRCK while ShiftWR or CaptureWR is active."
+            },
+            {
+              "x": 52,
+              "y": 79,
+              "w": 14,
+              "h": 17,
+              "label": "5",
+              "title": "Update / hold stage",
+              "md": "Holds a stable value while the chain shifts, so the core input does not see moving bits. Some cells have no separate update stage; then the shift flip-flop drives directly."
+            },
+            {
+              "x": 66,
+              "y": 25,
+              "w": 6,
+              "h": 30,
+              "label": "6",
+              "title": "Output mux",
+              "md": "In inward-facing test mode the cell — not CFI — drives the core input (CFO): the core is **controlled** and isolated from its neighbours."
+            }
+          ]
+        },
+        {
+          "type": "table",
+          "columns": [
+            "Mode",
+            "Core input cell",
+            "Core output cell"
+          ],
+          "rows": [
+            [
+              "Functional",
+              "transparent",
+              "transparent"
+            ],
+            [
+              "Inward-facing (INTEST)",
+              "**drives** the core input",
+              "**captures** the core output"
+            ],
+            [
+              "Outward-facing (EXTEST)",
+              "**captures** what arrives from outside",
+              "**drives** the wire to the next core"
+            ],
+            [
+              "Safe",
+              "holds a fixed, harmless value",
+              "holds a fixed, harmless value"
+            ]
+          ],
+          "caption": "What a cell does in each mode"
+        },
+        {
+          "type": "accordion",
+          "items": [
+            {
+              "title": "Dedicated and shared cells",
+              "md": "A **dedicated** cell adds its own flip-flop. A **shared** cell reuses a functional flip-flop that already sits at the core boundary — less area and no extra delay on the functional path, but the cell's behaviour then depends on the core's design."
+            },
+            {
+              "title": "Which terminals get cells?",
+              "md": "Normally every functional input and output. **Clocks**, asynchronous resets and analog signals usually do not; they are documented as exceptions."
+            },
+            {
+              "title": "Why a safe state?",
+              "md": "While one core is tested, its outputs must not disturb running neighbours. Safe values keep the wires quiet — for example, *not* asserting a write enable into a neighbour's memory."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "instructions",
+      "title": "Instructions and test modes",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": [
+            "Instruction",
+            "Required?",
+            "Register between WSI and WSO",
+            "Effect"
+          ],
+          "rows": [
+            [
+              "**WS_BYPASS**",
+              "mandatory",
+              "WBY",
+              "functional mode; the wrapper adds one bit"
+            ],
+            [
+              "**WS_EXTEST**",
+              "mandatory",
+              "WBR",
+              "outward-facing: test the wires to other cores"
+            ],
+            [
+              "**WS_INTEST_SCAN** or **WS_INTEST_RING**",
+              "one of them mandatory",
+              "WBR (+ core scan chains)",
+              "inward-facing: test the core, with or without its internal scan chains"
+            ],
+            [
+              "WS_PRELOAD",
+              "optional",
+              "WBR",
+              "load values before EXTEST"
+            ],
+            [
+              "WS_CLAMP",
+              "optional",
+              "WBY",
+              "WBR holds its values while only WBY is on the path"
+            ],
+            [
+              "WS_SAFE",
+              "optional",
+              "WBY",
+              "wrapper outputs go to their safe state"
+            ],
+            [
+              "WP_…",
+              "optional",
+              "through the WPP",
+              "parallel-port versions of the tests"
+            ]
+          ],
+          "caption": "IEEE 1500 instructions: WS_ = serial port, WP_ = parallel port"
+        },
+        {
+          "type": "stepper",
+          "src": "assets/wir-select.svg",
+          "interval": 3000,
+          "steps": [
+            {
+              "title": "Loading the WIR",
+              "md": "With **SelectWIR = 1** the WIR is between WSI and WSO, and the instruction is shifted in."
+            },
+            {
+              "title": "WS_BYPASS",
+              "md": "With SelectWIR = 0 the instruction chooses the data register. WS_BYPASS: only the 1-bit **WBY** — the core works normally and adds one bit to the path."
+            },
+            {
+              "title": "WS_EXTEST",
+              "md": "The **WBR** is on the path; its cells drive and capture the wires **outside** the core."
+            },
+            {
+              "title": "WS_INTEST_SCAN",
+              "md": "The WBR and the core's internal **scan chains** form one long path. The vendor's scan patterns are applied to the isolated core."
+            }
+          ]
+        },
+        {
+          "type": "categorize",
+          "prompt": "Practice: which instruction is needed?",
+          "categories": [
+            {
+              "id": "in",
+              "label": "WS_INTEST_SCAN"
+            },
+            {
+              "id": "out",
+              "label": "WS_EXTEST"
+            },
+            {
+              "id": "by",
+              "label": "WS_BYPASS"
+            }
+          ],
+          "items": [
+            {
+              "text": "Run the vendor's scan patterns of a USB core",
+              "category": "in"
+            },
+            {
+              "text": "Check the wires between the CPU core and the memory controller",
+              "category": "out"
+            },
+            {
+              "text": "Skip a core that is not being tested on the serial path",
+              "category": "by"
+            },
+            {
+              "text": "Find a stuck-at fault inside a DSP core with ATPG patterns",
+              "category": "in"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "integration",
+      "title": "Parallel port, control and documentation",
+      "blocks": [
+        {
+          "type": "svg",
+          "src": "assets/wpp.svg",
+          "caption": "Through the WPP several chains are shifted at once"
+        },
+        {
+          "type": "text",
+          "md": "The serial port moves one bit per clock — fine for instructions and small tests, far too slow for the millions of scan bits of a large core. The optional **wrapper parallel port** connects the WBR segments and the core's internal chains to several chip-level **scan pins** (or a test bus), so many chains shift at once. Its width and use are chosen by the SoC integrator.\n\nIn the SoC, the **WSC signals** come from the chip's TAP: the TAP states produce *ShiftWR*, *CaptureWR*, *UpdateWR*, and a TAP instruction (or an IJTAG network, Topic 6) puts the wrappers on the scan path."
+        },
+        {
+          "type": "accordion",
+          "items": [
+            {
+              "title": "CTL: documenting a wrapped core",
+              "md": "A wrapped core is delivered with a description in **CTL** — the Core Test Language, IEEE 1450.6. It tells the SoC integrator the wrapper's instructions, its terminals, its scan chains and how the core's test patterns must be applied."
+            },
+            {
+              "title": "Compliant and unwrapped cores",
+              "md": "A *1500-compliant* core comes with its wrapper. A *1500-ready* (unwrapped) core comes without one but with the CTL information needed to add a wrapper during SoC integration."
+            },
+            {
+              "title": "1500 and 1687 together",
+              "md": "IEEE 1500 standardises **what a core looks like** from outside; IEEE 1687 standardises **how instruments are reached** through a network. Real SoCs use both: wrapped cores whose wrapper registers and internal instruments sit inside an IJTAG network."
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "quiz": {
+    "questions": [
+      {
+        "id": "q-why",
+        "type": "single",
+        "text": "Why does a core inside an SoC need a test wrapper?",
+        "options": [
+          "Its terminals are connected to other logic, not to chip pins, so its tests cannot be applied directly",
+          "Cores have no clock",
+          "Wrappers make cores faster",
+          "To program the core's firmware"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "why-cores"
+        ]
+      },
+      {
+        "id": "q-selwir",
+        "type": "single",
+        "text": "What does **SelectWIR = 1** do?",
+        "options": [
+          "Puts the WIR between WSI and WSO",
+          "Resets the wrapper",
+          "Selects the parallel port",
+          "Starts a capture"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "wsp"
+        ]
+      },
+      {
+        "id": "q-nofsm",
+        "type": "truefalse",
+        "text": "An IEEE 1500 wrapper has its own TAP state machine driven by a TMS signal.",
+        "options": [
+          "True",
+          "False"
+        ],
+        "correct": [
+          1
+        ],
+        "shuffle": false,
+        "review": [
+          "wsp"
+        ]
+      },
+      {
+        "id": "q-cell",
+        "type": "single",
+        "text": "In inward-facing test mode, what does a wrapper cell on a core **input** do?",
+        "options": [
+          "It drives the core input from the cell",
+          "It captures the value from outside",
+          "It is transparent",
+          "It is removed from the chain"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "cell"
+        ]
+      },
+      {
+        "id": "q-mand",
+        "type": "multiple",
+        "text": "Which instructions must every IEEE 1500 wrapper support? Select **all** correct answers.",
+        "options": [
+          "WS_BYPASS",
+          "WS_EXTEST",
+          "WS_INTEST_SCAN or WS_INTEST_RING",
+          "WS_CLAMP"
+        ],
+        "correct": [
+          0,
+          1,
+          2
+        ],
+        "review": [
+          "instructions"
+        ]
+      },
+      {
+        "id": "q-intest",
+        "type": "single",
+        "text": "With WS_INTEST_SCAN, what is between WSI and WSO?",
+        "options": [
+          "The WBR together with the core's internal scan chains",
+          "Only WBY",
+          "Only the WIR",
+          "Nothing — the parallel port is used"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "instructions"
+        ]
+      },
+      {
+        "id": "q-wpp",
+        "type": "single",
+        "text": "Why is the wrapper parallel port used?",
+        "options": [
+          "To shift several chains at once and apply large scan pattern sets quickly",
+          "To load the WIR",
+          "To reset the wrapper",
+          "It replaces WRCK"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "integration"
+        ]
+      },
+      {
+        "id": "q-ctl",
+        "type": "single",
+        "text": "What does CTL (IEEE 1450.6) describe?",
+        "options": [
+          "A core's test information: wrapper instructions, terminals, scan chains, how to apply its patterns",
+          "The board netlist",
+          "The TAP state machine",
+          "The IJTAG network"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "integration"
+        ]
+      }
+    ]
+  }
+}

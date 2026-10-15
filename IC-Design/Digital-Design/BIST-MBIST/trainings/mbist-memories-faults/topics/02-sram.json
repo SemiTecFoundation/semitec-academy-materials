@@ -1,0 +1,362 @@
+{
+  "id": "sram",
+  "title": "Inside an SRAM",
+  "duration": "35 min",
+  "summary": "To understand how a memory fails, you first need to know how it works. This topic opens an SRAM: the 6-transistor cell, how a bit is read and written, and how thousands of cells are organised into an array with decoders, sense amplifiers and column multiplexers.",
+  "objectives": [
+    "Name the six transistors of an SRAM cell and their jobs.",
+    "Describe a read and a write step by step, and why a read can disturb a cell.",
+    "Explain how an address selects a row and columns in the array.",
+    "Compute rows, columns, column-mux ratio and address bits of a word-oriented memory."
+  ],
+  "subsections": [
+    {
+      "id": "cell",
+      "title": "The 6-transistor cell",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "One bit of SRAM is stored by **two inverters connected in a loop**: the output of each one drives the input of the other. The loop has two stable states — Q = 0 / QB = 1 or Q = 1 / QB = 0 — and holds it as long as power is on. Two more transistors connect the cell to the outside world."
+        },
+        {
+          "type": "reveal",
+          "src": "assets/sram-cell.svg",
+          "hint": "Click the parts of the cell.",
+          "caption": "Six transistors: two inverters (4) + two access transistors (2)",
+          "spots": [
+            {
+              "x": 42,
+              "y": 31,
+              "w": 13.2,
+              "h": 47.6,
+              "label": "1",
+              "title": "Cross-coupled inverters (M1–M4)",
+              "md": "Each inverter is one PMOS **pull-up** and one NMOS **pull-down** transistor. Together they form a latch that keeps the bit. This is where the value lives.",
+              "badge": "tr"
+            },
+            {
+              "x": 34.2,
+              "y": 36.9,
+              "w": 5.3,
+              "h": 34.5,
+              "label": "2",
+              "title": "Storage nodes Q and QB",
+              "md": "The two internal nodes always hold opposite values. *Reading the cell* means finding out which node is 0.",
+              "badge": "bl"
+            },
+            {
+              "x": 19.7,
+              "y": 50.5,
+              "w": 7.9,
+              "h": 8.6,
+              "label": "3",
+              "title": "Access transistors (M5, M6)",
+              "md": "Switches between the storage nodes and the bit lines. They open only when the **word line** is high."
+            },
+            {
+              "x": 7.9,
+              "y": 12,
+              "w": 84.2,
+              "h": 7,
+              "label": "4",
+              "title": "Word line (WL)",
+              "md": "One horizontal wire per **row**. Raising it connects every cell of that row to its bit lines."
+            },
+            {
+              "x": 10.5,
+              "y": 22,
+              "w": 5,
+              "h": 58,
+              "label": "5",
+              "title": "Bit lines (BL and BLB)",
+              "md": "Two vertical wires per **column**, carrying the value and its complement. Shared by all cells of the column."
+            },
+            {
+              "x": 7.9,
+              "y": 88.6,
+              "w": 84.2,
+              "h": 8.6,
+              "label": "6",
+              "title": "Column circuits",
+              "md": "At the end of each column: **precharge** (pulls both bit lines up before a read), **sense amplifier** (detects a tiny difference), **write driver** (forces a new value)."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "read-write",
+      "title": "Reading and writing a cell",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "Follow one cell through a **read** (steps 1–5) and a **write** (steps 6–8). The cell starts holding **0**."
+        },
+        {
+          "type": "stepper",
+          "src": "assets/sram-rw.svg",
+          "interval": 2600,
+          "steps": [
+            {
+              "title": "1. The cell holds 0",
+              "md": "Q = 0, QB = 1. The word line is low: the cell is cut off from the bit lines and just holds its value."
+            },
+            {
+              "title": "2. Precharge",
+              "md": "Before a read, both bit lines are charged to **VDD** (logic 1)."
+            },
+            {
+              "title": "3. Word line on",
+              "md": "The row's word line goes high and M5, M6 open. On the side that stores **0** (Q), the bit line BL starts to discharge through M5 and the pull-down — it drops by only a **small amount ΔV** (around a hundred millivolts) in the short read time."
+            },
+            {
+              "title": "4. Sense",
+              "md": "The **sense amplifier** compares BL and BLB. BL is a little lower → the cell holds **0**. The small difference is amplified to a full logic level."
+            },
+            {
+              "title": "5. Word line off",
+              "md": "The cell is disconnected again and still holds 0. A read must **never** change the cell — if the access transistor were too strong compared with the pull-down, node Q could rise enough to flip the cell. That failure is a **read disturb** (Topic 6)."
+            },
+            {
+              "title": "6. Write: drive the bit lines",
+              "md": "To write **1**, the write driver forces BL = 1 and BLB = 0 with strong transistors."
+            },
+            {
+              "title": "7. Word line on: the cell flips",
+              "md": "Through M6 the driver pulls QB down. The access transistor must be stronger than the cell's pull-up, so QB falls, the inverters switch and the cell flips: **Q = 1, QB = 0**. If it is too weak, the write fails — a **transition fault** (Topic 4)."
+            },
+            {
+              "title": "8. Word line off",
+              "md": "The cell now holds 1 on its own."
+            }
+          ]
+        },
+        {
+          "type": "callout",
+          "kind": "key",
+          "title": "A delicate balance",
+          "md": "Reads need the cell to be **strong** (not to flip); writes need it to be **weak enough** to flip. Defects and process variation can upset this balance — exactly what the fault models of this training describe."
+        },
+        {
+          "type": "sort",
+          "prompt": "Practice: put the steps of a read in order.",
+          "items": [
+            "Precharge both bit lines",
+            "Raise the word line",
+            "The bit line on the 0 side drops slightly",
+            "The sense amplifier decides",
+            "Lower the word line"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "array",
+      "title": "The array: decoders and sense amplifiers",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "Cells are arranged in **rows** (one word line each) and **columns** (one bit-line pair each). Follow an access to a small memory of 32 words × 4 bits:"
+        },
+        {
+          "type": "scrolly",
+          "src": "assets/sram-array.svg",
+          "steps": [
+            {
+              "title": "1. The address arrives",
+              "md": "5 address bits for 32 words. The upper bits A[4:2] choose the **row** (8 rows), the lower bits A[1:0] choose a **column group** (4 groups)."
+            },
+            {
+              "title": "2. Row decoder",
+              "md": "The row decoder turns A[4:2] = 101 into exactly **one** active word line: WL 5. All other word lines stay low."
+            },
+            {
+              "title": "3. A whole row is opened",
+              "md": "Every cell of row 5 — all **16** of them — is connected to its bit lines. A row holds **four** words."
+            },
+            {
+              "title": "4. Column multiplexer",
+              "md": "The column mux uses A[1:0] = 10 to pick **one column out of every four**: columns 2, 6, 10, 14. These are the 4 bits of the addressed word — they are **interleaved**, not side by side."
+            },
+            {
+              "title": "5. Read: sense amplifiers",
+              "md": "Four sense amplifiers amplify the four selected bit-line pairs and drive the data outputs D[3:0]."
+            },
+            {
+              "title": "6. Write: write drivers",
+              "md": "For a write, the same path works backwards: four write drivers force the selected columns, and only the 4 addressed cells of row 5 are written."
+            }
+          ]
+        },
+        {
+          "type": "accordion",
+          "items": [
+            {
+              "title": "Why not one column per bit?",
+              "md": "A memory with 1024 words of 4 bits would then be 1024 rows tall and 4 columns wide — a very long, thin block with very long bit lines (slow) and a huge decoder. Folding several words into one row makes the array close to **square**: shorter wires, faster, smaller."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "word-oriented",
+      "title": "Word-oriented memories and column multiplexing",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "Real memories are described as **words × bits per word** (e.g. 4096 × 16). The designer chooses the physical shape:\n\n- **cells** = words × bits\n- **columns** = cells ÷ rows\n- **column-mux ratio** = columns ÷ bits per word\n- **address bits** = log₂(rows) for the row + log₂(mux ratio) for the column"
+        },
+        {
+          "type": "callout",
+          "kind": "key",
+          "title": "Worked example",
+          "md": "A memory of **1024 × 8** bits is built with **128 rows**.\n\n- cells = 1024 × 8 = 8192\n- columns = 8192 ÷ 128 = **64**\n- column mux = 64 ÷ 8 = **8 : 1**\n- address = 10 bits = **7** row bits (128 rows) + **3** column bits (8 groups)"
+        },
+        {
+          "type": "tabs",
+          "tabs": [
+            {
+              "label": "Interleaved bits",
+              "md": "With an 8 : 1 mux, the bits of one word sit **8 columns apart**. A particle that hits two neighbouring cells usually damages **two different words**, one bit each — which an error-correcting code (ECC) can fix. Designers interleave on purpose."
+            },
+            {
+              "label": "Logical vs. physical neighbours",
+              "md": "Address 5 and address 6 are neighbours in the **address space**, but in the array they can be far apart (different column groups, or rows that the decoder has scrambled). Many memory faults happen between **physically** neighbouring cells. A good test either knows the real layout (*address scrambling* information) or uses algorithms that do not depend on it — the March tests."
+            },
+            {
+              "label": "Word-oriented tests",
+              "md": "All bits of a word are written at the same time. Faults **between bits of the same word** (intra-word) can only be found if the test writes different values into the bits of one word — using several **data backgrounds** such as 0000, 0101, 0011. You will meet them in the *March tests* training."
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "quiz": {
+    "questions": [
+      {
+        "id": "q-access",
+        "type": "single",
+        "text": "Which transistors connect the SRAM cell to its bit lines, and what controls them?",
+        "options": [
+          "The two access transistors M5, M6 — controlled by the word line.",
+          "The pull-up transistors — controlled by the bit lines.",
+          "The pull-down transistors — controlled by the sense amplifier.",
+          "All six transistors — controlled by the clock."
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "cell"
+        ]
+      },
+      {
+        "id": "q-read-order",
+        "type": "order",
+        "text": "Put the steps of an SRAM read in order.",
+        "items": [
+          "Precharge both bit lines",
+          "Raise the word line",
+          "The bit line on the 0 side drops slightly",
+          "The sense amplifier decides",
+          "Lower the word line"
+        ],
+        "review": [
+          "read-write"
+        ]
+      },
+      {
+        "id": "q-disturb",
+        "type": "truefalse",
+        "text": "If the access transistor is too strong compared with the pull-down transistor, a read can flip the cell.",
+        "options": [
+          "True",
+          "False"
+        ],
+        "correct": [
+          0
+        ],
+        "shuffle": false,
+        "review": [
+          "read-write"
+        ],
+        "explain": "The storage node rises during the read; if it rises too far, the latch switches — a **read disturb**."
+      },
+      {
+        "id": "q-write",
+        "type": "single",
+        "text": "Why can a write flip the cell although the cell's inverters try to hold the old value?",
+        "options": [
+          "The write driver and access transistor are stronger than the cell's pull-up, so the node is pulled to the new value.",
+          "The word line switches off the inverters during a write.",
+          "The cell is cleared to 0 before every write.",
+          "The sense amplifier stores the new value."
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "read-write"
+        ]
+      },
+      {
+        "id": "q-mux",
+        "type": "single",
+        "text": "A 4096 × 16-bit memory is built with 512 rows. What is the column-mux ratio?",
+        "options": [
+          "8 : 1",
+          "4 : 1",
+          "16 : 1",
+          "32 : 1"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "word-oriented"
+        ],
+        "explain": "cells = 65 536; columns = 65 536 ÷ 512 = 128; mux = 128 ÷ 16 = **8 : 1**."
+      },
+      {
+        "id": "q-bits",
+        "type": "single",
+        "text": "For the same memory (4096 × 16, 512 rows, 8 : 1 mux), how are the 12 address bits split?",
+        "options": [
+          "9 row bits + 3 column bits",
+          "8 row bits + 4 column bits",
+          "12 row bits + 0 column bits",
+          "6 row bits + 6 column bits"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "word-oriented"
+        ],
+        "explain": "512 rows → 9 bits; 8 column groups → 3 bits; 9 + 3 = 12 (4096 words)."
+      },
+      {
+        "id": "q-interleave",
+        "type": "multiple",
+        "text": "What follows from column multiplexing? Select **all** correct answers.",
+        "options": [
+          "The bits of one word are not physically next to each other.",
+          "Neighbouring addresses are not always neighbouring cells in the array.",
+          "A particle hitting two adjacent cells usually damages two different words.",
+          "All bits of a word share one bit line."
+        ],
+        "correct": [
+          0,
+          1,
+          2
+        ],
+        "review": [
+          "array",
+          "word-oriented"
+        ]
+      }
+    ]
+  }
+}

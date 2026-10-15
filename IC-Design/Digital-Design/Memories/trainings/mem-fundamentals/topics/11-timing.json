@@ -1,0 +1,414 @@
+{
+  "id": "timing",
+  "title": "Timing and datasheets",
+  "duration": "60 min",
+  "summary": "Memories have timing rules just like flip-flops — setup, hold, clock-to-output, cycle time — and stand-alone SRAMs have their own asynchronous cycles. This topic teaches you to read a memory datasheet, compute the clock limit of a path through a memory, and verify a memory with a behavioural model and a self-checking testbench.",
+  "objectives": [
+    "Explain setup, hold, clock-to-output and cycle time of a memory macro.",
+    "Read a memory datasheet and compute the maximum clock frequency of a path.",
+    "Describe asynchronous SRAM read and write cycles.",
+    "Write a behavioural memory model with timing checks and a self-checking testbench."
+  ],
+  "subsections": [
+    {
+      "id": "macro-timing",
+      "title": "Setup, hold and clock-to-output",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "An SRAM macro behaves like a big register bank with timing rules at its pins:"
+        },
+        {
+          "type": "stepper",
+          "src": "assets/macro-timing.svg",
+          "interval": 3000,
+          "steps": [
+            {
+              "title": "Setup time tSU",
+              "md": "Address, enables and data must be stable **before** the rising edge."
+            },
+            {
+              "title": "Hold time tH",
+              "md": "…and stay stable for a short time **after** it."
+            },
+            {
+              "title": "Clock-to-output tCQ",
+              "md": "Read data becomes valid tCQ after the edge — the macro's access time."
+            },
+            {
+              "title": "Cycle time tCYC",
+              "md": "The minimum clock period: one access per tCYC."
+            }
+          ]
+        },
+        {
+          "type": "callout",
+          "kind": "key",
+          "title": "Two timing paths through every memory",
+          "md": "**Into** the memory: logic delay + tSU must fit in the clock period. **Out of** the memory: tCQ + logic delay + the setup of the next flip-flop must fit. The output path is usually the critical one — which is why output registers (latency 2) exist."
+        }
+      ]
+    },
+    {
+      "id": "datasheet",
+      "title": "Reading a memory datasheet",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "A memory compiler produces a datasheet for every generated instance. A typical excerpt (illustrative numbers for one instance and corner):"
+        },
+        {
+          "type": "table",
+          "columns": [
+            "Parameter",
+            "Symbol",
+            "Value"
+          ],
+          "rows": [
+            [
+              "minimum cycle time",
+              "tCYC",
+              "1.00 ns"
+            ],
+            [
+              "clock to output (access time)",
+              "tCQ / tACC",
+              "0.60 ns"
+            ],
+            [
+              "address setup / hold",
+              "tAS / tAH",
+              "0.12 / 0.05 ns"
+            ],
+            [
+              "data setup / hold",
+              "tDS / tDH",
+              "0.10 / 0.05 ns"
+            ],
+            [
+              "write-enable setup / hold",
+              "tWS / tWH",
+              "0.12 / 0.05 ns"
+            ],
+            [
+              "read energy / write energy",
+              "—",
+              "5.2 / 6.0 pJ"
+            ],
+            [
+              "leakage",
+              "—",
+              "35 µW"
+            ]
+          ],
+          "caption": "Datasheet excerpt (illustration)"
+        },
+        {
+          "type": "text",
+          "md": "**Worked example.** The read data goes through 0.9 ns of logic into a flip-flop with 0.1 ns setup:\n\n> period ≥ tCQ + logic + tSU(FF) = 0.6 + 0.9 + 0.1 = **1.6 ns** → at most 625 MHz.\n\nWith an output register (latency 2) the logic moves to the next stage: period ≥ max(tCYC, tCQ + tSU(FF)) = 1.0 ns → 1 GHz."
+        },
+        {
+          "type": "callout",
+          "kind": "info",
+          "title": "Corners",
+          "md": "Values are given per **corner**: slow process, low voltage, high temperature for the worst case; fast corners for hold checks. Timing analysis uses all of them."
+        }
+      ]
+    },
+    {
+      "id": "async-sram",
+      "title": "Asynchronous SRAM",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "Stand-alone SRAM chips (and some old designs) have **no clock**. Control signals are active-low: /CE (chip enable), /OE (output enable), /WE (write enable)."
+        },
+        {
+          "type": "stepper",
+          "src": "assets/async-sram.svg",
+          "interval": 3000,
+          "steps": [
+            {
+              "title": "Read cycle",
+              "md": "Data appears tAA after the address is stable — once /CE and /OE are low (tOE after /OE)."
+            },
+            {
+              "title": "Write cycle",
+              "md": "The cell is written while /WE is low for at least tWP; data must be valid tDW before /WE rises."
+            }
+          ]
+        },
+        {
+          "type": "table",
+          "columns": [
+            "Symbol",
+            "Meaning"
+          ],
+          "rows": [
+            [
+              "tAA",
+              "address access time: address stable → data valid"
+            ],
+            [
+              "tOE",
+              "output enable to data valid"
+            ],
+            [
+              "tWP",
+              "write pulse width (/WE low)"
+            ],
+            [
+              "tDW / tDH",
+              "data setup / hold to the end of the write pulse"
+            ]
+          ],
+          "caption": "Asynchronous SRAM timing parameters"
+        }
+      ]
+    },
+    {
+      "id": "model",
+      "title": "In SystemVerilog: behavioural model",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "For simulation, memory vendors supply **behavioural models**: RTL-like code plus timing checks in a `specify` block. A simplified model of a synchronous SRAM with active-low enables:"
+        },
+        {
+          "type": "code",
+          "lang": "systemverilog",
+          "code": "`timescale 1ns/1ps\nmodule sram_model #(\n  parameter int  DW   = 16,\n  parameter int  AW   = 10,\n  parameter real T_CQ = 0.6               // clock-to-output\n) (\n  input  logic          clk,\n  input  logic          cen,              // chip enable, active low\n  input  logic          wen,              // write enable, active low\n  input  logic [AW-1:0] a,\n  input  logic [DW-1:0] d,\n  output logic [DW-1:0] q\n);\n  logic [DW-1:0] mem [2**AW];\n  reg notifier;                           // toggled on a timing violation\n\n  always @(posedge clk)\n    if (!cen) begin\n      if (!wen) mem[a] <= d;              // write\n      else      q <= #(T_CQ) mem[a];      // read, valid after tCQ\n    end\n\n  specify\n    $setup(a,   posedge clk, 0.12, notifier);\n    $hold (posedge clk, a,   0.05, notifier);\n    $setup(d,   posedge clk, 0.10, notifier);\n    $hold (posedge clk, d,   0.05, notifier);\n    $setup(wen, posedge clk, 0.12, notifier);\n    $setup(cen, posedge clk, 0.12, notifier);\n  endspecify\n\n  always @(notifier)                      // violation: output unknown\n    if ($realtime > 0) begin              // ignore initialisation at time 0\n      q <= 'x;\n      $display(\"%t: timing violation in %m\", $realtime);\n    end\n\n  // assertion: one clock after a read, q holds the word that was addressed\n  a_read: assert property (\n    @(posedge clk) (!cen && wen) |=> (q === mem[$past(a)])\n  ) else $error(\"read data mismatch\");\nendmodule"
+        }
+      ]
+    },
+    {
+      "id": "testbench",
+      "title": "In SystemVerilog: self-checking testbench",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "The testbench writes random data to random addresses, keeps a **reference model** (an associative array) and compares every read:"
+        },
+        {
+          "type": "code",
+          "lang": "systemverilog",
+          "code": "`timescale 1ns/1ps\nmodule tb;\n  logic        clk = 0, cen = 1, wen = 1;\n  logic [9:0]  a;\n  logic [15:0] d, q;\n  logic [15:0] ref_mem [int];             // reference model\n  int          errors = 0;\n\n  always #5 clk = ~clk;                   // 100 MHz\n  sram_model #(.DW(16), .AW(10)) dut (.*);\n\n  task automatic write(input logic [9:0] addr, input logic [15:0] data);\n    @(negedge clk); cen = 0; wen = 0; a = addr; d = data;\n    ref_mem[addr] = data;\n  endtask\n\n  task automatic read_check(input logic [9:0] addr);\n    @(negedge clk); cen = 0; wen = 1; a = addr;\n    @(negedge clk); cen = 1;              // q is valid now\n    if (ref_mem.exists(addr) && q !== ref_mem[addr]) begin\n      errors++;\n      $error(\"addr %0h: read %h, expected %h\", addr, q, ref_mem[addr]);\n    end\n  endtask\n\n  initial begin\n    repeat (500) write($urandom_range(0, 1023), $urandom);\n    repeat (500) read_check($urandom_range(0, 1023));\n    $display(\"test finished with %0d errors\", errors);\n    $finish;\n  end\nendmodule"
+        },
+        {
+          "type": "accordion",
+          "items": [
+            {
+              "title": "Why drive at the falling edge?",
+              "md": "Inputs change half a period before the rising edge, so setup and hold are met with a large margin — the testbench checks function, the specify block checks timing."
+            },
+            {
+              "title": "Why an associative array?",
+              "md": "It stores only the addresses that were written. `exists()` tells whether a read address has a known expected value — unwritten addresses are skipped."
+            },
+            {
+              "title": "What next?",
+              "md": "Lab **M1** extends this testbench: byte enables, read-during-write checks, back-to-back accesses and coverage of all addresses."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "summary",
+      "title": "Summary and what comes next",
+      "blocks": [
+        {
+          "type": "flipcards",
+          "md": "Check yourself before the quiz: say the meaning, then flip the card.",
+          "cards": [
+            {
+              "front": "**Memory hierarchy**",
+              "back": "Registers → caches (SRAM) → DRAM → flash: faster and smaller at the top."
+            },
+            {
+              "front": "**AMAT**",
+              "back": "hit time + miss rate × miss penalty."
+            },
+            {
+              "front": "**Address bits**",
+              "back": "⌈log₂(depth)⌉."
+            },
+            {
+              "front": "**Column mux**",
+              "back": "Picks one word of the several words stored in a row."
+            },
+            {
+              "front": "**Read latency**",
+              "back": "Clocks between a read request and valid data."
+            },
+            {
+              "front": "**Read-first / write-first / no-change**",
+              "back": "What dout shows during a write: old data, new data, unchanged."
+            },
+            {
+              "front": "**Byte enable**",
+              "back": "One write enable per byte of the word."
+            },
+            {
+              "front": "**Bypass**",
+              "back": "Forwards the data being written to a read of the same address."
+            },
+            {
+              "front": "**tSU / tH / tCQ**",
+              "back": "Setup, hold, clock-to-output of a memory macro."
+            },
+            {
+              "front": "**Bandwidth**",
+              "back": "width × accesses per second × ports."
+            },
+            {
+              "front": "**Interleaving**",
+              "back": "Consecutive words in different banks, so accesses overlap."
+            },
+            {
+              "front": "**FIFO full / empty**",
+              "back": "Equal pointers: empty. Same slot, different wrap bit: full."
+            },
+            {
+              "front": "**SECDED**",
+              "back": "Corrects one flipped bit, detects two; 7 check bits for 32 data bits."
+            },
+            {
+              "front": "**VALID / READY**",
+              "back": "AXI handshake: a transfer happens when both are 1."
+            }
+          ]
+        },
+        {
+          "type": "callout",
+          "kind": "tip",
+          "title": "Next",
+          "md": "**SRAM in Depth** opens the macro: cells, sense amplifiers, decoders and memory compilers. **Lab M1** builds and verifies the RAM models of this training. Pass the quiz of this topic to complete *Memory Fundamentals* and open your certificate."
+        }
+      ]
+    }
+  ],
+  "quiz": {
+    "questions": [
+      {
+        "id": "q-tsu",
+        "type": "single",
+        "text": "What does the setup time tSU of a memory macro require?",
+        "options": [
+          "Inputs stable for tSU before the rising clock edge",
+          "Data valid tSU after the edge",
+          "A clock period of at least tSU",
+          "Inputs stable tSU after the edge"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "macro-timing"
+        ]
+      },
+      {
+        "id": "q-period",
+        "type": "single",
+        "text": "tCQ = 0.8 ns, logic after the memory = 1.0 ns, flip-flop setup = 0.2 ns. Minimum clock period?",
+        "options": [
+          "2.0 ns",
+          "1.0 ns",
+          "0.8 ns",
+          "1.8 ns"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "datasheet"
+        ],
+        "explain": "0.8 + 1.0 + 0.2 = 2.0 ns."
+      },
+      {
+        "id": "q-taa",
+        "type": "single",
+        "text": "In an asynchronous SRAM read, what is tAA?",
+        "options": [
+          "Time from a stable address to valid data",
+          "The write pulse width",
+          "The clock period",
+          "Output enable to high impedance"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "async-sram"
+        ]
+      },
+      {
+        "id": "q-notifier",
+        "type": "single",
+        "text": "What happens in sram_model when a setup or hold check fails?",
+        "options": [
+          "The notifier toggles and q becomes X",
+          "The write is retried",
+          "The simulation stops immediately",
+          "Nothing"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "model"
+        ]
+      },
+      {
+        "id": "q-ref",
+        "type": "single",
+        "text": "Why does the testbench use an associative array as reference model?",
+        "options": [
+          "It only stores written addresses, and exists() tells which reads can be checked",
+          "It is faster than the DUT",
+          "It models timing",
+          "SystemVerilog has no other arrays"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "testbench"
+        ]
+      },
+      {
+        "id": "q-tcq",
+        "type": "single",
+        "text": "In the model, why is the read written as `q <= #(T_CQ) mem[a];`?",
+        "options": [
+          "To model the clock-to-output delay",
+          "To model setup time",
+          "To make the write slower",
+          "Because non-blocking assignments need a delay"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "model"
+        ]
+      },
+      {
+        "id": "q-oreg",
+        "type": "truefalse",
+        "text": "An output register can raise the maximum clock frequency when the logic after the memory is the critical path.",
+        "options": [
+          "True",
+          "False"
+        ],
+        "correct": [
+          0
+        ],
+        "shuffle": false,
+        "review": [
+          "datasheet"
+        ]
+      }
+    ]
+  }
+}

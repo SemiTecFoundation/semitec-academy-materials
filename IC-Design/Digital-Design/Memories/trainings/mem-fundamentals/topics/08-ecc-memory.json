@@ -1,0 +1,556 @@
+{
+  "id": "ecc-memory",
+  "title": "ECC memory modules",
+  "duration": "50 min",
+  "summary": "Memories in cars, servers and space systems protect every word with an **error-correcting code**. This topic treats ECC as a hardware module: encoder on the write path, check bits stored with the data, decoder with corrected/uncorrectable flags on the read path, plus overhead, scrubbing and error logging. It ends with a SECDED (39,32) encoder, decoder and ECC RAM in SystemVerilog.",
+  "objectives": [
+    "Explain why memories need ECC and compare parity, SEC and SECDED.",
+    "Describe the ECC memory module and its ce / ue outputs.",
+    "Compute check bits and a syndrome by hand for a small Hamming code.",
+    "Compute the check-bit overhead for a word width.",
+    "Explain read-modify-write, bit interleaving and scrubbing.",
+    "Read and use a SECDED (39,32) encoder, decoder and ECC RAM in SystemVerilog."
+  ],
+  "subsections": [
+    {
+      "id": "why-ecc",
+      "title": "Why memories need ECC",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "Memory cells are tiny. A particle from cosmic radiation or from the package can flip a bit (**soft error**); a weak cell can fail after years of use. Large memories — caches, DRAM, on-chip SRAM in cars and servers — therefore store a few extra **check bits** per word and correct errors on every read. This is **ECC** (error-correcting code).\n\nHere we treat ECC as a **memory module** — what it contains, how it is connected and what its signals mean. The mathematics of the codes is covered in the *Error-Correcting Codes* training."
+        },
+        {
+          "type": "table",
+          "columns": [
+            "Protection",
+            "Extra bits for 32 data bits",
+            "Detects",
+            "Corrects"
+          ],
+          "rows": [
+            [
+              "none",
+              "0",
+              "—",
+              "—"
+            ],
+            [
+              "parity",
+              "1",
+              "1 error (odd number)",
+              "—"
+            ],
+            [
+              "SEC (Hamming)",
+              "6",
+              "1 error",
+              "1 error"
+            ],
+            [
+              "SECDED (Hamming + parity)",
+              "7",
+              "2 errors",
+              "1 error"
+            ]
+          ],
+          "caption": "Levels of protection"
+        }
+      ]
+    },
+    {
+      "id": "architecture",
+      "title": "The ECC memory module",
+      "blocks": [
+        {
+          "type": "stepper",
+          "src": "assets/ecc-flow.svg",
+          "interval": 3000,
+          "steps": [
+            {
+              "title": "Write",
+              "md": "The **encoder** computes 7 check bits from the 32 data bits. The memory stores the whole 39-bit **code word**."
+            },
+            {
+              "title": "Clean read",
+              "md": "The **decoder** recomputes the check bits and compares: the **syndrome** is 0 — the data passes unchanged, no flag."
+            },
+            {
+              "title": "One bit flipped",
+              "md": "The syndrome is not 0 and points to the flipped bit; the decoder inverts it and raises **ce** (corrected error)."
+            },
+            {
+              "title": "Two bits flipped",
+              "md": "The decoder sees an even number of errors with a non-zero syndrome: it cannot correct, it raises **ue** (uncorrectable error)."
+            }
+          ]
+        },
+        {
+          "type": "table",
+          "columns": [
+            "Signal",
+            "Meaning",
+            "What the system does"
+          ],
+          "rows": [
+            [
+              "dout",
+              "corrected data",
+              "use it"
+            ],
+            [
+              "ce",
+              "a single error was corrected",
+              "count it; log the address; rewrite the word (scrubbing)"
+            ],
+            [
+              "ue",
+              "two errors detected",
+              "do not trust the data: interrupt, retry, reset or safe state"
+            ]
+          ],
+          "caption": "Outputs of an ECC memory"
+        }
+      ]
+    },
+    {
+      "id": "worked-example",
+      "title": "A worked example: 4 data bits",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "The idea is easiest to see with only **4 data bits**. Number the bit positions of the code word 1, 2, 3 … in binary. Positions that are powers of two (1, 2, 4) hold **check bits**; the others hold **data bits**. Each check bit covers every position whose binary number has *its* bit set."
+        },
+        {
+          "type": "stepper",
+          "src": "assets/ham-encode.svg",
+          "interval": 3000,
+          "steps": [
+            {
+              "title": "Place the bits",
+              "md": "Data 1 0 1 1 goes to positions 3, 5, 6, 7."
+            },
+            {
+              "title": "p1",
+              "md": "p1 covers positions 1, 3, 5, 7 (binary …1): p1 = 1 ⊕ 0 ⊕ 1 = 0."
+            },
+            {
+              "title": "p2",
+              "md": "p2 covers positions 2, 3, 6, 7 (binary .1.): p2 = 1 ⊕ 1 ⊕ 1 = 1."
+            },
+            {
+              "title": "p4",
+              "md": "p4 covers positions 4, 5, 6, 7 (binary 1..): p4 = 0 ⊕ 1 ⊕ 1 = 0."
+            },
+            {
+              "title": "Overall parity",
+              "md": "SECDED adds p0 = parity of all 7 bits = 0. The memory stores 8 bits: 0 | 0110011."
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "md": "**Decoding** repeats the same parity checks on the word that comes back from memory. Each check that fails sets one bit of the **syndrome** — and the syndrome, read as a binary number, is the **position of the wrong bit**."
+        },
+        {
+          "type": "stepper",
+          "src": "assets/ham-decode.svg",
+          "interval": 3000,
+          "steps": [
+            {
+              "title": "An error",
+              "md": "Position 6 has flipped from 1 to 0."
+            },
+            {
+              "title": "Check s1",
+              "md": "Positions 1, 3, 5, 7: 0 ⊕ 1 ⊕ 0 ⊕ 1 = 0 — this group is fine."
+            },
+            {
+              "title": "Check s2",
+              "md": "Positions 2, 3, 6, 7: 1 ⊕ 1 ⊕ 0 ⊕ 1 = 1 — this group contains the error."
+            },
+            {
+              "title": "Check s4",
+              "md": "Positions 4, 5, 6, 7: 0 ⊕ 0 ⊕ 0 ⊕ 1 = 1 — this group contains the error too."
+            },
+            {
+              "title": "Correct",
+              "md": "Syndrome s4 s2 s1 = 110 = **6**. The overall parity is odd, so there is exactly one error: invert bit 6, raise ce."
+            },
+            {
+              "title": "Two errors",
+              "md": "With bits 3 and 6 flipped the syndrome is 101 = 5 — a wrong position! The overall parity is **even**, which reveals two errors: no correction, raise ue."
+            }
+          ]
+        },
+        {
+          "type": "table",
+          "columns": [
+            "Syndrome",
+            "Overall parity",
+            "Decision"
+          ],
+          "rows": [
+            [
+              "0",
+              "even",
+              "no error"
+            ],
+            [
+              "≠ 0",
+              "odd",
+              "single error at position = syndrome → correct, ce = 1"
+            ],
+            [
+              "0",
+              "odd",
+              "the parity bit p0 itself flipped → data is fine, ce = 1"
+            ],
+            [
+              "≠ 0",
+              "even",
+              "double error → do not correct, ue = 1"
+            ]
+          ],
+          "caption": "How the SECDED decoder decides"
+        },
+        {
+          "type": "svg",
+          "src": "assets/ham-xor.svg",
+          "caption": "In hardware: one XOR gate per check bit in the encoder; in the decoder XORs give the syndrome, a small decoder selects the bit to invert"
+        },
+        {
+          "type": "callout",
+          "kind": "key",
+          "title": "The 32-bit version is the same idea",
+          "md": "For 32 data bits there are 6 check bits (positions 1, 2, 4, 8, 16, 32) and one overall parity bit. The constant masks M0 … M5 in the SystemVerilog below are exactly the rows of the coverage table: mask Mk marks the data bits whose position has bit k set."
+        }
+      ]
+    },
+    {
+      "id": "overhead",
+      "title": "Overhead and organisation",
+      "blocks": [
+        {
+          "type": "table",
+          "columns": [
+            "Data width",
+            "Check bits (SECDED)",
+            "Code word",
+            "Overhead"
+          ],
+          "rows": [
+            [
+              "8",
+              "5",
+              "13",
+              "63 %"
+            ],
+            [
+              "16",
+              "6",
+              "22",
+              "38 %"
+            ],
+            [
+              "32",
+              "7",
+              "39",
+              "22 %"
+            ],
+            [
+              "64",
+              "8",
+              "72",
+              "12.5 %"
+            ],
+            [
+              "128",
+              "9",
+              "137",
+              "7 %"
+            ]
+          ],
+          "caption": "SECDED overhead — wide words are cheaper"
+        },
+        {
+          "type": "text",
+          "md": "That is why server DRAM modules are **72 bits** wide (64 data + 8 check) and why ECC is computed over the widest practical word.\n\nTwo consequences for the design:\n\n- **Partial writes become read-modify-write.** Writing one byte changes the check bits of the whole word, so the module must read the word, merge the byte, re-encode and write back.\n- **The decoder is on the read path.** It adds a few gate levels of delay; fast memories often add a pipeline stage for it."
+        },
+        {
+          "type": "callout",
+          "kind": "info",
+          "title": "Interleaving",
+          "md": "Bits of one code word can be placed in physically distant cells (**bit interleaving**), so a single particle that flips several neighbouring cells hits several *different* code words — each with only one error, which ECC can correct."
+        }
+      ]
+    },
+    {
+      "id": "scrubbing",
+      "title": "Error flags, counters and scrubbing",
+      "blocks": [
+        {
+          "type": "accordion",
+          "items": [
+            {
+              "title": "Error counters",
+              "md": "Every corrected error increments a counter. A sudden increase means a memory is getting worse — the system can react before an uncorrectable error happens."
+            },
+            {
+              "title": "Scrubbing",
+              "md": "A corrected error is only corrected in the **output**; the cell still holds the wrong bit. A **scrubber** reads every word in the background and writes the corrected value back, so single errors cannot accumulate into double errors."
+            },
+            {
+              "title": "Testing the ECC logic",
+              "md": "MBIST tests the cells with the ECC bypassed and checks the encoder and decoder by writing code words with deliberately flipped bits — see *MBIST Architecture*, Topic 6."
+            }
+          ]
+        },
+        {
+          "type": "categorize",
+          "prompt": "Practice: what should happen?",
+          "categories": [
+            {
+              "id": "ce",
+              "label": "ce = 1: correct and log"
+            },
+            {
+              "id": "ue",
+              "label": "ue = 1: raise an error"
+            }
+          ],
+          "items": [
+            {
+              "text": "one bit of a cache line flipped by a particle",
+              "category": "ce"
+            },
+            {
+              "text": "two bits of the same word flipped",
+              "category": "ue"
+            },
+            {
+              "text": "a weak cell read once a day with one wrong bit",
+              "category": "ce"
+            },
+            {
+              "text": "a whole row failing in one word",
+              "category": "ue"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sv",
+      "title": "In SystemVerilog: SECDED encoder, decoder and ECC RAM",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "A **parameterised** SECDED (Hamming + overall parity) for any data width. A package holds the helper that gives each data bit its Hamming position:"
+        },
+        {
+          "type": "code",
+          "lang": "systemverilog",
+          "code": "// SECDED (39,32): 32 data bits + 6 Hamming check bits + 1 overall parity bit\npackage secded32_pkg;\n  // Each Hamming check bit is the parity of the data bits selected by a mask\n  // (data bit i sits at Hamming position 3, 5, 6, 7, 9, ... - never a power of 2)\n  localparam logic [31:0] M0 = 32'h56AA_AD5B, M1 = 32'h9B33_366D,\n                          M2 = 32'hE3C3_C78E, M3 = 32'h03FC_07F0,\n                          M4 = 32'h03FF_F800, M5 = 32'hFC00_0000;\n\n  function automatic logic [5:0] hamming(input logic [31:0] d);\n    return {^(d & M5), ^(d & M4), ^(d & M3), ^(d & M2), ^(d & M1), ^(d & M0)};\n  endfunction\n\n  // syndrome (error position) -> data bit index; 63 = not a data bit\n  localparam logic [5:0] DATA_BIT [64] = '{\n    6'd63, 6'd63, 6'd63, 6'd0, 6'd63, 6'd1, 6'd2, 6'd3,\n    6'd63, 6'd4, 6'd5, 6'd6, 6'd7, 6'd8, 6'd9, 6'd10,\n    6'd63, 6'd11, 6'd12, 6'd13, 6'd14, 6'd15, 6'd16, 6'd17,\n    6'd18, 6'd19, 6'd20, 6'd21, 6'd22, 6'd23, 6'd24, 6'd25,\n    6'd63, 6'd26, 6'd27, 6'd28, 6'd29, 6'd30, 6'd31, 6'd63,\n    6'd63, 6'd63, 6'd63, 6'd63, 6'd63, 6'd63, 6'd63, 6'd63,\n    6'd63, 6'd63, 6'd63, 6'd63, 6'd63, 6'd63, 6'd63, 6'd63,\n    6'd63, 6'd63, 6'd63, 6'd63, 6'd63, 6'd63, 6'd63, 6'd63\n  };\nendpackage\n\nmodule secded32_enc\n  import secded32_pkg::*;\n(\n  input  logic [31:0] data,\n  output logic [6:0]  check            // {overall parity, 6 Hamming bits}\n);\n  logic [5:0] h;\n  assign h     = hamming(data);\n  assign check = {^{data, h}, h};       // overall parity over all 38 bits\nendmodule\n\nmodule secded32_dec\n  import secded32_pkg::*;\n(\n  input  logic [31:0] data_in,\n  input  logic [6:0]  check_in,\n  output logic [31:0] data_out,          // corrected data\n  output logic        ce,                // a single error was corrected\n  output logic        ue                 // uncorrectable (double) error\n);\n  logic [5:0] syn;                       // syndrome: position of a single error\n  logic       par;                       // 1 = odd number of flipped bits\n  logic [5:0] bad_bit;                   // data bit at that position\n\n  assign syn      = check_in[5:0] ^ hamming(data_in);\n  assign par      = ^{data_in, check_in};\n  assign bad_bit  = DATA_BIT[syn];\n  assign data_out = (par && bad_bit != 6'd63) ? data_in ^ (32'd1 << bad_bit)\n                                              : data_in;\n  assign ce = par;                       // error in data, check or parity bit\n  assign ue = !par && (syn != '0);       // two errors: detected only\nendmodule"
+        },
+        {
+          "type": "text",
+          "md": "The **ECC memory module** puts encoder, memory and decoder together. The stored word is {check bits, data}:"
+        },
+        {
+          "type": "code",
+          "lang": "systemverilog",
+          "code": "module ecc_ram #(\n  parameter  int DEPTH = 1024,\n  localparam int AW    = $clog2(DEPTH)\n) (\n  input  logic          clk, en, we,\n  input  logic [AW-1:0] addr,\n  input  logic [31:0]   din,\n  output logic [31:0]   dout,            // corrected read data\n  output logic          ce, ue           // error flags of this read\n);\n  logic [6:0]  check_w;\n  logic [38:0] code_r;                   // stored word: {check bits, data}\n\n  secded32_enc u_enc (.data(din), .check(check_w));\n\n  sp_ram #(.DW(39), .DEPTH(DEPTH)) u_ram (\n    .clk, .en, .we, .addr,\n    .din ({check_w, din}),\n    .dout(code_r));\n\n  secded32_dec u_dec (\n    .data_in (code_r[31:0]),\n    .check_in(code_r[38:32]),\n    .data_out(dout), .ce, .ue);\nendmodule"
+        },
+        {
+          "type": "accordion",
+          "items": [
+            {
+              "title": "How was it verified?",
+              "md": "A testbench wrote a word, then flipped **every single bit** of the 39-bit code word (39 cases: all corrected, ce = 1) and **every pair of bits** (741 cases: all flagged, ue = 1)."
+            },
+            {
+              "title": "What is missing for a product?",
+              "md": "Byte writes (read-modify-write), a pipeline register after the decoder, error address logging, counters and a scrubber — good exercises for the ECC lab M5."
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "quiz": {
+    "questions": [
+      {
+        "id": "q-chk",
+        "type": "single",
+        "text": "How many check bits does SECDED need for 64 data bits?",
+        "options": [
+          "8",
+          "7",
+          "6",
+          "64"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "overhead"
+        ]
+      },
+      {
+        "id": "q-ce",
+        "type": "single",
+        "text": "What does ce = 1 mean on a read from an ECC memory?",
+        "options": [
+          "One bit was wrong and has been corrected in dout",
+          "The data is unusable",
+          "The memory is empty",
+          "Two bits were corrected"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "architecture"
+        ]
+      },
+      {
+        "id": "q-ue",
+        "type": "single",
+        "text": "The decoder raises ue. What should the system do?",
+        "options": [
+          "Treat the data as invalid and report the error",
+          "Use the data normally",
+          "Ignore it — ECC fixed it",
+          "Write the data twice"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "architecture",
+          "scrubbing"
+        ]
+      },
+      {
+        "id": "q-scrub",
+        "type": "single",
+        "text": "Why is scrubbing needed although the decoder corrects single errors?",
+        "options": [
+          "The wrong bit stays in the cell; a second error in the same word would make it uncorrectable",
+          "Scrubbing makes reads faster",
+          "The decoder cannot correct without it",
+          "To erase the memory"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "scrubbing"
+        ]
+      },
+      {
+        "id": "q-rmw",
+        "type": "single",
+        "text": "Why does a byte write into an ECC-protected 32-bit word need a read-modify-write?",
+        "options": [
+          "The check bits depend on the whole word",
+          "Bytes cannot be stored in SRAM",
+          "ECC memories have no byte enables",
+          "To scrub the word"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "overhead"
+        ]
+      },
+      {
+        "id": "q-wide",
+        "type": "single",
+        "text": "Why is ECC usually computed over wide words?",
+        "options": [
+          "The relative overhead of check bits falls with the word width",
+          "Wide words have fewer errors",
+          "Narrow words cannot be encoded",
+          "It removes the need for a decoder"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "overhead"
+        ]
+      },
+      {
+        "id": "q-par",
+        "type": "truefalse",
+        "text": "Simple parity can correct one flipped bit.",
+        "options": [
+          "True",
+          "False"
+        ],
+        "correct": [
+          1
+        ],
+        "shuffle": false,
+        "review": [
+          "why-ecc"
+        ]
+      },
+      {
+        "id": "q-p1",
+        "type": "single",
+        "text": "4-bit Hamming code: data bits at positions 3, 5, 6, 7 are 0, 1, 1, 0. What is p1 (covers positions 1, 3, 5, 7)?",
+        "options": [
+          "1",
+          "0",
+          "2",
+          "it depends on p2"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "worked-example"
+        ],
+        "explain": "p1 = 0 ⊕ 1 ⊕ 0 = 1."
+      },
+      {
+        "id": "q-syn",
+        "type": "single",
+        "text": "The decoder computes s4 s2 s1 = 011 and the overall parity is odd. What does it do?",
+        "options": [
+          "Invert the bit at position 3 and raise ce",
+          "Raise ue",
+          "Invert bit 11",
+          "Nothing — no error"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "worked-example"
+        ]
+      },
+      {
+        "id": "q-even",
+        "type": "single",
+        "text": "The syndrome is not 0, but the overall parity is even. What happened?",
+        "options": [
+          "Two bits flipped — uncorrectable, raise ue",
+          "One bit flipped — correct it",
+          "No error",
+          "Only the parity bit flipped"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "worked-example"
+        ]
+      }
+    ]
+  }
+}

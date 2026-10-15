@@ -1,0 +1,190 @@
+{
+  "id": "notation",
+  "title": "March notation",
+  "duration": "30 min",
+  "summary": "A **March test** sweeps through the memory, address by address, with a fixed list of reads and writes. This topic teaches the notation used to write March tests, shows how one element runs, and how to compute the length of a test.",
+  "objectives": [
+    "Explain what a March test is and why it suits memory BIST.",
+    "Read March notation: elements, address orders ⇑ ⇓ ⇕ and operations r0, r1, w0, w1.",
+    "Run a March element by hand on a small memory.",
+    "Compute the length of a March test (kN) and its test time."
+  ],
+  "subsections": [
+    {
+      "id": "from-faults",
+      "title": "From fault models to an algorithm",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "In *Memories and Their Faults* every fault model asked for certain operations: read both values, make both transitions, operate on an aggressor and then read the victim, sweep the addresses **up and down**. A good memory test must do all of this for **every** cell — and still be short.\n\nThe answer, found in the late 1970s and 1980s, is the **March test**: the test *marches* through the memory, one address after the other, and at every address applies the same short list of operations. Then it marches again, maybe in the other direction, with a different list."
+        },
+        {
+          "type": "callout",
+          "kind": "key",
+          "title": "Why March tests rule memory BIST",
+          "md": "- **Linear length**: the number of operations grows as k·N for N addresses — fast even for big memories.\n- **Provable**: for each fault model you can show *on paper* that the test detects it.\n- **Cheap in hardware**: an address counter that counts up or down, a data generator for 0/1, and a comparator — exactly the MBIST hardware of the later trainings."
+        }
+      ]
+    },
+    {
+      "id": "notation-read",
+      "title": "Reading March notation",
+      "blocks": [
+        {
+          "type": "stepper",
+          "src": "assets/march-notation.svg",
+          "interval": 3000,
+          "steps": [
+            { "title": "A list of elements", "md": "A March test is written in braces { } as a list of **March elements** separated by semicolons. The elements run one after the other." },
+            { "title": "One element", "md": "Each element is an **address order** followed by a list of **operations** in brackets." },
+            { "title": "Address order", "md": "**⇑** goes up through all addresses, **⇓** goes down, **⇕** means the order does not matter (either is fine)." },
+            { "title": "Operations", "md": "**r0 / r1** read and expect 0 / 1; **w0 / w1** write 0 / 1. At every address, all operations of the element are done before the next address." },
+            { "title": "Length", "md": "Count the operations: 1 + 2 + 2 = **5 per address**. For N addresses the test needs **5N** operations." }
+          ]
+        },
+        {
+          "type": "table",
+          "columns": ["Symbol", "Meaning"],
+          "rows": [
+            ["⇑", "address order up: 0, 1, … N−1"],
+            ["⇓", "address order down: N−1, … 1, 0 — exactly the reverse of ⇑"],
+            ["⇕", "any order — the test works with either"],
+            ["r0, r1", "read the cell, compare with 0 / 1 — a mismatch is a **fail**"],
+            ["w0, w1", "write 0 / 1 into the cell"],
+            ["r x, w x̄", "general form: x is 0 or 1, x̄ is its inverse"],
+            ["Del", "a pause with no access — used for retention tests (Topic 5)"]
+          ],
+          "caption": "March notation"
+        },
+        {
+          "type": "callout",
+          "kind": "info",
+          "title": "⇑ does not have to be 0, 1, 2 …",
+          "md": "Any fixed sequence that visits every address once can be '⇑' — for example a counter that counts in Gray code. The only rule: **⇓ must be exactly the reverse of ⇑**. MBIST hardware uses this freedom to save logic."
+        }
+      ]
+    },
+    {
+      "id": "element-run",
+      "title": "How one element runs",
+      "blocks": [
+        {
+          "type": "stepper",
+          "src": "assets/element-run.svg",
+          "interval": 2400,
+          "steps": [
+            { "title": "Start", "md": "The previous element ⇕(w0) has written 0 into every cell. Now ⇑(r0, w1) starts at address 0." },
+            { "title": "Address 0", "md": "Read: expect 0 — it is 0 ✓. Write 1. Only now the test moves on." },
+            { "title": "Address 1", "md": "The same two operations at address 1." },
+            { "title": "Address 2", "md": "And at address 2. Note that address 0 and 1 already hold 1 — they can act as **aggressors** for cells that are not visited yet." },
+            { "title": "Address 3", "md": "After the last address the element is finished: **2 operations × 4 addresses = 8 operations**, and every cell holds 1 for the next element." }
+          ]
+        },
+        {
+          "type": "callout",
+          "kind": "tip",
+          "title": "The operations of one address come back to back",
+          "md": "In ⇑(r0, w1) the read and the write of one address follow each other directly; the next address only comes afterwards. This order matters: it decides which cells are still 0 and which already 1 when a cell is read — and that is how coupling faults are caught."
+        },
+        {
+          "type": "sort",
+          "prompt": "Practice: put the operations of the element ⇓(r1, w0) on a 3-address memory in the order they happen.",
+          "items": ["address 2: r1", "address 2: w0", "address 1: r1", "address 1: w0", "address 0: r1", "address 0: w0"]
+        }
+      ]
+    },
+    {
+      "id": "length",
+      "title": "Test length kN",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "The **length** of a March test is the number of operations per address, k, written as **kN**. With one operation per clock, the test time is\n\n> test time = k · N · clock period\n\nMemories in a chip are tested at their functional clock, often several hundred MHz."
+        },
+        {
+          "type": "table",
+          "columns": ["Test length", "N = 1 Ki words", "N = 1 Mi words", "Time for 1 Mi words at 100 MHz"],
+          "rows": [
+            ["5N", "5 120 ops", "5.2 M ops", "52 ms"],
+            ["10N", "10 240 ops", "10.5 M ops", "105 ms"],
+            ["22N", "22 528 ops", "23.1 M ops", "231 ms"],
+            ["N² (for comparison)", "1 M ops", "1.1 · 10¹² ops", "about **3 hours**"]
+          ],
+          "caption": "Linear tests stay short; a test that grows with N² is useless for big memories"
+        },
+        {
+          "type": "callout",
+          "kind": "key",
+          "title": "Count the operations, not the elements",
+          "md": "{⇕(w0); ⇑(r0, w1); ⇑(r1, w0); ⇓(r0, w1); ⇓(r1, w0); ⇕(r0)} has 6 elements but 1 + 2 + 2 + 2 + 2 + 1 = **10** operations per address → **10N**."
+        }
+      ]
+    }
+  ],
+  "quiz": {
+    "questions": [
+      {
+        "id": "q-len",
+        "type": "single",
+        "text": "What is the length of {⇕(w0); ⇑(r0, w1); ⇑(r1, w0); ⇕(r0)}?",
+        "options": ["6N", "4N", "8N", "3N"],
+        "correct": [0],
+        "review": ["length"]
+      },
+      {
+        "id": "q-down",
+        "type": "single",
+        "text": "What does ⇓ mean in a March element?",
+        "options": [
+          "Visit the addresses in the reverse of the ⇑ order.",
+          "Write 0 into every cell.",
+          "Read every cell twice.",
+          "The order of addresses does not matter."
+        ],
+        "correct": [0],
+        "review": ["notation-read"]
+      },
+      {
+        "id": "q-element",
+        "type": "single",
+        "text": "In the element ⇑(r0, w1), what happens at one address before the test moves to the next address?",
+        "options": [
+          "The cell is read (expecting 0) and then 1 is written into it.",
+          "Only the read; all writes come after all reads.",
+          "The cell is written with 0 and then read.",
+          "Nothing — ⇑ only sets the direction."
+        ],
+        "correct": [0],
+        "review": ["element-run"]
+      },
+      {
+        "id": "q-order",
+        "type": "order",
+        "text": "The element ⇑(r1, w0) runs on a 2-address memory. Put the operations in order.",
+        "items": ["address 0: r1", "address 0: w0", "address 1: r1", "address 1: w0"],
+        "review": ["element-run"]
+      },
+      {
+        "id": "q-time",
+        "type": "single",
+        "text": "A 10N test runs on a memory with N = 1 Mi words, one operation per 10 ns clock. About how long does it take?",
+        "options": ["About 0.1 s", "About 10 µs", "About 10 s", "About 3 hours"],
+        "correct": [0],
+        "review": ["length"]
+      },
+      {
+        "id": "q-why",
+        "type": "multiple",
+        "text": "Why are March tests the standard for memory BIST? Select **all** correct answers.",
+        "options": [
+          "Their length grows only linearly with the number of addresses.",
+          "Their fault coverage can be proven for each fault model.",
+          "They need only simple hardware: address counter, data generator, comparator.",
+          "They need no reads at all."
+        ],
+        "correct": [0, 1, 2],
+        "review": ["from-faults"]
+      }
+    ]
+  }
+}

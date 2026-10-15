@@ -1,0 +1,412 @@
+{
+  "id": "multi-port",
+  "title": "Multi-port memories and register files",
+  "duration": "55 min",
+  "summary": "Many designs need more than one access per clock: a FIFO writes and reads, a CPU reads two operands and writes one result, two processors share a buffer. This topic covers single-, dual- and multi-port memories, register files with bypass, collisions and dual-clock memories — with their SystemVerilog templates.",
+  "objectives": [
+    "Compare single-port, simple dual-port, true dual-port memories and register files.",
+    "Write SDP, TDP and register-file models in SystemVerilog.",
+    "Explain write-through bypass and implement it.",
+    "Recognise port collisions and check them with an assertion."
+  ],
+  "subsections": [
+    {
+      "id": "port-types",
+      "title": "Port types",
+      "blocks": [
+        {
+          "type": "svg",
+          "src": "assets/ports.svg",
+          "caption": "Single port, simple dual port, true dual port and a register file"
+        },
+        {
+          "type": "table",
+          "columns": [
+            "Type",
+            "Ports",
+            "Accesses per clock",
+            "Typical use"
+          ],
+          "rows": [
+            [
+              "single port (1RW)",
+              "1 read-or-write",
+              "1",
+              "most on-chip RAMs, caches"
+            ],
+            [
+              "simple dual port (1W + 1R)",
+              "1 write, 1 read",
+              "1 write and 1 read",
+              "FIFOs, line buffers"
+            ],
+            [
+              "true dual port (2RW)",
+              "2 read-or-write",
+              "2 of any kind",
+              "shared buffers between two clock domains"
+            ],
+            [
+              "register file (nR + mW)",
+              "n read, m write",
+              "n + m",
+              "CPU registers: 2R1W, 4R2W …"
+            ]
+          ],
+          "caption": "Memory port types"
+        },
+        {
+          "type": "callout",
+          "kind": "info",
+          "title": "Ports cost area",
+          "md": "Every port adds word lines, bit lines and decoders to **every** cell. A two-port SRAM cell has 8 transistors instead of 6; register files with many ports are built from flip-flops. Use the fewest ports that meet the bandwidth."
+        }
+      ]
+    },
+    {
+      "id": "inside",
+      "title": "Inside a multi-port memory",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "A second port is not free: every cell must be reachable from both sides. In an SRAM this means a second **word line** and a second pair of **bit lines** per cell (8 transistors instead of 6). In a register file every register feeds **every read multiplexer**."
+        },
+        {
+          "type": "svg",
+          "src": "assets/mp-inside.svg",
+          "caption": "Left: a dual-port SRAM cell. Right: a 2R1W register file — two read multiplexers see all registers"
+        },
+        {
+          "type": "table",
+          "columns": [
+            "Port type",
+            "What happens in one clock"
+          ],
+          "rows": [
+            [
+              "simple dual port (1W + 1R)",
+              "port A writes address X while port B reads address Y"
+            ],
+            [
+              "true dual port (2RW)",
+              "each port reads **or** writes, each with its own clock"
+            ],
+            [
+              "register file 2R1W",
+              "two registers are read and one is written"
+            ]
+          ],
+          "caption": "What two ports allow"
+        }
+      ]
+    },
+    {
+      "id": "regfile",
+      "title": "Register files and bypass",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "A CPU reads two operands and writes one result every clock — a **2R1W register file**. Reads are usually asynchronous, so a value written in this cycle is only visible next cycle — unless a **bypass** forwards it:"
+        },
+        {
+          "type": "stepper",
+          "src": "assets/bypass.svg",
+          "interval": 3000,
+          "steps": [
+            {
+              "title": "Without bypass",
+              "md": "Register 5 is written and read in the same cycle. The write happens at the clock edge, so the read still sees the old value 10."
+            },
+            {
+              "title": "With bypass",
+              "md": "A comparator sees that the read address equals the write address and forwards the new data 99 directly."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "collisions",
+      "title": "Collisions",
+      "blocks": [
+        {
+          "type": "svg",
+          "src": "assets/collision-wave.svg",
+          "caption": "Write + write to one address: undefined. Write + read: old, new or X, depending on the memory"
+        },
+        {
+          "type": "text",
+          "md": "When two ports access the **same address** in the same cycle, the result depends on the memory:"
+        },
+        {
+          "type": "table",
+          "columns": [
+            "Case",
+            "Typical result"
+          ],
+          "rows": [
+            [
+              "write A and write B, same address",
+              "**undefined** content — must be avoided"
+            ],
+            [
+              "write A, read B, same address",
+              "old data, new data, or X — see the datasheet / tool"
+            ],
+            [
+              "read A and read B, same address",
+              "both get the same data — no problem"
+            ]
+          ],
+          "caption": "Same-address access on two ports"
+        }
+      ]
+    },
+    {
+      "id": "dual-clock",
+      "title": "Dual-clock memories",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "A true dual-port or simple dual-port RAM with **different clocks** on its ports is the core of an **asynchronous FIFO**: one clock domain writes, the other reads. The memory itself is safe; the difficulty is passing the read and write **pointers** between the domains — solved with Gray-code counters and synchronisers in the *Designing with Memories* training."
+        },
+        {
+          "type": "categorize",
+          "prompt": "Practice: which memory type fits?",
+          "categories": [
+            {
+              "id": "sp",
+              "label": "single port"
+            },
+            {
+              "id": "sdp",
+              "label": "simple dual port"
+            },
+            {
+              "id": "tdp",
+              "label": "true dual port"
+            },
+            {
+              "id": "rf",
+              "label": "register file"
+            }
+          ],
+          "items": [
+            {
+              "text": "a FIFO between a producer and a consumer",
+              "category": "sdp"
+            },
+            {
+              "text": "operands of a RISC CPU (2 reads, 1 write per clock)",
+              "category": "rf"
+            },
+            {
+              "text": "a buffer shared by two processors that both read and write",
+              "category": "tdp"
+            },
+            {
+              "text": "a 64 KiB data scratch-pad used by one engine",
+              "category": "sp"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sv",
+      "title": "In SystemVerilog: multi-port templates",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "**Simple dual port** — one write port and one read port:"
+        },
+        {
+          "type": "code",
+          "lang": "systemverilog",
+          "code": "module sdp_ram #(\n  parameter  int DW = 32, DEPTH = 512,\n  localparam int AW = $clog2(DEPTH)\n) (\n  input  logic          clk,\n  // write port\n  input  logic          we,\n  input  logic [AW-1:0] waddr,\n  input  logic [DW-1:0] din,\n  // read port\n  input  logic          re,\n  input  logic [AW-1:0] raddr,\n  output logic [DW-1:0] dout\n);\n  logic [DW-1:0] mem [DEPTH];\n\n  always_ff @(posedge clk) begin\n    if (we) mem[waddr] <= din;\n    if (re) dout <= mem[raddr];     // same address as a write: old data\n  end\nendmodule"
+        },
+        {
+          "type": "text",
+          "md": "**True dual port** — two read/write ports with their own clocks:"
+        },
+        {
+          "type": "code",
+          "lang": "systemverilog",
+          "code": "module tdp_ram #(\n  parameter  int DW = 32, DEPTH = 1024,\n  localparam int AW = $clog2(DEPTH)\n) (\n  input  logic clka, ena, wea,\n  input  logic [AW-1:0] addra,\n  input  logic [DW-1:0] dina,\n  output logic [DW-1:0] douta,\n  input  logic clkb, enb, web,\n  input  logic [AW-1:0] addrb,\n  input  logic [DW-1:0] dinb,\n  output logic [DW-1:0] doutb\n);\n  logic [DW-1:0] mem [DEPTH];\n\n  // Two processes write the same array, so plain 'always' is used:\n  // 'always_ff' does not allow a variable to be written by two blocks.\n  always @(posedge clka)\n    if (ena) begin\n      if (wea) mem[addra] <= dina;\n      douta <= mem[addra];\n    end\n\n  always @(posedge clkb)\n    if (enb) begin\n      if (web) mem[addrb] <= dinb;\n      doutb <= mem[addrb];\n    end\nendmodule"
+        },
+        {
+          "type": "callout",
+          "kind": "tip",
+          "title": "A detail experts check",
+          "md": "The SystemVerilog standard forbids writing one variable from two `always_ff` blocks. FPGA synthesis tools recognise the template above with `always`; some also accept a single array written from two `always_ff` blocks with a warning. Follow the template of your tool."
+        },
+        {
+          "type": "text",
+          "md": "**Register file 2R1W with bypass:**"
+        },
+        {
+          "type": "code",
+          "lang": "systemverilog",
+          "code": "module regfile_2r1w #(\n  parameter  int DW = 32, N = 32,\n  localparam int AW = $clog2(N)\n) (\n  input  logic          clk, we,\n  input  logic [AW-1:0] wa, ra1, ra2,\n  input  logic [DW-1:0] wd,\n  output logic [DW-1:0] rd1, rd2\n);\n  logic [DW-1:0] rf [N];\n\n  always_ff @(posedge clk) if (we) rf[wa] <= wd;\n\n  // write-through bypass: reading the register that is being written\n  // returns the new value in the same cycle\n  assign rd1 = (we && wa == ra1) ? wd : rf[ra1];\n  assign rd2 = (we && wa == ra2) ? wd : rf[ra2];\nendmodule"
+        },
+        {
+          "type": "text",
+          "md": "**Collision check** — an assertion that flags two writes to the same address (both ports on one clock):"
+        },
+        {
+          "type": "code",
+          "lang": "systemverilog",
+          "code": "// inside tdp_ram, when both ports use the same clock 'clk'\na_no_ww_collision: assert property (\n  @(posedge clk) !(ena && wea && enb && web && addra == addrb)\n) else $error(\"write-write collision at address %0h\", addra);"
+        },
+        {
+          "type": "callout",
+          "kind": "info",
+          "title": "Different clocks",
+          "md": "With two clocks, \"same cycle\" has no exact meaning — collisions are avoided by the protocol, for example by a FIFO's full/empty logic."
+        }
+      ]
+    }
+  ],
+  "quiz": {
+    "questions": [
+      {
+        "id": "q-sdp",
+        "type": "single",
+        "text": "Which memory allows one write and one read at different addresses in the same clock?",
+        "options": [
+          "Simple dual port",
+          "Single port",
+          "ROM",
+          "eFuse"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "port-types"
+        ]
+      },
+      {
+        "id": "q-cost",
+        "type": "single",
+        "text": "Why not give every memory many ports?",
+        "options": [
+          "Each port adds lines and transistors to every cell — area and power grow",
+          "Ports reduce the capacity to one word",
+          "Ports are not allowed in ASICs",
+          "Extra ports make reads asynchronous"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "port-types"
+        ]
+      },
+      {
+        "id": "q-always",
+        "type": "single",
+        "text": "Why does the true dual-port template use `always` instead of `always_ff`?",
+        "options": [
+          "The array is written from two processes, which always_ff forbids",
+          "always is faster in simulation",
+          "always_ff cannot use two clocks in one design",
+          "It does not matter"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "sv"
+        ]
+      },
+      {
+        "id": "q-bypass",
+        "type": "single",
+        "text": "In regfile_2r1w, we = 1, wa = 7, wd = 0x55, ra1 = 7, rf[7] = 0x10. What is rd1?",
+        "options": [
+          "0x55",
+          "0x10",
+          "X",
+          "0x00"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "regfile"
+        ]
+      },
+      {
+        "id": "q-ww",
+        "type": "single",
+        "text": "Two ports write different data to the same address in the same cycle. What is stored?",
+        "options": [
+          "Undefined — this collision must be avoided",
+          "Port A's data",
+          "Port B's data",
+          "The OR of both"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "collisions"
+        ]
+      },
+      {
+        "id": "q-match",
+        "type": "match",
+        "text": "Match the use to the memory.",
+        "categories": [
+          {
+            "id": "rf",
+            "label": "register file"
+          },
+          {
+            "id": "sdp",
+            "label": "simple dual port"
+          },
+          {
+            "id": "sp",
+            "label": "single port"
+          }
+        ],
+        "items": [
+          {
+            "text": "CPU operands, 2 reads + 1 write",
+            "category": "rf"
+          },
+          {
+            "text": "FIFO storage",
+            "category": "sdp"
+          },
+          {
+            "text": "data cache way",
+            "category": "sp"
+          }
+        ],
+        "review": [
+          "dual-clock",
+          "port-types"
+        ]
+      },
+      {
+        "id": "q-dc",
+        "type": "truefalse",
+        "text": "A simple dual-port RAM with two different clocks is the storage of an asynchronous FIFO.",
+        "options": [
+          "True",
+          "False"
+        ],
+        "correct": [
+          0
+        ],
+        "shuffle": false,
+        "review": [
+          "dual-clock"
+        ]
+      }
+    ]
+  }
+}

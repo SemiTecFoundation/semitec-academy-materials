@@ -1,0 +1,179 @@
+{
+  "id": "new-faults",
+  "title": "Tests for newer fault models",
+  "duration": "35 min",
+  "summary": "March C− was designed for the classical fault models. Smaller technologies brought faults it cannot see: deceptive read faults, write-disturb faults, linked and dynamic faults. This topic shows the tests built for them — and the price paid in test length.",
+  "objectives": [
+    "Explain why March C− misses DRDF and WDF.",
+    "Read March SS and say which operation catches which fault.",
+    "Describe linked and dynamic faults and the tests that target them.",
+    "Compare March tests by length and fault coverage."
+  ],
+  "subsections": [
+    {
+      "id": "c-misses",
+      "title": "What March C− misses",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "Look at March C− again: {⇕(w0); ⇑(r0, w1); ⇑(r1, w0); ⇓(r0, w1); ⇓(r1, w0); ⇕(r0)}. Two patterns are **missing**:"
+        },
+        {
+          "type": "table",
+          "columns": ["Missing pattern", "Fault it would catch", "Why March C− misses it"],
+          "rows": [
+            ["Two reads of a cell **with no write in between**", "**DRDF** — the read returns the right value but flips the cell", "Every read in March C− is followed by a write to the same cell, which overwrites the flipped value before anyone sees it."],
+            ["A write of the value the cell **already holds**", "**WDF** — a non-transition write flips the cell", "Every write in M1–M4 changes the cell (0 → 1 or 1 → 0)."],
+            ["Operations **back to back** in special orders", "**dynamic** faults, e.g. a write immediately followed by a read", "March C− has only r-w pairs, never w-r or r-r."]
+          ],
+          "caption": "Gaps of March C−"
+        },
+        {
+          "type": "callout",
+          "kind": "info",
+          "title": "Why it matters now",
+          "md": "In nanometre SRAMs, weak cells and process variation make **read and write disturb** faults common. Industrial studies found faults that March C− lets through — which is why newer tests were developed around 2000 onward, based on the fault-primitive analysis of Topic 7 of *Memories and Their Faults*."
+        }
+      ]
+    },
+    {
+      "id": "march-ss",
+      "title": "March SS",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "**March SS** (Hamdioui and co-authors, 2002) was built to detect **all static simple faults** — every single-cell and two-cell fault primitive with at most one operation:\n\n> {⇕(w0); ⇑(r0, r0, w0, r0, w1); ⇑(r1, r1, w1, r1, w0); ⇓(r0, r0, w0, r0, w1); ⇓(r1, r1, w1, r1, w0); ⇕(r0)} — **22N**\n\nIt has the same skeleton as March C− — up, up, down, down — but every r-w pair is replaced by a richer sequence."
+        },
+        {
+          "type": "stepper",
+          "src": "assets/march-ss.svg",
+          "interval": 3200,
+          "steps": [
+            { "title": "1st r0", "md": "Checks the stored value: catches SAF, IRF, RDF — and the effects of coupling from earlier operations. If the cell has a DRDF, this read flips it without showing it." },
+            { "title": "2nd r0", "md": "No write in between: the DRDF flipped by the first read is now visible." },
+            { "title": "w0", "md": "A **non-transition write**: the cell already holds 0. A write-disturb fault flips the cell here." },
+            { "title": "3rd r0", "md": "Reads right after the non-transition write and catches the WDF." },
+            { "title": "w1", "md": "The 0 → 1 transition, as in March C−: it sensitizes transition faults (checked by the next element) and acts as an aggressor on cells not yet visited." }
+          ]
+        },
+        {
+          "type": "callout",
+          "kind": "key",
+          "title": "Twice as long, many more faults",
+          "md": "March SS costs **22N** instead of 10N, and in return covers all **static** simple faults, including DRDF, WDF and the read- and write-disturb versions of coupling faults."
+        }
+      ]
+    },
+    {
+      "id": "linked-dynamic",
+      "title": "Linked and dynamic faults",
+      "blocks": [
+        {
+          "type": "tabs",
+          "tabs": [
+            { "label": "Linked faults", "md": "Two faults that **mask** each other — for example two coupling faults on the same victim, one forcing it to 1 and the other back to 0. A test that triggers both before reading the victim sees the correct value.\n\nTests for linked faults order their operations so that every fault is read **before** the second one can undo it:\n\n- **March A** (15N) and **March B** (17N) — linked idempotent coupling and transition faults;\n- **March LR** (14N) — linked faults that are realistic in real layouts;\n- **March SL** (41N) — all static linked faults." },
+            { "label": "Dynamic faults", "md": "A dynamic fault needs **two or more operations in a row** on the same cell, for example *write 1, then read 1 immediately*. Tests for them contain sequences such as **w x, r x** back to back, or several reads in a row.\n\nDynamic faults are timing-related: they may appear only when the operations follow each other at **full clock speed**." },
+            { "label": "At speed", "md": "Because of dynamic, recovery and precharge faults, MBIST runs memory tests at the **functional clock frequency** of the memory, not at the slow clock of a tester. This is called **at-speed** testing — one more reason to put the test hardware on the chip." }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ladder",
+      "title": "The ladder of March tests",
+      "blocks": [
+        {
+          "type": "svg",
+          "src": "assets/test-ladder.svg",
+          "caption": "Longer tests detect more fault types"
+        },
+        {
+          "type": "table",
+          "columns": ["Test", "Length", "Main target"],
+          "rows": [
+            ["MATS+", "5N", "stuck-at, address decoder"],
+            ["March X", "6N", "+ transition, inversion coupling"],
+            ["March Y", "8N", "+ deceptive read faults (r after w … r)"],
+            ["March C−", "10N", "all unlinked coupling faults"],
+            ["March LR", "14N", "realistic linked faults"],
+            ["March SS", "22N", "all static simple faults"],
+            ["March SL", "41N", "all static linked faults"]
+          ],
+          "caption": "A selection of March tests from the literature"
+        },
+        {
+          "type": "sort",
+          "prompt": "Practice: order the tests from shortest to longest.",
+          "items": ["MATS+", "March Y", "March C−", "March LR", "March SS", "March SL"]
+        }
+      ]
+    }
+  ],
+  "quiz": {
+    "questions": [
+      {
+        "id": "q-drdf",
+        "type": "single",
+        "text": "Why does March C− miss deceptive read destructive faults (DRDF)?",
+        "options": [
+          "Every read is followed by a write to the same cell before the cell is read again.",
+          "March C− never reads 1.",
+          "March C− only goes up.",
+          "DRDF can only be found by GALPAT."
+        ],
+        "correct": [0],
+        "review": ["c-misses"]
+      },
+      {
+        "id": "q-wdf",
+        "type": "single",
+        "text": "In the March SS element ⇑(r0, r0, w0, r0, w1), which operation **sensitizes** a write-disturb fault?",
+        "options": ["The w0 — a write of the value the cell already holds", "The first r0", "The w1", "None — March SS ignores WDF"],
+        "correct": [0],
+        "review": ["march-ss"]
+      },
+      {
+        "id": "q-ss",
+        "type": "single",
+        "text": "How long is March SS, and what does it cover?",
+        "options": [
+          "22N — all static simple faults",
+          "10N — stuck-at faults only",
+          "41N — all dynamic faults",
+          "6N — transition faults"
+        ],
+        "correct": [0],
+        "review": ["march-ss"]
+      },
+      {
+        "id": "q-linked",
+        "type": "single",
+        "text": "What must a test for linked faults do?",
+        "options": [
+          "Read the victim after the first fault acts, before a second fault can undo it.",
+          "Write every cell only once.",
+          "Use only ⇕ elements.",
+          "Skip the initialisation element."
+        ],
+        "correct": [0],
+        "review": ["linked-dynamic"]
+      },
+      {
+        "id": "q-atspeed",
+        "type": "truefalse",
+        "text": "Dynamic faults may appear only when operations follow each other at full clock speed, so MBIST runs at the memory's functional clock.",
+        "options": ["True", "False"],
+        "correct": [0],
+        "shuffle": false,
+        "review": ["linked-dynamic"]
+      },
+      {
+        "id": "q-sort",
+        "type": "order",
+        "text": "Order the tests from shortest to longest.",
+        "items": ["MATS+", "March C−", "March SS", "March SL"],
+        "review": ["ladder"]
+      }
+    ]
+  }
+}

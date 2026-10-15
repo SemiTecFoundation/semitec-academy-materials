@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 780 340" font-family="Segoe UI, Arial, sans-serif">
+  <defs><marker id="ms-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#34495e"/></marker>
+  <marker id="ms-r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#c0392b"/></marker>
+  <marker id="ms-g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#1e8449"/></marker></defs>
+  <rect width="780" height="340" rx="14" fill="#ffffff"/>
+  <text x="390" y="30" text-anchor="middle" font-size="16" font-weight="700" fill="#1f4e79">Multiple-input signature register (MISR)</text>
+  <rect x="170" y="130" width="80" height="70" rx="8" fill="#eef4fb" stroke="#1f4e79" stroke-width="2.5"/><text x="210.0" y="220" text-anchor="middle" font-size="14" font-weight="700" fill="#1f4e79">Q1</text>
+  <rect x="320" y="130" width="80" height="70" rx="8" fill="#eef4fb" stroke="#1f4e79" stroke-width="2.5"/><text x="360.0" y="220" text-anchor="middle" font-size="14" font-weight="700" fill="#1f4e79">Q2</text>
+  <rect x="470" y="130" width="80" height="70" rx="8" fill="#eef4fb" stroke="#1f4e79" stroke-width="2.5"/><text x="510.0" y="220" text-anchor="middle" font-size="14" font-weight="700" fill="#1f4e79">Q3</text>
+  <rect x="620" y="130" width="80" height="70" rx="8" fill="#eef4fb" stroke="#1f4e79" stroke-width="2.5"/><text x="660.0" y="220" text-anchor="middle" font-size="14" font-weight="700" fill="#1f4e79">Q4</text>
+  <path d="M154 165H168" stroke="#34495e" stroke-width="2.5" marker-end="url(#ms-a)"/>
+  <circle cx="140" cy="165" r="14" fill="#fff" stroke="#c0392b" stroke-width="2.5"/><path d="M131 165H149M140 156V174" stroke="#c0392b" stroke-width="2.5"/>
+  <path d="M250 165H275" stroke="#34495e" stroke-width="2.5" marker-end="url(#ms-a)"/>
+  <path d="M304 165H318" stroke="#34495e" stroke-width="2.5" marker-end="url(#ms-a)"/>
+  <circle cx="290" cy="165" r="14" fill="#fff" stroke="#c0392b" stroke-width="2.5"/><path d="M281 165H299M290 156V174" stroke="#c0392b" stroke-width="2.5"/>
+  <path d="M400 165H425" stroke="#34495e" stroke-width="2.5" marker-end="url(#ms-a)"/>
+  <path d="M454 165H468" stroke="#34495e" stroke-width="2.5" marker-end="url(#ms-a)"/>
+  <circle cx="440" cy="165" r="14" fill="#fff" stroke="#c0392b" stroke-width="2.5"/><path d="M431 165H449M440 156V174" stroke="#c0392b" stroke-width="2.5"/>
+  <path d="M550 165H575" stroke="#34495e" stroke-width="2.5" marker-end="url(#ms-a)"/>
+  <path d="M604 165H618" stroke="#34495e" stroke-width="2.5" marker-end="url(#ms-a)"/>
+  <circle cx="590" cy="165" r="14" fill="#fff" stroke="#c0392b" stroke-width="2.5"/><path d="M581 165H599M590 156V174" stroke="#c0392b" stroke-width="2.5"/>
+  <g stroke="#c0392b" stroke-width="2.5" fill="none"><path d="M700 165H730V250H140V181" marker-end="url(#ms-r)"/><path d="M590 250V181" marker-end="url(#ms-r)"/></g>
+  <circle cx="590" cy="250" r="4" fill="#c0392b"/><text x="420" y="268" text-anchor="middle" font-size="12" font-weight="700" fill="#c0392b">feedback from Q4</text>
+  <path d="M140 62V149" stroke="#1e8449" stroke-width="2.5" marker-end="url(#ms-g)"/><text x="140" y="56" text-anchor="middle" font-size="14" font-weight="700" fill="#1e8449">D1</text>
+  <path d="M290 62V149" stroke="#1e8449" stroke-width="2.5" marker-end="url(#ms-g)"/><text x="290" y="56" text-anchor="middle" font-size="14" font-weight="700" fill="#1e8449">D2</text>
+  <path d="M440 62V149" stroke="#1e8449" stroke-width="2.5" marker-end="url(#ms-g)"/><text x="440" y="56" text-anchor="middle" font-size="14" font-weight="700" fill="#1e8449">D3</text>
+  <path d="M590 62V149" stroke="#1e8449" stroke-width="2.5" marker-end="url(#ms-g)"/><text x="590" y="56" text-anchor="middle" font-size="14" font-weight="700" fill="#1e8449">D4</text>
+  <text x="390" y="300" text-anchor="middle" font-size="12" fill="#6b7a8c">new Q1 = Q4 ⊕ D1 · new Q2 = Q1 ⊕ D2 · new Q3 = Q2 ⊕ D3 · new Q4 = Q3 ⊕ Q4 ⊕ D4</text>
+  <text x="390" y="322" text-anchor="middle" font-size="12" fill="#6b7a8c">D1…D4: four response bits of the circuit, all taken in the same clock</text>
+</svg>

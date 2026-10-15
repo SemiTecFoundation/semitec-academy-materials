@@ -1,0 +1,58 @@
+{
+  "id": "mbist-memories-faults",
+  "version": "0.1",
+  "title": "Memories and Their Faults",
+  "subtitle": "SemiTec Foundation · BIST / MBIST",
+  "language": "en",
+  "layout": "sidebar",
+  "theme": "foundation",
+  "themes": [
+    "foundation",
+    "midnight",
+    "paper"
+  ],
+  "allowViewSwitch": true,
+  "passThreshold": 0.75,
+  "showCorrectAnswers": "afterPass",
+  "requireSequential": true,
+  "topicWord": "Topic",
+  "hours": "4",
+  "schedule": {
+    "weeks": 2,
+    "topics": [
+      {
+        "week": 1,
+        "topics": [
+          "why-memories",
+          "sram",
+          "variants"
+        ]
+      },
+      {
+        "week": 2,
+        "topics": [
+          "cell-faults",
+          "coupling",
+          "decoder-rw",
+          "fault-primitives"
+        ]
+      }
+    ]
+  },
+  "delivery": {
+    "mode": "standalone",
+    "urlParams": true,
+    "resume": true
+  },
+  "labels": {},
+  "topics": [
+    "01-why-memories.json",
+    "02-sram.json",
+    "03-variants.json",
+    "04-cell-faults.json",
+    "05-coupling.json",
+    "06-decoder-rw.json",
+    "07-fault-primitives.json"
+  ],
+  "certificate": "certificate.json"
+}

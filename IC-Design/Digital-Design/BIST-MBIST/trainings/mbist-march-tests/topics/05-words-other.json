@@ -1,0 +1,170 @@
+{
+  "id": "words-other",
+  "title": "Words, backgrounds and other tests",
+  "duration": "35 min",
+  "summary": "Real memories store **words**, not single bits, and some faults need patterns that March tests alone do not create. This topic covers data backgrounds for word-oriented memories, the checkerboard and retention tests, and why tests that grow with N² are used only in the lab.",
+  "objectives": [
+    "Apply a March test to a word-oriented memory with data backgrounds.",
+    "Compute the number of backgrounds log₂(B) + 1 for B-bit words.",
+    "Describe the checkerboard and retention tests and what they detect.",
+    "Explain why GALPAT and walking patterns are not used in production."
+  ],
+  "subsections": [
+    {
+      "id": "backgrounds",
+      "title": "Word-oriented memories and data backgrounds",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "In a memory with **B-bit words**, one address reads or writes B cells at once. A March test is applied to words by giving 0 and 1 a new meaning:\n\n- **w0** → write a **data background** D (a B-bit pattern),\n- **w1** → write its inverse **D̄**, and the reads compare with D or D̄.\n\nFaults *between* words behave exactly as in a bit-oriented memory. But for **coupling faults inside one word** the aggressor and victim are written at the same time — with D = 00…0 they always get the same value. So the test is repeated with **several backgrounds**."
+        },
+        {
+          "type": "svg",
+          "src": "assets/backgrounds.svg",
+          "caption": "Four backgrounds are enough for an 8-bit word"
+        },
+        {
+          "type": "table",
+          "columns": ["Word width B", "Backgrounds log₂(B) + 1", "March C− repeated for each"],
+          "rows": [
+            ["8", "4", "40N"],
+            ["16", "5", "50N"],
+            ["32", "6", "60N"],
+            ["64", "7", "70N"]
+          ],
+          "caption": "Backgrounds for intra-word coupling faults (N = number of words)"
+        },
+        {
+          "type": "callout",
+          "kind": "info",
+          "title": "Logical is not physical",
+          "md": "Neighbouring addresses are not always neighbouring rows, and the bits of a word are often spread over the array by **column multiplexing** (Topic 2 of *Memories and Their Faults*). Patterns that care about physical neighbours — like the checkerboard below — must use the memory's **address and data scrambling** information."
+        }
+      ]
+    },
+    {
+      "id": "checkerboard",
+      "title": "Checkerboard",
+      "blocks": [
+        {
+          "type": "stepper",
+          "src": "assets/checkerboard.svg",
+          "interval": 3200,
+          "steps": [
+            { "title": "Write and read the checkerboard", "md": "Every cell gets the **opposite** value of its four physical neighbours. Then all cells are read." },
+            { "title": "Write and read the inverse", "md": "The same with every value inverted. Together: **4N** operations." }
+          ]
+        },
+        {
+          "type": "text",
+          "md": "The checkerboard puts the **largest possible difference** between neighbours. A short (bridge) between two neighbours, or leakage from one cell to the next, shows up as a wrong value. With a **pause** before each read it is also a simple retention test.\n\nIts weakness: it makes few transitions and visits the addresses in only one order, so it misses most **address-decoder** and **transition** faults. In practice it is used **together with** a March test — often as an extra background for the March test itself."
+        }
+      ]
+    },
+    {
+      "id": "retention",
+      "title": "Retention tests",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "A **data-retention fault** (DRF) shows only after the cell has been left alone for a while. March notation adds a **Del** element — a pause with no access:\n\n> {⇕(w0); Del; ⇕(r0, w1); Del; ⇕(r1)}\n\nThe pause is typically tens to hundreds of milliseconds, often at **high temperature** and **low supply voltage**, where leakage is worst."
+        },
+        {
+          "type": "callout",
+          "kind": "key",
+          "title": "The pause dominates",
+          "md": "A 10N March test on a 1 Mi-word memory takes about 0.1 s at 100 MHz; two retention pauses of 100 ms add another 0.2 s. To save time, all memories of a chip pause **at the same time**, and the pause can overlap with other tests."
+        }
+      ]
+    },
+    {
+      "id": "galpat",
+      "title": "GALPAT and walking patterns",
+      "blocks": [
+        {
+          "type": "accordion",
+          "items": [
+            { "title": "Walking 1 / walking 0", "md": "Fill the memory with 0. Write 1 into one cell, then **read all other cells** to check that none changed; restore the cell and move on to the next. Every cell is the aggressor once, and every other cell is checked each time → about **2N²** operations." },
+            { "title": "GALPAT (galloping pattern)", "md": "Like walking, but the reads **alternate** between the base cell and each other cell: read base, read cell j, read base, read cell k, … This also checks the read path between every pair of addresses → about **4N²** operations." },
+            { "title": "Butterfly and sliding diagonal", "md": "Variants that check only the neighbours of the base cell (or a diagonal) to cut the time — still longer than March tests and with less provable coverage." }
+          ]
+        },
+        {
+          "type": "table",
+          "columns": ["Test", "Length", "Time for 1 Mi words at 100 MHz"],
+          "rows": [
+            ["March C−", "10N", "0.1 s"],
+            ["March SS", "22N", "0.23 s"],
+            ["Walking 1/0", "≈ 2N²", "≈ 6 hours"],
+            ["GALPAT", "≈ 4N²", "≈ 12 hours"]
+          ],
+          "caption": "Tests that grow with N² are far too slow for production"
+        },
+        {
+          "type": "callout",
+          "kind": "tip",
+          "title": "Where N² tests still live",
+          "md": "On **small** memories, on a few chips in the lab for **characterisation**, or for **diagnosis** of a known bad block. March tests with the right elements catch the same fault models in linear time."
+        }
+      ]
+    }
+  ],
+  "quiz": {
+    "questions": [
+      {
+        "id": "q-nbg",
+        "type": "single",
+        "text": "How many data backgrounds are needed for intra-word coupling faults in a memory with 32-bit words?",
+        "options": ["6", "32", "5", "2"],
+        "correct": [0],
+        "review": ["backgrounds"]
+      },
+      {
+        "id": "q-w1",
+        "type": "single",
+        "text": "When a March test is applied to a word-oriented memory with background D, what does **w1** mean?",
+        "options": ["Write the inverse background D̄", "Write all ones", "Write D again", "Write only the lowest bit"],
+        "correct": [0],
+        "review": ["backgrounds"]
+      },
+      {
+        "id": "q-whybg",
+        "type": "single",
+        "text": "Why does a single background D = 00…0 miss coupling faults inside one word?",
+        "options": [
+          "Aggressor and victim in the same word are always written with the same value at the same time.",
+          "The word is never read.",
+          "Backgrounds only matter for ROM.",
+          "Intra-word faults need a pause."
+        ],
+        "correct": [0],
+        "review": ["backgrounds"]
+      },
+      {
+        "id": "q-cb",
+        "type": "multiple",
+        "text": "What does the checkerboard test detect well? Select **all** correct answers.",
+        "options": ["Bridges between neighbouring cells", "Data-retention faults, when pauses are added", "All address-decoder faults", "All transition faults"],
+        "correct": [0, 1],
+        "review": ["checkerboard"]
+      },
+      {
+        "id": "q-del",
+        "type": "single",
+        "text": "What does **Del** mean in a March test?",
+        "options": ["A pause with no memory access, for retention faults", "Delete the memory content", "Decrement the address", "A double read"],
+        "correct": [0],
+        "review": ["retention"]
+      },
+      {
+        "id": "q-galpat",
+        "type": "truefalse",
+        "text": "GALPAT is the standard production test for large embedded memories.",
+        "options": ["True", "False"],
+        "correct": [1],
+        "shuffle": false,
+        "review": ["galpat"]
+      }
+    ]
+  }
+}

@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 600" font-family="Segoe UI, Arial, sans-serif">
+  <defs><marker id="tb-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#34495e"/></marker>
+  <marker id="tb-p" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#6c4fb3"/></marker></defs>
+  <rect width="640" height="600" rx="14" fill="#ffffff"/>
+  <text x="320" y="32" text-anchor="middle" font-size="16" font-weight="700" fill="#1f4e79">A complete tiny BIST</text>
+
+  <g data-step="1">
+    <rect x="40" y="60" width="380" height="80" rx="10" fill="#e3effc" stroke="#1f6feb" stroke-width="2.5"/>
+    <text x="60" y="84" font-size="14" font-weight="800" fill="#1f4e79">3-bit LFSR  (new Q1 = Q2 ⊕ Q3)</text>
+    <g fill="#ffffff" stroke="#1f4e79" stroke-width="2"><rect x="70" y="96" width="60" height="32" rx="5"/><rect x="170" y="96" width="60" height="32" rx="5"/><rect x="270" y="96" width="60" height="32" rx="5"/></g>
+    <g font-size="13" font-weight="700" fill="#1f4e79" text-anchor="middle"><text x="100" y="117">Q1 → a</text><text x="200" y="117">Q2 → b</text><text x="300" y="117">Q3 → c</text></g>
+    <text x="432" y="170" font-size="11" fill="#34495e">7 patterns (abc):</text>
+    <text x="432" y="188" font-size="11" fill="#34495e" font-family="Consolas, monospace">100 010 101 110</text>
+    <text x="432" y="206" font-size="11" fill="#34495e" font-family="Consolas, monospace">111 011 001</text>
+  </g>
+  <g data-step="2">
+    <g stroke="#34495e" stroke-width="2.5"><path d="M100 140V178" marker-end="url(#tb-a)"/><path d="M200 140V178" marker-end="url(#tb-a)"/><path d="M300 140V178" marker-end="url(#tb-a)"/></g>
+    <rect x="40" y="180" width="380" height="110" rx="10" fill="#eef1f4" stroke="#34495e" stroke-width="2.5"/>
+    <text x="60" y="204" font-size="14" font-weight="800" fill="#34495e">Circuit under test</text>
+    <g font-size="15" font-weight="700" fill="#34495e" font-family="Consolas, monospace"><text x="80" y="236">y1 = a AND b</text><text x="80" y="258">y2 = b OR c</text><text x="80" y="280">y3 = a XOR c</text></g>
+  </g>
+  <g data-step="3">
+    <g stroke="#34495e" stroke-width="2.5"><path d="M120 290V328" marker-end="url(#tb-a)"/><path d="M220 290V328" marker-end="url(#tb-a)"/><path d="M320 290V328" marker-end="url(#tb-a)"/></g>
+    <g font-size="12" font-weight="700" fill="#1e8449"><text x="126" y="314">y1→D1</text><text x="226" y="314">y2→D2</text><text x="326" y="314">y3→D3</text></g>
+    <rect x="40" y="330" width="380" height="90" rx="10" fill="#e8f6ee" stroke="#27ae60" stroke-width="2.5"/>
+    <text x="60" y="354" font-size="14" font-weight="800" fill="#1e8449">4-bit MISR  (D4 = 0)</text>
+    <g fill="#ffffff" stroke="#27ae60" stroke-width="2"><rect x="70" y="368" width="60" height="36" rx="5"/><rect x="155" y="368" width="60" height="36" rx="5"/><rect x="240" y="368" width="60" height="36" rx="5"/><rect x="325" y="368" width="60" height="36" rx="5"/></g>
+    <g font-size="13" font-weight="700" fill="#1e8449" text-anchor="middle"><text x="100" y="391">Q1</text><text x="185" y="391">Q2</text><text x="270" y="391">Q3</text><text x="355" y="391">Q4</text></g>
+  </g>
+  <g data-step="4">
+    <path d="M230 420V458" stroke="#34495e" stroke-width="2.5" marker-end="url(#tb-a)"/>
+    <rect x="130" y="460" width="200" height="60" rx="10" fill="#fdf7e3" stroke="#c9a227" stroke-width="2.5"/>
+    <text x="230" y="486" text-anchor="middle" font-size="14" font-weight="800" fill="#8a6d00">Compare</text>
+    <text x="230" y="506" text-anchor="middle" font-size="12" fill="#34495e">signature = golden 0110 ?</text>
+    <path d="M230 520V552" stroke="#34495e" stroke-width="2.5" marker-end="url(#tb-a)"/>
+    <text x="230" y="574" text-anchor="middle" font-size="14" font-weight="800" fill="#1e8449">pass / fail</text>
+  </g>
+  <g data-step="5">
+    <rect x="450" y="250" width="160" height="120" rx="10" fill="#efeafa" stroke="#6c4fb3" stroke-width="2.5"/>
+    <text x="530" y="278" text-anchor="middle" font-size="14" font-weight="800" fill="#5b3fa0">Controller</text>
+    <text x="530" y="300" text-anchor="middle" font-size="12" fill="#34495e">IDLE → INIT → RUN</text>
+    <text x="530" y="318" text-anchor="middle" font-size="12" fill="#34495e">→ CHECK → DONE</text>
+    <text x="530" y="342" text-anchor="middle" font-size="12" fill="#34495e">counter: 7 patterns</text>
+    <g stroke="#6c4fb3" stroke-width="2" fill="none" stroke-dasharray="5 4">
+      <path d="M595 250V100H422" marker-end="url(#tb-p)"/><path d="M450 375H422" marker-end="url(#tb-p)"/><path d="M530 370V490H332" marker-end="url(#tb-p)"/>
+    </g>
+    <text x="530" y="420" text-anchor="middle" font-size="12" font-weight="700" fill="#6c4fb3">start / done / pass</text>
+  </g>
+</svg>

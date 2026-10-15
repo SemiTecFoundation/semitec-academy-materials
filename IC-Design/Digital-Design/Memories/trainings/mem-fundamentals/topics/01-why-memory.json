@@ -1,0 +1,383 @@
+{
+  "id": "why-memory",
+  "title": "Why memory matters",
+  "duration": "45 min",
+  "summary": "Every digital system stores data — in flip-flops, register files, SRAM, DRAM or flash. This topic shows where bits live, why systems use a **hierarchy** of memories, and why **locality** makes it work. You will also see how the same SystemVerilog array becomes flip-flops or a real memory.",
+  "objectives": [
+    "Compare flip-flops, register files, SRAM, DRAM and flash as storage.",
+    "Describe the memory hierarchy and the processor–memory gap.",
+    "Compute the average memory access time and explain locality.",
+    "Explain what synthesis builds from an array with asynchronous or synchronous read."
+  ],
+  "subsections": [
+    {
+      "id": "storage",
+      "title": "Storage in a digital system",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "Every digital system stores bits — in very different ways. A **flip-flop** keeps one bit with about 20 transistors and can be read and written by every clock. A **memory array** packs bits far more densely, but gives access to only one or a few words at a time, through an **address**."
+        },
+        {
+          "type": "table",
+          "columns": [
+            "Storage",
+            "Per bit",
+            "Access",
+            "Typical use"
+          ],
+          "rows": [
+            [
+              "flip-flop",
+              "~20 transistors",
+              "every bit at once, every clock",
+              "pipeline registers, state machines"
+            ],
+            [
+              "register file",
+              "flip-flops or 8–10T cells",
+              "a few words per clock, several ports",
+              "CPU registers"
+            ],
+            [
+              "SRAM array",
+              "6 transistors",
+              "one word per port per clock",
+              "caches, buffers, on-chip memory"
+            ],
+            [
+              "DRAM",
+              "1 transistor + 1 capacitor",
+              "row by row, needs refresh",
+              "main memory"
+            ],
+            [
+              "flash",
+              "1 floating-gate transistor",
+              "page / block, slow writes",
+              "storage, firmware"
+            ]
+          ],
+          "caption": "Where bits live"
+        },
+        {
+          "type": "text",
+          "md": "The next subsections show how these storage types are organised in a system. At the end of the topic, *In SystemVerilog* shows how one and the same array in RTL becomes either flip-flops or a real memory."
+        }
+      ]
+    },
+    {
+      "id": "hierarchy",
+      "title": "The memory hierarchy",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "No single memory is fast, large **and** cheap. Systems therefore stack several levels: small and fast near the processor, large and slow further away."
+        },
+        {
+          "type": "stepper",
+          "src": "assets/hierarchy.svg",
+          "interval": 3000,
+          "steps": [
+            {
+              "title": "Registers",
+              "md": "A few hundred to a few thousand bits inside the processor. Read in the same clock cycle."
+            },
+            {
+              "title": "L1 cache",
+              "md": "Tens of kilobytes of SRAM, about one nanosecond away."
+            },
+            {
+              "title": "L2 / L3 cache",
+              "md": "Megabytes of SRAM, shared by cores; several to tens of nanoseconds."
+            },
+            {
+              "title": "Main memory",
+              "md": "Gigabytes of DRAM outside the processor chip; 50–100 ns."
+            },
+            {
+              "title": "Storage",
+              "md": "Terabytes of flash; tens of microseconds — and it keeps data without power."
+            }
+          ]
+        },
+        {
+          "type": "callout",
+          "kind": "info",
+          "title": "Every level is a memory from this course",
+          "md": "Registers and caches are **SRAM** or flip-flops, main memory is **DRAM**, storage is **flash**. The following trainings look at each of them in depth."
+        }
+      ]
+    },
+    {
+      "id": "gap",
+      "title": "The processor–memory gap",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "Processor clocks went up much faster than DRAM speed. A processor at 4 GHz has a cycle time of 0.25 ns; a DRAM access of 80 ns therefore costs about **320 cycles** — time in which the core could have executed hundreds of instructions. This is the **memory wall**."
+        },
+        {
+          "type": "table",
+          "columns": [
+            "",
+            "Value",
+            "In processor cycles at 4 GHz"
+          ],
+          "rows": [
+            [
+              "L1 hit",
+              "~1 ns",
+              "~4"
+            ],
+            [
+              "L2 hit",
+              "~4 ns",
+              "~16"
+            ],
+            [
+              "L3 hit",
+              "~15 ns",
+              "~60"
+            ],
+            [
+              "DRAM access",
+              "~80 ns",
+              "~320"
+            ]
+          ],
+          "caption": "Typical latencies seen by a processor"
+        },
+        {
+          "type": "callout",
+          "kind": "key",
+          "title": "Why it matters to a hardware designer",
+          "md": "Most of a chip's area is memory, and most of its waiting is for memory. Choosing the right memory, organisation and interface is often more important than optimising the logic."
+        }
+      ]
+    },
+    {
+      "id": "locality",
+      "title": "Locality",
+      "blocks": [
+        {
+          "type": "stepper",
+          "src": "assets/locality.svg",
+          "interval": 3000,
+          "steps": [
+            {
+              "title": "A typical loop",
+              "md": "The loop reads an array element by element and updates *sum* every iteration."
+            },
+            {
+              "title": "Spatial locality",
+              "md": "Addresses close to a recent one are used soon. Caches therefore fetch a whole **line** (here 4 words): one miss, then three hits."
+            },
+            {
+              "title": "Temporal locality",
+              "md": "A recently used item is used again soon. *sum* stays in the fastest level."
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "md": "Locality is what makes a hierarchy work. Its benefit is measured by the **average memory access time**:\n\n> AMAT = hit time + miss rate × miss penalty\n\nExample: L1 hit time 1 ns, miss rate 5 %, miss penalty 80 ns → AMAT = 1 + 0.05 × 80 = **5 ns** — much closer to the SRAM than to the DRAM."
+        },
+        {
+          "type": "categorize",
+          "prompt": "Practice: which kind of locality is used?",
+          "categories": [
+            {
+              "id": "t",
+              "label": "Temporal"
+            },
+            {
+              "id": "s",
+              "label": "Spatial"
+            }
+          ],
+          "items": [
+            {
+              "text": "a loop counter used every iteration",
+              "category": "t"
+            },
+            {
+              "text": "reading an image row pixel by pixel",
+              "category": "s"
+            },
+            {
+              "text": "the instructions of a loop body executed again and again",
+              "category": "t"
+            },
+            {
+              "text": "fetching a whole 64-byte cache line",
+              "category": "s"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sv",
+      "title": "In SystemVerilog: registers or memory?",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "In RTL both look like an array. What the hardware becomes depends on **how the array is read**:"
+        },
+        {
+          "type": "code",
+          "lang": "systemverilog",
+          "code": "// 16 x 8 registers, combinational read: every word is visible at once.\n// Synthesis builds flip-flops + a 16:1 multiplexer (FPGA: LUT RAM).\nmodule regs16 (\n  input  logic       clk, we,\n  input  logic [3:0] wa, ra,\n  input  logic [7:0] wd,\n  output logic [7:0] rd\n);\n  logic [7:0] regs [16];\n  always_ff @(posedge clk) if (we) regs[wa] <= wd;\n  assign rd = regs[ra];                 // asynchronous read\nendmodule\n\n// 1024 x 32 memory, synchronous read: the read data is registered.\n// This pattern can be mapped to an SRAM macro (ASIC) or block RAM (FPGA).\nmodule ram1k (\n  input  logic        clk, we,\n  input  logic [9:0]  addr,\n  input  logic [31:0] din,\n  output logic [31:0] dout\n);\n  logic [31:0] mem [1024];\n  always_ff @(posedge clk) begin\n    if (we) mem[addr] <= din;\n    dout <= mem[addr];                  // synchronous read\n  end\nendmodule"
+        },
+        {
+          "type": "callout",
+          "kind": "key",
+          "title": "Rule of thumb",
+          "md": "Small and read **asynchronously** → flip-flops or LUT RAM. Large and read **synchronously** → a real memory (SRAM macro or block RAM). A 1024 × 32 array built from flip-flops would need 32 768 flip-flops and a huge multiplexer."
+        }
+      ]
+    }
+  ],
+  "quiz": {
+    "questions": [
+      {
+        "id": "q-ff",
+        "type": "single",
+        "text": "A 1024 × 32 array is read with `assign rd = mem[ra];`. What does an ASIC synthesis tool most likely build?",
+        "options": [
+          "Flip-flops and a large read multiplexer",
+          "An SRAM macro",
+          "A DRAM",
+          "A ROM"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "sv"
+        ]
+      },
+      {
+        "id": "q-sync",
+        "type": "single",
+        "text": "Which RTL pattern can be mapped to an SRAM macro or FPGA block RAM?",
+        "options": [
+          "A memory array read inside `always_ff` (synchronous read)",
+          "An array read with `assign` (asynchronous read)",
+          "A `case` statement",
+          "A `for` loop over all words"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "sv"
+        ]
+      },
+      {
+        "id": "q-order",
+        "type": "order",
+        "text": "Order the levels from fastest to slowest.",
+        "items": [
+          "registers",
+          "L1 cache",
+          "L3 cache",
+          "DRAM",
+          "flash SSD"
+        ],
+        "review": [
+          "hierarchy"
+        ]
+      },
+      {
+        "id": "q-cycles",
+        "type": "single",
+        "text": "A processor runs at 2 GHz. About how many cycles does a 60 ns DRAM access cost?",
+        "options": [
+          "120",
+          "30",
+          "60",
+          "1200"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "gap"
+        ],
+        "explain": "60 ns ÷ 0.5 ns = 120 cycles."
+      },
+      {
+        "id": "q-amat",
+        "type": "single",
+        "text": "Hit time 2 ns, miss rate 10 %, miss penalty 50 ns. What is the AMAT?",
+        "options": [
+          "7 ns",
+          "5 ns",
+          "52 ns",
+          "2.5 ns"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "locality"
+        ],
+        "explain": "2 + 0.1 × 50 = 7 ns."
+      },
+      {
+        "id": "q-loc",
+        "type": "match",
+        "text": "Temporal or spatial locality?",
+        "categories": [
+          {
+            "id": "t",
+            "label": "Temporal"
+          },
+          {
+            "id": "s",
+            "label": "Spatial"
+          }
+        ],
+        "items": [
+          {
+            "text": "variable reused in a loop",
+            "category": "t"
+          },
+          {
+            "text": "array walked element by element",
+            "category": "s"
+          },
+          {
+            "text": "cache line fetch",
+            "category": "s"
+          },
+          {
+            "text": "function called repeatedly",
+            "category": "t"
+          }
+        ],
+        "review": [
+          "locality"
+        ]
+      },
+      {
+        "id": "q-dram",
+        "type": "truefalse",
+        "text": "Main memory in a computer is usually built from SRAM.",
+        "options": [
+          "True",
+          "False"
+        ],
+        "correct": [
+          1
+        ],
+        "shuffle": false,
+        "review": [
+          "hierarchy"
+        ]
+      }
+    ]
+  }
+}

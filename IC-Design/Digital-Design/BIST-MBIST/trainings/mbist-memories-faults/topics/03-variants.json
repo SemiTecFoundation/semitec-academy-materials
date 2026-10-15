@@ -1,0 +1,236 @@
+{
+  "id": "variants",
+  "title": "Memory variants and what they mean for test",
+  "duration": "20 min",
+  "summary": "Besides the plain single-port SRAM, a chip contains multi-port memories, ROMs and — in FPGAs — block RAM and distributed (LUT) RAM. Each one changes **how the BIST must test it**. DRAM and flash are mentioned briefly; the details of all memories belong to the Digital Design courses.",
+  "objectives": [
+    "Explain what extra testing a multi-port memory needs.",
+    "Explain how a ROM is tested without writing.",
+    "Explain synchronous and asynchronous read and why the MBIST comparator must know the read latency.",
+    "Name the special concerns of DRAM and flash tests."
+  ],
+  "subsections": [
+    {
+      "id": "multi-port",
+      "title": "Multi-port memories and register files",
+      "blocks": [
+        {
+          "type": "image",
+          "src": "assets/dual-port.svg",
+          "alt": "Dual-port memory with port A and port B around a shared cell array",
+          "caption": "Dual-port memory"
+        },
+        {
+          "type": "text",
+          "md": "A **dual-port** memory has two complete sets of address, data and control signals. Both ports can read or write **at the same time**, even the same cell. Processor **register files** go further: typically two read ports and one write port per clock.\n\nEvery cell gets extra access transistors and bit lines for each port — and with them, new ways to fail."
+        },
+        {
+          "type": "table",
+          "columns": [
+            "What the MBIST must do",
+            "Why"
+          ],
+          "rows": [
+            [
+              "Run the single-port test **through every port**",
+              "a port's own decoder, bit lines or sense amplifiers can be broken while the other port works"
+            ],
+            [
+              "Add **inter-port** tests: both ports active in the same clock",
+              "a short between the bit lines of two ports, or a weak cell that fails only when both ports load it"
+            ],
+            [
+              "Know the **collision rule**",
+              "what the memory does when both ports write the same address is defined by the memory — the test must not expect anything else"
+            ]
+          ],
+          "caption": "Testing multi-port memories"
+        }
+      ]
+    },
+    {
+      "id": "rom",
+      "title": "ROM",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "A **ROM** is written once, when the chip is made. A test that writes data is impossible, so the BIST simply **reads every word** and compacts the data in a **MISR** — exactly the response compaction of *BIST Foundations*, Topic 5."
+        },
+        {
+          "type": "image",
+          "src": "assets/rom-signature.svg",
+          "alt": "Address counter drives the ROM, the ROM data goes into a MISR, the signature is compared",
+          "caption": "ROM BIST = address counter + MISR"
+        },
+        {
+          "type": "callout",
+          "kind": "tip",
+          "title": "Where the golden signature comes from",
+          "md": "The ROM content is a file (the boot code image). The design flow computes the expected signature from that file. If the ROM content changes, the golden signature must change with it — usually generated automatically."
+        }
+      ]
+    },
+    {
+      "id": "fpga",
+      "title": "FPGA memories: block RAM and LUT RAM",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "FPGAs offer two kinds of on-chip RAM, and an MBIST built into an FPGA design has to handle both:"
+        },
+        {
+          "type": "tabs",
+          "tabs": [
+            {
+              "label": "Block RAM (BRAM)",
+              "md": "Dedicated memory blocks of a fixed size (for example 36 Kb blocks in AMD devices, 20 Kb M20K blocks in Intel devices), configurable in width and depth, single- or dual-port. **Synchronous read**: the address is taken at a clock edge and the data appears **after** that edge — one clock later, or two with the optional output register."
+            },
+            {
+              "label": "LUT RAM (distributed RAM)",
+              "md": "Small memories built from the look-up tables of the logic blocks (AMD: distributed RAM; Intel: MLAB). Writes are synchronous, but the **read is asynchronous**: the data follows the address within the same clock cycle, like combinational logic."
+            }
+          ]
+        },
+        {
+          "type": "image",
+          "src": "assets/bram-timing.svg",
+          "alt": "Timing: LUTRAM data appears in the same cycle, BRAM data one clock later",
+          "caption": "Read latency: 0 clocks (LUTRAM) or 1 clock (BRAM)"
+        },
+        {
+          "type": "callout",
+          "kind": "key",
+          "title": "Why the MBIST must know the latency",
+          "md": "The MBIST comparator checks the read data against the **expected** value. With a BRAM, the data of the read issued in clock *n* arrives in clock *n + 1* — so the expected value (and the address, for the fail log) must be **delayed by the same latency**. A wrong latency makes a perfect memory look broken, or hides real failures."
+        }
+      ]
+    },
+    {
+      "id": "dram-flash",
+      "title": "DRAM and flash in brief",
+      "blocks": [
+        {
+          "type": "tabs",
+          "tabs": [
+            {
+              "label": "DRAM",
+              "blocks": [
+                {
+                  "type": "svg",
+                  "src": "assets/dram-cell.svg",
+                  "controls": true,
+                  "caption": "1T1C DRAM cell: the bit is a charge on a capacitor"
+                },
+                {
+                  "type": "text",
+                  "md": "A DRAM cell stores a bit as **charge on a tiny capacitor**, behind one access transistor — far smaller than a 6T SRAM cell. The charge **leaks**, so every row is refreshed regularly, and a read **destroys** the value, so it is written back after every read.\n\nThe key DRAM tests are **retention** (does a cell keep its charge long enough between refreshes, also when hot?) and **disturb** effects between neighbouring rows. DRAM is usually a separate chip tested by its maker; an SoC's memory controller may also run a memory test at boot."
+                }
+              ]
+            },
+            {
+              "label": "Flash",
+              "md": "Non-volatile cells that are **programmed** and **erased** in blocks, slowly, and wear out after many cycles. Tests check program/erase, **endurance** and read margins. Embedded flash in microcontrollers has its own built-in test modes."
+            }
+          ]
+        },
+        {
+          "type": "callout",
+          "kind": "info",
+          "title": "Focus of this course",
+          "md": "From here on we concentrate on **SRAM** — the memories that MBIST tests in almost every chip, including the block RAM and LUT RAM of FPGAs."
+        }
+      ]
+    }
+  ],
+  "quiz": {
+    "questions": [
+      {
+        "id": "q-mp",
+        "type": "multiple",
+        "text": "What does an MBIST need for a dual-port memory? Select **all** correct answers.",
+        "options": [
+          "Run the memory test through each port.",
+          "Test both ports active in the same clock.",
+          "Respect the memory's rule for two writes to the same address.",
+          "Test only port A — port B uses the same cells."
+        ],
+        "correct": [
+          0,
+          1,
+          2
+        ],
+        "review": [
+          "multi-port"
+        ]
+      },
+      {
+        "id": "q-rom",
+        "type": "single",
+        "text": "How is a ROM tested by BIST?",
+        "options": [
+          "Read every word and compact the data in a MISR; compare with the signature computed from the ROM file.",
+          "Run a March test that writes 0s and 1s.",
+          "Compare it with a second ROM on the chip.",
+          "ROMs cannot have defects, so they are not tested."
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "rom"
+        ]
+      },
+      {
+        "id": "q-lut",
+        "type": "single",
+        "text": "In an FPGA, which memory has an **asynchronous** read (data in the same clock cycle)?",
+        "options": [
+          "LUT RAM (distributed RAM)",
+          "Block RAM",
+          "Both",
+          "Neither"
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "fpga"
+        ]
+      },
+      {
+        "id": "q-lat",
+        "type": "single",
+        "text": "An MBIST tests a BRAM with one clock of read latency but compares the data in the same clock as the read. What happens?",
+        "options": [
+          "The comparison uses the wrong data: good memories fail or real faults are missed.",
+          "Nothing — the BRAM adapts its latency.",
+          "The test only runs slower.",
+          "Only the first address is affected."
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "fpga"
+        ]
+      },
+      {
+        "id": "q-dram",
+        "type": "single",
+        "text": "Why must a DRAM be refreshed?",
+        "options": [
+          "The charge on its capacitors leaks away.",
+          "Its sense amplifiers forget the data.",
+          "Its address decoder needs a periodic reset.",
+          "SRAM needs refresh too, DRAM does not."
+        ],
+        "correct": [
+          0
+        ],
+        "review": [
+          "dram-flash"
+        ]
+      }
+    ]
+  }
+}

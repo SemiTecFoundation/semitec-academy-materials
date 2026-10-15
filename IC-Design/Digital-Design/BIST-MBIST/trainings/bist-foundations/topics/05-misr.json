@@ -1,0 +1,253 @@
+{
+  "id": "misr",
+  "title": "Compacting responses: MISR",
+  "duration": "35 min",
+  "summary": "The pattern generator makes the questions; now the chip must check the **answers**. Instead of storing millions of expected bits, BIST squeezes all responses into one short **signature** with an LFSR-like register — the **SISR** or **MISR**.",
+  "objectives": [
+    "Explain why responses are compacted into a signature.",
+    "Compute a serial signature step by step and relate it to polynomial division.",
+    "Compute the next state of a MISR.",
+    "Explain aliasing and why unknown (X) values are dangerous."
+  ],
+  "subsections": [
+    {
+      "id": "why-compact",
+      "title": "Why compact the responses",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "A logic BIST run applies thousands of patterns to circuits with thousands of outputs: **millions of response bits**. Storing all expected values on the chip would need a huge memory, and comparing them bit by bit a lot of logic.\n\nThe trick: feed all responses into a small register that mixes them into one short value — the **signature**. Only the final signature is compared with the expected **golden signature**, computed once by simulating the fault-free design."
+        },
+        {
+          "type": "image",
+          "src": "assets/compaction.svg",
+          "alt": "Responses go into a compactor that produces a signature compared with the golden one",
+          "caption": "Response compaction"
+        },
+        {
+          "type": "accordion",
+          "items": [
+            { "title": "Simple idea 1: count the ones", "md": "Count how many 1s appear in the output stream. Cheap — but any error that turns one 0 into 1 **and** another 1 into 0 leaves the count unchanged and is missed." },
+            { "title": "Simple idea 2: count the transitions", "md": "Count how often the output changes 0→1 or 1→0. Also cheap, also blind to many error patterns." },
+            { "title": "The better idea: signature analysis", "md": "Feed the stream into an **LFSR** that keeps XOR-mixing it. Every bit influences the final state, and it is very unlikely that a wrong stream ends in the same state. This is what real BIST uses." }
+          ]
+        },
+        {
+          "type": "callout",
+          "kind": "info",
+          "title": "Compaction loses information",
+          "md": "Millions of bits become a few dozen. So, in theory, a faulty circuit **could** produce the right signature. This is called **aliasing** — see 5.4. With a good register it is extremely unlikely."
+        }
+      ]
+    },
+    {
+      "id": "sisr",
+      "title": "Signature analysis: SISR",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "Take the Galois LFSR of Topic 4 and add one XOR at its input: the data bit enters Q1 together with the feedback from Q4. This is a **serial-input signature register (SISR)**. It starts at 0000, then the circuit's output stream is clocked in, one bit per clock:"
+        },
+        {
+          "type": "stepper",
+          "src": "assets/sisr-steps.svg",
+          "interval": 1800,
+          "steps": [
+            { "title": "Start: 0000", "md": "The register is cleared before the test. The stream to compact is **11010011**." },
+            { "title": "Bit 1 = 1 → 1000", "md": "Q1 = in ⊕ Q4 = 1 ⊕ 0 = 1; Q4 = Q3 ⊕ Q4 = 0." },
+            { "title": "Bit 2 = 1 → 1100", "md": "Q1 = 1 ⊕ 0 = 1; the old Q1 moves to Q2." },
+            { "title": "Bit 3 = 0 → 0110", "md": "Q1 = 0 ⊕ 0 = 0; everything else shifts." },
+            { "title": "Bit 4 = 1 → 1011", "md": "Q1 = 1 ⊕ 0 = 1; Q4 = Q3 ⊕ Q4 = 1 ⊕ 0 = 1." },
+            { "title": "Bit 5 = 0 → 1100", "md": "Now Q4 = 1 is fed back: Q1 = 0 ⊕ 1 = 1; Q4 = 1 ⊕ 1 = 0." },
+            { "title": "Bit 6 = 0 → 0110", "md": "Q1 = 0 ⊕ 0 = 0." },
+            { "title": "Bit 7 = 1 → 1011", "md": "Q1 = 1 ⊕ 0 = 1; Q4 = 1 ⊕ 0 = 1." },
+            { "title": "Bit 8 = 1 → signature 0100", "md": "Q1 = 1 ⊕ 1 = 0; Q4 = 1 ⊕ 1 = 0. The final state **0100** is the signature of this stream." }
+          ]
+        },
+        {
+          "type": "tabs",
+          "tabs": [
+            { "label": "Good stream", "md": "Stream **11010011** → signature **0100**. This is the golden signature." },
+            { "label": "One bit wrong", "md": "A defect flips the 5th bit: stream 1101**1**011. The register goes 1000, 1100, 0110, 1011, 0100, 0010, 1001, 0101 → signature **0101** ≠ 0100. **Fail** — the error is detected." }
+          ]
+        },
+        {
+          "type": "text",
+          "md": "**Why it works — polynomial division.** Read the stream as a polynomial, first bit = highest power: 11010011 = x⁷ + x⁶ + x⁴ + x + 1. The SISR **divides** it by the register's polynomial p(x) = x⁴ + x³ + 1 and keeps the **remainder**. Qk holds the coefficient of xᵏ⁻¹, so Q1Q2Q3Q4 = 0100 means remainder = x."
+        },
+        {
+          "type": "code",
+          "language": "text",
+          "code": "  1 1 0 1 0 0 1 1     stream   x^7+x^6+x^4+x+1\n⊕ 1 1 0 0 1          p(x)·x^3 (align with the leading 1)\n  ---------------\n  0 0 0 1 1 0 1 1\n⊕       1 1 0 0 1      p(x)·x^0\n  ---------------\n  0 0 0 0 0 0 1 0     remainder = x  →  Q1Q2Q3Q4 = 0 1 0 0",
+          "caption": "Division over GF(2): subtraction is XOR"
+        },
+        {
+          "type": "callout",
+          "kind": "key",
+          "title": "A single wrong bit is always caught",
+          "md": "One flipped bit adds xᵏ to the stream. Because p(x) ends with **+ 1**, it never divides xᵏ, so the remainder — the signature — always changes."
+        }
+      ]
+    },
+    {
+      "id": "misr",
+      "title": "The multiple-input signature register",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "A real circuit has many outputs (or, in LBIST, many **scan chains**) producing bits in parallel. Putting an XOR in front of **every** stage lets one register take all of them in each clock: the **multiple-input signature register (MISR)**."
+        },
+        {
+          "type": "image",
+          "src": "assets/misr.svg",
+          "alt": "4-bit MISR with inputs D1 to D4",
+          "caption": "A 4-bit MISR compacts 4 outputs at once"
+        },
+        {
+          "type": "table",
+          "columns": ["Clock", "Inputs D1D2D3D4", "MISR Q1Q2Q3Q4 (good)", "Inputs with an error", "MISR (faulty)"],
+          "rows": [
+            ["start", "—", "0000", "—", "0000"],
+            ["1", "1011", "1011", "1011", "1011"],
+            ["2", "0110", "1010", "01**0**0", "1000"],
+            ["3", "1100", "1001", "1100", "1000"],
+            ["4", "0011", "**1110**", "0011", "**0111**"]
+          ],
+          "caption": "One wrong bit in clock 2 changes the final signature"
+        },
+        {
+          "type": "text",
+          "md": "Check clock 2 yourself: state 1011, inputs 0110 →\n\n- Q1 = Q4 ⊕ D1 = 1 ⊕ 0 = **1**\n- Q2 = Q1 ⊕ D2 = 1 ⊕ 1 = **0**\n- Q3 = Q2 ⊕ D3 = 0 ⊕ 1 = **1**\n- Q4 = Q3 ⊕ Q4 ⊕ D4 = 1 ⊕ 1 ⊕ 0 = **0** → 1010"
+        },
+        {
+          "type": "callout",
+          "kind": "tip",
+          "title": "In practice",
+          "md": "MISRs are typically 16–64 bits wide. In LBIST, each scan chain feeds one MISR input (or a **space compactor** of XOR trees first reduces many chains to fewer inputs)."
+        }
+      ]
+    },
+    {
+      "id": "aliasing",
+      "title": "Aliasing and unknown values",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "**Aliasing** happens when a faulty response still produces the golden signature. In terms of division: the **error pattern** (good stream ⊕ faulty stream) is a multiple of p(x), so it leaves the remainder unchanged."
+        },
+        {
+          "type": "tabs",
+          "tabs": [
+            { "label": "An aliasing example", "md": "Error pattern 11001000 = x³ · p(x). Faulty stream: 11010011 ⊕ 11001000 = **00011011**. Its signature is also **0100** — three wrong bits, and the test still passes." },
+            { "label": "How likely is it?", "blocks": [
+              { "type": "text", "md": "For long, random error streams the chance of aliasing in an n-bit register is about **2⁻ⁿ**:" },
+              { "type": "table", "columns": ["Signature width", "Aliasing probability ≈"], "rows": [["4 bits", "1 / 16"], ["16 bits", "1 / 65 536"], ["32 bits", "1 / 4.3 billion"]] },
+              { "type": "text", "md": "That is why real MISRs are wide: with 32 bits, aliasing is practically impossible." }
+            ] }
+          ]
+        },
+        {
+          "type": "text",
+          "md": "A much more practical danger is the **unknown value X**. Some flip-flops or outputs are not predictable in simulation: uninitialized memories or registers, buses with several drivers, analog blocks, signals crossing clock domains, slow (multicycle) paths at speed."
+        },
+        {
+          "type": "callout",
+          "kind": "warning",
+          "title": "One X spoils the whole signature",
+          "md": "An X entering the MISR is XOR-mixed into every later state. The final signature becomes unknown, so there is **no golden signature** to compare with. LBIST therefore needs **X-bounding** (fixing X sources in the design, e.g. initializing registers, blocking memory outputs) or **X-masking** (forcing known values in front of the MISR) — you will see both in the LBIST course."
+        },
+        {
+          "type": "categorize",
+          "prompt": "Practice: which signals can put an X into the MISR?",
+          "categories": [{ "id": "x", "label": "Possible X source" }, { "id": "ok", "label": "Known value" }],
+          "items": [
+            { "text": "uninitialized register", "category": "x" },
+            { "text": "output of an untested memory", "category": "x" },
+            { "text": "bus with two drivers", "category": "x" },
+            { "text": "clock-domain crossing", "category": "x" },
+            { "text": "flip-flop loaded by a scan chain", "category": "ok" },
+            { "text": "output of the LFSR", "category": "ok" }
+          ]
+        }
+      ]
+    }
+  ],
+  "quiz": {
+    "questions": [
+      {
+        "id": "q-why",
+        "type": "single",
+        "text": "Why does BIST compact the responses into a signature instead of comparing every bit?",
+        "options": [
+          "Storing millions of expected bits on the chip would need far too much memory and logic.",
+          "Signatures detect more faults than bit-by-bit comparison.",
+          "A MISR makes the circuit faster.",
+          "Responses cannot be compared bit by bit."
+        ],
+        "correct": [0],
+        "review": ["why-compact"]
+      },
+      {
+        "id": "q-sisr",
+        "type": "single",
+        "text": "The SISR of this topic (new Q1 = in ⊕ Q4, Q2 = Q1, Q3 = Q2, Q4 = Q3 ⊕ Q4) holds Q1Q2Q3Q4 = **0110**. The input bit is **1**. What is the next state?",
+        "options": ["1011", "0011", "1111", "0110"],
+        "correct": [0],
+        "review": ["sisr"],
+        "explain": "Q1 = 1 ⊕ 0 = 1, Q2 = 0, Q3 = 1, Q4 = Q3 ⊕ Q4 = 1 ⊕ 0 = 1 → **1011**."
+      },
+      {
+        "id": "q-misr",
+        "type": "single",
+        "text": "A 4-bit MISR (Q1 = Q4 ⊕ D1, Q2 = Q1 ⊕ D2, Q3 = Q2 ⊕ D3, Q4 = Q3 ⊕ Q4 ⊕ D4) holds **1011**; the inputs are D1D2D3D4 = **0110**. Next state?",
+        "options": ["1010", "1101", "0110", "1001"],
+        "correct": [0],
+        "review": ["misr"]
+      },
+      {
+        "id": "q-single",
+        "type": "truefalse",
+        "text": "With a signature polynomial ending in + 1, a single wrong response bit always changes the signature.",
+        "options": ["True", "False"],
+        "correct": [0],
+        "shuffle": false,
+        "review": ["sisr"]
+      },
+      {
+        "id": "q-alias",
+        "type": "single",
+        "text": "What is aliasing?",
+        "options": [
+          "A faulty circuit produces the same signature as the good one.",
+          "Two MISRs produce different signatures.",
+          "The LFSR repeats its sequence.",
+          "The golden signature is computed by simulation."
+        ],
+        "correct": [0],
+        "review": ["aliasing"]
+      },
+      {
+        "id": "q-prob",
+        "type": "single",
+        "text": "About how likely is aliasing in a 20-bit MISR (long random error streams)?",
+        "options": ["about 1 in a million", "about 1 in 20", "about 1 in 400", "impossible"],
+        "correct": [0],
+        "review": ["aliasing"],
+        "explain": "2⁻²⁰ ≈ 1 / 1 048 576."
+      },
+      {
+        "id": "q-x",
+        "type": "single",
+        "text": "An uninitialized register sends an unknown value X into the MISR. What happens?",
+        "options": [
+          "The final signature becomes unknown, so X sources must be blocked or masked.",
+          "The MISR ignores X values automatically.",
+          "Only one bit of the signature is affected.",
+          "The test runs faster."
+        ],
+        "correct": [0],
+        "review": ["aliasing"]
+      }
+    ]
+  }
+}

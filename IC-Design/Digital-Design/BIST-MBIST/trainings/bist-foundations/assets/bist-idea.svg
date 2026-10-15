@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 440" font-family="Segoe UI, Arial, sans-serif">
+  <defs>
+    <marker id="bi-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#34495e"/></marker>
+    <marker id="bi-arrc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#6c4fb3"/></marker>
+  </defs>
+  <rect width="820" height="440" rx="14" fill="#ffffff"/>
+  <!-- chip outline -->
+  <rect x="200" y="30" width="600" height="390" rx="14" fill="#f6f9fc" stroke="#1f4e79" stroke-width="3"/>
+  <text x="500" y="410" text-anchor="middle" font-size="13" font-weight="700" fill="#1f4e79">the chip</text>
+
+  <g data-step="1">
+    <rect x="225" y="190" width="160" height="100" rx="10" fill="#e3effc" stroke="#1f6feb" stroke-width="2.5"/>
+    <text x="305" y="225" text-anchor="middle" font-size="15" font-weight="700" fill="#1f4e79">Pattern</text>
+    <text x="305" y="245" text-anchor="middle" font-size="15" font-weight="700" fill="#1f4e79">generator</text>
+    <text x="305" y="270" text-anchor="middle" font-size="12" fill="#34495e">LFSR, counter, March</text>
+  </g>
+  <g data-step="2">
+    <line x1="385" y1="240" x2="423" y2="240" stroke="#34495e" stroke-width="2.5" marker-end="url(#bi-arr)"/>
+    <rect x="425" y="175" width="170" height="130" rx="10" fill="#eef1f4" stroke="#34495e" stroke-width="2.5"/>
+    <text x="510" y="225" text-anchor="middle" font-size="15" font-weight="700" fill="#34495e">Circuit</text>
+    <text x="510" y="245" text-anchor="middle" font-size="15" font-weight="700" fill="#34495e">under test</text>
+    <text x="510" y="270" text-anchor="middle" font-size="12" fill="#34495e">logic or a memory</text>
+  </g>
+  <g data-step="3">
+    <line x1="595" y1="240" x2="633" y2="240" stroke="#34495e" stroke-width="2.5" marker-end="url(#bi-arr)"/>
+    <rect x="635" y="190" width="145" height="100" rx="10" fill="#e8f6ee" stroke="#27ae60" stroke-width="2.5"/>
+    <text x="707" y="225" text-anchor="middle" font-size="15" font-weight="700" fill="#1e8449">Response</text>
+    <text x="707" y="245" text-anchor="middle" font-size="15" font-weight="700" fill="#1e8449">checker</text>
+    <text x="707" y="270" text-anchor="middle" font-size="12" fill="#34495e">compare or MISR</text>
+  </g>
+  <g data-step="4">
+    <rect x="410" y="55" width="200" height="70" rx="10" fill="#efeafa" stroke="#6c4fb3" stroke-width="2.5"/>
+    <text x="510" y="86" text-anchor="middle" font-size="15" font-weight="700" fill="#5b3fa0">BIST controller</text>
+    <text x="510" y="106" text-anchor="middle" font-size="12" fill="#34495e">start → run → done</text>
+    <g stroke="#6c4fb3" stroke-width="2" fill="none">
+      <path d="M430 125V155H305V188" marker-end="url(#bi-arrc)"/>
+      <path d="M510 125V173" marker-end="url(#bi-arrc)"/>
+      <path d="M590 125V155H707V188" marker-end="url(#bi-arrc)"/>
+    </g>
+  </g>
+  <g data-step="5">
+    <rect x="20" y="55" width="150" height="120" rx="10" fill="#34495e"/>
+    <text x="95" y="100" text-anchor="middle" font-size="15" font-weight="700" fill="#ffffff">Tester</text>
+    <text x="95" y="122" text-anchor="middle" font-size="12" fill="#c8d3de">sends one command,</text>
+    <text x="95" y="138" text-anchor="middle" font-size="12" fill="#c8d3de">reads the result</text>
+    <g stroke="#e67e22" stroke-width="2.5" fill="none">
+      <path d="M170 80H408" marker-end="url(#bi-arr)"/>
+      <path d="M408 105H172" marker-end="url(#bi-arr)"/>
+    </g>
+    <text x="290" y="72" text-anchor="middle" font-size="12" font-weight="700" fill="#b8641b">start</text>
+    <text x="290" y="122" text-anchor="middle" font-size="12" font-weight="700" fill="#b8641b">done, pass / fail</text>
+    <text x="95" y="210" text-anchor="middle" font-size="12" fill="#34495e">a few pins (JTAG)</text>
+    <text x="500" y="345" text-anchor="middle" font-size="14" font-weight="700" fill="#1f4e79">The test itself runs inside the chip, at the chip's own clock.</text>
+  </g>
+</svg>

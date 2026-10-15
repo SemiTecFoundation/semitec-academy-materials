@@ -1,0 +1,163 @@
+{
+  "id": "cell-faults",
+  "title": "The functional model and cell faults",
+  "duration": "30 min",
+  "summary": "Thousands of physical defects can hit a memory, but a test engineer needs only a handful of **fault models**. This topic introduces the functional model of a memory and the faults of a single cell — and for each one, the shortest sequence of operations that detects it.",
+  "objectives": [
+    "Name the three blocks of the reduced functional model and why faults are mapped to them.",
+    "Describe stuck-at, transition, stuck-open and data-retention faults with state diagrams.",
+    "Write the minimum sequence of writes and reads that detects each of them."
+  ],
+  "subsections": [
+    {
+      "id": "functional-model",
+      "title": "The reduced functional model",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "For testing, a memory is described by three blocks. Every defect — wherever it sits physically — shows up as wrong behaviour of one of them."
+        },
+        {
+          "type": "reveal",
+          "src": "assets/functional-model.svg",
+          "hint": "Click the three blocks.",
+          "caption": "Address decoder, cell array, read/write logic",
+          "spots": [
+            { "x": 23.7, "y": 16.7, "w": 19.7, "h": 52.4, "label": "1", "title": "Address decoder", "md": "Turns the address into one word line and one column selection. Its faults make the memory access the **wrong cell, no cell or several cells** — the *address-decoder faults* of Topic 6." },
+            { "x": 50, "y": 16.7, "w": 46, "h": 52.4, "label": "2", "title": "Memory cell array", "md": "The cells themselves. Faults of **one cell** (this topic) or between **two or more cells** (coupling faults, Topic 5)." },
+            { "x": 50, "y": 78.6, "w": 46, "h": 15.2, "label": "3", "title": "Read / write logic", "md": "Sense amplifiers, write drivers, data registers. A broken sense amplifier makes a whole column read the same value — to the test it looks exactly like **stuck-at faults of the cells** in that column." }
+          ]
+        },
+        {
+          "type": "callout",
+          "kind": "key",
+          "title": "Fewer models, same coverage",
+          "md": "Faults of the read/write logic and of the decoder can be **mapped** to equivalent faults of the cell array or to address-decoder faults. So a test that detects all **cell-array faults** and all **address-decoder faults** also detects the defects in the rest of the memory. That is the basis of every memory test."
+        }
+      ]
+    },
+    {
+      "id": "stuck-at",
+      "title": "Stuck-at and transition faults",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "A good cell is a tiny state machine with two states. Writing 0 (**w0**) always leads to state 0, writing 1 (**w1**) to state 1. Step through what goes wrong in a faulty cell:"
+        },
+        {
+          "type": "stepper",
+          "src": "assets/cell-faults.svg",
+          "interval": 3000,
+          "steps": [
+            { "title": "Good cell", "md": "Both states can be reached from each other; each write ends in the written value." },
+            { "title": "Stuck-at-0", "md": "Whatever is written, the cell stays **0** (e.g. a short to ground). A test must **write 1 and read 1** — the read returns 0." },
+            { "title": "Stuck-at-1", "md": "The cell is always **1**. Detected by **write 0, read 0**." },
+            { "title": "Up-transition fault", "md": "The cell can hold a 1 but **cannot make the 0 → 1 transition** (e.g. a weak write path). The test must first put a **0** in the cell, then write 1, then read: **w0, w1, r1**." },
+            { "title": "Down-transition fault", "md": "The cell cannot make the **1 → 0** transition. Detected by **w1, w0, r0**." }
+          ]
+        },
+        {
+          "type": "callout",
+          "kind": "warning",
+          "title": "Order matters already for one cell",
+          "md": "A transition fault is invisible to *w1, r1* if the cell already held 1 — the failing transition never happened. The test must create the transition **on purpose**."
+        }
+      ]
+    },
+    {
+      "id": "sof-drf",
+      "title": "Stuck-open and data-retention faults",
+      "blocks": [
+        {
+          "type": "tabs",
+          "tabs": [
+            { "label": "Stuck-open fault (SOF)", "md": "An **open** in the cell's access path (a broken contact to the word line or the access transistor): the cell can be neither written nor read. What does a read return? Many sense amplifiers simply keep their **last value** — so the read returns the data of the **previous read**.\n\nTo catch it, the test must read the cell when the expected value is **different** from what the sense amplifier read just before — e.g. read a 0 from one cell, then read a 1 from the faulty one." },
+            { "label": "Data-retention fault (DRF)", "md": "The cell accepts a value and returns it correctly — but **loses it after a while**, for example because one pull-up transistor is open and the node slowly leaks.\n\nA quick test passes. To catch it, the test **writes, waits** (e.g. tens to hundreds of milliseconds), then **reads** — for both 0 and 1. MBIST controllers therefore support a **pause** step." }
+          ]
+        },
+        {
+          "type": "table",
+          "columns": ["Fault", "Behaviour", "Minimum sequence that detects it"],
+          "rows": [
+            ["Stuck-at-0 / 1", "the cell always holds 0 / 1", "w1, r1 / w0, r0"],
+            ["Transition ↑ / ↓", "0 → 1 / 1 → 0 fails", "w0, w1, r1 / w1, w0, r0"],
+            ["Stuck-open", "the cell cannot be accessed; a read returns the previous read data", "reads in a row that expect **different** values"],
+            ["Data retention", "the cell loses its value after some time", "w0, pause, r0 and w1, pause, r1"]
+          ],
+          "caption": "Single-cell faults and how to catch them"
+        },
+        {
+          "type": "categorize",
+          "prompt": "Practice: which fault explains the symptom?",
+          "categories": [{ "id": "saf", "label": "Stuck-at" }, { "id": "tf", "label": "Transition" }, { "id": "drf", "label": "Data retention" }],
+          "items": [
+            { "text": "reads 0 after any write", "category": "saf" },
+            { "text": "w1, r1 passes, but w0, w1, r1 fails", "category": "tf" },
+            { "text": "passes a fast test, fails after a 100 ms pause", "category": "drf" },
+            { "text": "reads 1 even right after w0", "category": "saf" }
+          ]
+        }
+      ]
+    }
+  ],
+  "quiz": {
+    "questions": [
+      {
+        "id": "q-blocks",
+        "type": "multiple",
+        "text": "Which blocks make up the reduced functional model of a memory? Select **all**.",
+        "options": ["Address decoder", "Memory cell array", "Read / write logic", "Scan chain"],
+        "correct": [0, 1, 2],
+        "review": ["functional-model"]
+      },
+      {
+        "id": "q-map",
+        "type": "single",
+        "text": "A sense amplifier is broken and always outputs 0. To a memory test this looks like …",
+        "options": ["stuck-at-0 faults of the cells in that column", "a data-retention fault", "a transition fault of one cell", "nothing — it cannot be detected"],
+        "correct": [0],
+        "review": ["functional-model"]
+      },
+      {
+        "id": "q-tf",
+        "type": "single",
+        "text": "Which sequence is guaranteed to detect an **up-transition** fault (0 → 1 fails)?",
+        "options": ["w0, w1, r1", "w1, r1", "w1, w0, r0", "r1"],
+        "correct": [0],
+        "review": ["stuck-at"],
+        "explain": "The cell must first be put in 0, so that w1 really makes the failing 0 → 1 transition."
+      },
+      {
+        "id": "q-tf2",
+        "type": "truefalse",
+        "text": "Writing 1 and reading 1 always detects an up-transition fault.",
+        "options": ["True", "False"],
+        "correct": [1],
+        "shuffle": false,
+        "review": ["stuck-at"],
+        "explain": "If the cell already held 1, no 0 → 1 transition happens and the fault stays hidden."
+      },
+      {
+        "id": "q-sof",
+        "type": "single",
+        "text": "A cell has a stuck-open fault and the sense amplifier keeps its last value. What does a read of that cell return?",
+        "options": ["The data of the previous read", "Always 0", "Always 1", "A random value every time"],
+        "correct": [0],
+        "review": ["sof-drf"]
+      },
+      {
+        "id": "q-drf",
+        "type": "single",
+        "text": "Why does a fast March test miss a data-retention fault?",
+        "options": [
+          "The cell keeps its value for a short time; only a pause between write and read reveals the loss.",
+          "Retention faults only appear in ROMs.",
+          "March tests never read the cells.",
+          "Retention faults are address-decoder faults."
+        ],
+        "correct": [0],
+        "review": ["sof-drf"]
+      }
+    ]
+  }
+}

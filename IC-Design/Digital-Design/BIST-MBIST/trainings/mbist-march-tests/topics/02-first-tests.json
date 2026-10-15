@@ -1,0 +1,177 @@
+{
+  "id": "first-tests",
+  "title": "First March tests",
+  "duration": "35 min",
+  "summary": "Start with the shortest March tests and add operations one at a time. Each addition makes the test catch a new fault model. You will watch a fault escape one test and get caught by the next.",
+  "objectives": [
+    "Write MATS, MATS+, MATS++ and March X and state their length.",
+    "Explain which fault model each added operation catches.",
+    "Follow a March test on a faulty memory and decide pass or fail.",
+    "Show why March X detects inversion coupling faults in both aggressor positions."
+  ],
+  "subsections": [
+    {
+      "id": "mats",
+      "title": "MATS, MATS+, MATS++ and March X",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "**MATS** (Modified Algorithmic Test Sequence) is the shortest useful March test. The others grow from it, one step at a time:"
+        },
+        {
+          "type": "tabs",
+          "tabs": [
+            { "label": "MATS — 4N", "md": "**{⇕(w0); ⇕(r0, w1); ⇕(r1)}**\n\nEvery cell is read as 0 and as 1, so all **stuck-at faults** are found. The address order is free (⇕), so the AF condition of Topic 6 is not met: some **address-decoder faults escape**." },
+            { "label": "MATS+ — 5N", "md": "**{⇕(w0); ⇑(r0, w1); ⇓(r1, w0)}**\n\nOne extra operation, and fixed directions: ⇑(r0 … w1) and ⇓(r1 … w0) are exactly the **AF condition**. MATS+ detects all **stuck-at and address-decoder faults**." },
+            { "label": "MATS++ — 6N", "md": "**{⇕(w0); ⇑(r0, w1); ⇓(r1, w0, r0)}**\n\nThe last w0 makes a 1 → 0 transition — but in MATS+ nobody reads it. The added **r0** does. MATS++ adds all **transition faults**." },
+            { "label": "March X — 6N", "md": "**{⇕(w0); ⇑(r0, w1); ⇓(r1, w0); ⇕(r0)}**\n\nThe final read moves into its own element. Same length as MATS++, but now *every* cell is read after *all* cells have made their last transition. March X adds all **inversion coupling faults (CFin)**." }
+          ]
+        },
+        {
+          "type": "table",
+          "columns": ["Test", "Length", "SAF", "AF", "TF", "CFin"],
+          "rows": [
+            ["MATS", "4N", "✓", "partly", "partly", "partly"],
+            ["MATS+", "5N", "✓", "✓", "partly", "partly"],
+            ["MATS++", "6N", "✓", "✓", "✓", "partly"],
+            ["March X", "6N", "✓", "✓", "✓", "✓"]
+          ],
+          "caption": "Fault coverage of the first March tests (checked with a fault simulator)"
+        }
+      ]
+    },
+    {
+      "id": "watch",
+      "title": "Watch a fault escape — and get caught",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "Cell 2 of a 4-cell memory has a **transition fault ↓**: it can go 0 → 1, but not 1 → 0. Run MATS+ and MATS++ on it:"
+        },
+        {
+          "type": "stepper",
+          "src": "assets/mats-run.svg",
+          "interval": 3000,
+          "steps": [
+            { "title": "⇕(w0)", "md": "All cells start at 0 — cell 2 included." },
+            { "title": "⇑(r0, w1)", "md": "Every read returns 0 ✓. Every w1 works: the fault does not block the 0 → 1 transition." },
+            { "title": "⇓(r1, w0)", "md": "Every read returns 1 ✓. Then w0 — but cell 2 **cannot** go back to 0. MATS+ ends here. No read was wrong: **PASS — the faulty memory escapes.**" },
+            { "title": "⇓(r1, w0, r0)", "md": "MATS++ reads every cell right after writing 0. Cell 2 returns **1 ✗** → **FAIL**. The fault is detected." }
+          ]
+        },
+        {
+          "type": "callout",
+          "kind": "key",
+          "title": "The rule behind it",
+          "md": "A fault only counts as detected when a **read returns a wrong value**. Every operation that can trigger a fault — a transition, an aggressor write — must be **followed later by a read** of the cell it can damage."
+        }
+      ]
+    },
+    {
+      "id": "march-x",
+      "title": "March X and inversion coupling",
+      "blocks": [
+        {
+          "type": "text",
+          "md": "A CFin ⟨↑;↕⟩ or ⟨↓;↕⟩ can have the aggressor **below** the victim (a < v) or **above** it (a > v). A test must catch all four cases. March X has the elements M0 ⇕(w0), M1 ⇑(r0, w1), M2 ⇓(r1, w0), M3 ⇕(r0):"
+        },
+        {
+          "type": "table",
+          "columns": ["Fault", "Position", "What happens", "Detected in"],
+          "rows": [
+            ["⟨↑;↕⟩", "a < v", "M1 goes up: a is written 1 before v is visited, v flips to 1; then M1 reads v expecting 0", "**M1** (r0 of v)"],
+            ["⟨↑;↕⟩", "a > v", "M1 writes v = 1 first, then a rises and flips v to 0; M2 goes down and reads v expecting 1", "**M2** (r1 of v)"],
+            ["⟨↓;↕⟩", "a < v", "M2 goes down: v becomes 0 first, then a falls and flips v to 1; M3 reads v expecting 0", "**M3** (r0 of v)"],
+            ["⟨↓;↕⟩", "a > v", "M2 goes down: a falls before v is visited and flips v to 0; M2 then reads v expecting 1", "**M2** (r1 of v)"]
+          ],
+          "caption": "All four CFin cases are detected by March X"
+        },
+        {
+          "type": "callout",
+          "kind": "info",
+          "title": "Both directions do the work",
+          "md": "Going **up**, aggressors below the victim act *before* the victim is read. Going **down**, aggressors above it do. That is why March tests always contain ⇑ **and** ⇓ elements."
+        },
+        {
+          "type": "categorize",
+          "prompt": "Practice: which is the shortest test of this topic that detects all faults of each model?",
+          "categories": [{ "id": "mats", "label": "MATS" }, { "id": "matsp", "label": "MATS+" }, { "id": "matspp", "label": "MATS++" }, { "id": "x", "label": "March X" }],
+          "items": [
+            { "text": "Stuck-at faults", "category": "mats" },
+            { "text": "Address-decoder faults", "category": "matsp" },
+            { "text": "Transition faults", "category": "matspp" },
+            { "text": "Inversion coupling faults", "category": "x" }
+          ]
+        }
+      ]
+    }
+  ],
+  "quiz": {
+    "questions": [
+      {
+        "id": "q-matsp",
+        "type": "single",
+        "text": "Which test is MATS+?",
+        "options": ["{⇕(w0); ⇑(r0, w1); ⇓(r1, w0)}", "{⇕(w0); ⇕(r0, w1); ⇕(r1)}", "{⇕(w0); ⇑(r0, w1); ⇓(r1, w0, r0)}", "{⇕(w0); ⇑(r0, w1); ⇓(r1, w0); ⇕(r0)}"],
+        "correct": [0],
+        "review": ["mats"]
+      },
+      {
+        "id": "q-af",
+        "type": "single",
+        "text": "Why does MATS+ detect all address-decoder faults, while MATS does not?",
+        "options": [
+          "MATS+ fixes the directions so that it contains ⇑(r0 … w1) and ⇓(r1 … w0).",
+          "MATS+ writes each cell twice.",
+          "MATS+ uses a longer pause.",
+          "MATS+ reads every cell three times."
+        ],
+        "correct": [0],
+        "review": ["mats"]
+      },
+      {
+        "id": "q-escape",
+        "type": "single",
+        "text": "A cell cannot go from 1 to 0. Why does MATS+ miss this fault?",
+        "options": [
+          "The last w0 fails, but no read of that cell follows it.",
+          "MATS+ never writes 1.",
+          "MATS+ only reads in the up direction.",
+          "Transition faults cannot be detected by March tests."
+        ],
+        "correct": [0],
+        "review": ["watch"]
+      },
+      {
+        "id": "q-rule",
+        "type": "truefalse",
+        "text": "A fault is detected only when a read returns a value different from the expected one.",
+        "options": ["True", "False"],
+        "correct": [0],
+        "shuffle": false,
+        "review": ["watch"]
+      },
+      {
+        "id": "q-cfin",
+        "type": "single",
+        "text": "In March X, a CFin ⟨↑;↕⟩ with the aggressor **below** the victim is detected in which element?",
+        "options": ["M1 ⇑(r0, w1)", "M0 ⇕(w0)", "M2 ⇓(r1, w0)", "M3 ⇕(r0)"],
+        "correct": [0],
+        "review": ["march-x"]
+      },
+      {
+        "id": "q-match",
+        "type": "match",
+        "text": "Match the test to its length.",
+        "categories": [{ "id": "4", "label": "4N" }, { "id": "5", "label": "5N" }, { "id": "6", "label": "6N" }],
+        "items": [
+          { "text": "MATS", "category": "4" },
+          { "text": "MATS+", "category": "5" },
+          { "text": "MATS++", "category": "6" },
+          { "text": "March X", "category": "6" }
+        ],
+        "review": ["mats"]
+      }
+    ]
+  }
+}

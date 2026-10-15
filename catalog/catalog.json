@@ -1,0 +1,67 @@
+{
+  "format": 1,
+  "name": "SemiTec Foundation Academy Catalog",
+  "updated": "2026-10-16T07:42:25.788Z",
+  "packages": [
+    {
+      "id": "org.semitec.bist-mbist",
+      "version": "1.0.0",
+      "title": "BIST and MBIST",
+      "description": "How chips test themselves: LFSRs and signatures, memory fault models, March tests, MBIST architecture, and test access with JTAG, IEEE 1500 and IJTAG.",
+      "language": "en",
+      "publisher": "SemiTec Foundation",
+      "authors": [
+        "Arman Manukyan, PhD"
+      ],
+      "minAppVersion": "1.0.0",
+      "format": 1,
+      "items": [
+        {
+          "type": "training",
+          "format": 1
+        },
+        {
+          "type": "training",
+          "format": 1
+        },
+        {
+          "type": "training",
+          "format": 1
+        },
+        {
+          "type": "training",
+          "format": 1
+        },
+        {
+          "type": "training",
+          "format": 1
+        },
+        {
+          "type": "training",
+          "format": 1
+        }
+      ],
+      "counts": {
+        "training": 6
+      },
+      "itemTitles": [
+        "Memory Fundamentals",
+        "BIST Foundations: Why Chips Test Themselves",
+        "Memories and Their Faults",
+        "March Tests",
+        "MBIST Architecture",
+        "Test Access: JTAG and IJTAG"
+      ],
+      "projectCategories": [],
+      "hasSchedule": true,
+      "created": "2026-10-14T20:06:51.748Z",
+      "signed": true,
+      "signedBy": "SemiTec Foundation",
+      "url": "../Packages/bist-mbist/dist/org.semitec.bist-mbist-1.0.0.stlp",
+      "size": 425843,
+      "sha256": "b5b469870a4310f18caae471b86c4643f6f9a5e7e218a533ce33836578430da6",
+      "cover": "../Packages/bist-mbist/cover.svg",
+      "publisherLogo": "../Packages/bist-mbist/publisher-logo.svg"
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 780 320" font-family="Segoe UI, Arial, sans-serif">
+  <defs><marker id="lg-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#34495e"/></marker>
+  <marker id="lg-r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#c0392b"/></marker></defs>
+  <rect width="780" height="320" rx="14" fill="#ffffff"/>
+  <text x="390" y="32" text-anchor="middle" font-size="16" font-weight="700" fill="#1f4e79">Galois LFSR, 4 bits: the XOR sits inside the shift path</text>
+  <rect x="150" y="110" width="90" height="80" rx="8" fill="#eef4fb" stroke="#1f4e79" stroke-width="2.5"/>
+  <text x="195.0" y="100" text-anchor="middle" font-size="15" font-weight="700" fill="#1f4e79">Q1</text>
+  <rect x="290" y="110" width="90" height="80" rx="8" fill="#eef4fb" stroke="#1f4e79" stroke-width="2.5"/>
+  <text x="335.0" y="100" text-anchor="middle" font-size="15" font-weight="700" fill="#1f4e79">Q2</text>
+  <rect x="430" y="110" width="90" height="80" rx="8" fill="#eef4fb" stroke="#1f4e79" stroke-width="2.5"/>
+  <text x="475.0" y="100" text-anchor="middle" font-size="15" font-weight="700" fill="#1f4e79">Q3</text>
+  <rect x="570" y="110" width="90" height="80" rx="8" fill="#eef4fb" stroke="#1f4e79" stroke-width="2.5"/>
+  <text x="615.0" y="100" text-anchor="middle" font-size="15" font-weight="700" fill="#1f4e79">Q4</text>
+  <path d="M710 150H750" stroke="#34495e" stroke-width="2.5" marker-end="url(#lg-a)"/><text x="740" y="135" text-anchor="middle" font-size="12" fill="#34495e">out</text>
+  <text x="390" y="305" text-anchor="middle" font-size="12" fill="#6b7a8c">on every clock edge each flip-flop takes the value on its input</text>
+  <path d="M240 150H288" stroke="#34495e" stroke-width="2.5" marker-end="url(#lg-a)"/>
+  <path d="M380 150H428" stroke="#34495e" stroke-width="2.5" marker-end="url(#lg-a)"/>
+  <path d="M520 150H529" stroke="#34495e" stroke-width="2.5" marker-end="url(#lg-a)"/><path d="M561 150H568" stroke="#34495e" stroke-width="2.5" marker-end="url(#lg-a)"/>
+  <path d="M660 150H710" stroke="#34495e" stroke-width="2.5"/>
+  <circle cx="545" cy="150" r="16" fill="#fff" stroke="#c0392b" stroke-width="2.5"/><path d="M534 150H556M545 139V161" stroke="#c0392b" stroke-width="2.5"/>
+  <g stroke="#c0392b" stroke-width="2.5" fill="none"><path d="M690 150V270H100V150H148" marker-end="url(#lg-r)"/><path d="M545 270V168" marker-end="url(#lg-r)"/></g>
+  <circle cx="690" cy="150" r="4" fill="#c0392b"/><circle cx="545" cy="270" r="4" fill="#c0392b"/>
+  <text x="300" y="260" text-anchor="middle" font-size="12" font-weight="700" fill="#c0392b">Q4 goes back to Q1 and into the XOR before Q4</text>
+</svg>
