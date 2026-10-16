@@ -14,6 +14,19 @@ No partners registered yet — the table below is the shape to fill in.
 
 A `meta.json` referring to a key that is not in this table is an error — `tools/inventory.py` reports it.
 
+## Package publisher keys
+
+This table concerns material the Foundation publishes in this repository. A company may publish its own
+standalone materials and packages elsewhere without being registered here. It creates and protects its
+own private signing key, then distributes only its package, public key, public metadata and fingerprint;
+recipients can add that public key in Academy's *Trusted publishers* settings.
+
+The Foundation may separately decide to include a confirmed partner **public** key in a future Academy
+release so it is trusted by default. This is a deliberate app-distribution decision, not a transfer of the
+private key and not a statement that every package or certificate from the publisher is
+Foundation-approved. The complete process is in
+[Academy's signing-key guide](https://github.com/SemiTecFoundation/semitec-academy/blob/main/docs/KEYS.md#optional-foundation-default-trust-for-a-partner).
+
 ### What we need before publishing partner material
 
 1. **Written permission** to publish, from someone who can give it — an e-mail is enough, kept with the
