@@ -40,7 +40,7 @@
   },
   "delivery": {
     "mode": "standalone",
-    "urlParams": true,
+    "urlParams": false,
     "resume": true
   },
   "labels": {},
@@ -52,5 +52,5 @@
     "05-misr.json",
     "06-tiny-bist.json"
   ],
-  "certificate": "certificate.json"
+  "certificate": "certificate/index.html"
 }

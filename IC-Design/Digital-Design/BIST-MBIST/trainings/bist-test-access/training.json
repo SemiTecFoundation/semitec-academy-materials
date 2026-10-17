@@ -42,7 +42,7 @@
   },
   "delivery": {
     "mode": "standalone",
-    "urlParams": true,
+    "urlParams": false,
     "resume": true
   },
   "labels": {},
@@ -56,5 +56,5 @@
     "07-icl-pdl.json",
     "08-mbist-access.json"
   ],
-  "certificate": "certificate.json"
+  "certificate": "certificate/index.html"
 }

@@ -41,7 +41,7 @@
   },
   "delivery": {
     "mode": "standalone",
-    "urlParams": true,
+    "urlParams": false,
     "resume": true
   },
   "labels": {},
@@ -54,5 +54,5 @@
     "06-decoder-rw.json",
     "07-fault-primitives.json"
   ],
-  "certificate": "certificate.json"
+  "certificate": "certificate/index.html"
 }

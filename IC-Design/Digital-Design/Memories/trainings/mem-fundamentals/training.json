@@ -50,7 +50,7 @@
   },
   "delivery": {
     "mode": "standalone",
-    "urlParams": true,
+    "urlParams": false,
     "resume": true
   },
   "labels": {},
@@ -67,5 +67,5 @@
     "10-metrics.json",
     "11-timing.json"
   ],
-  "certificate": "certificate.json"
+  "certificate": "certificate/index.html"
 }

@@ -14,7 +14,7 @@ repositories are separate, how material is classified, and what gets built next:
 
 | Sphere | Topic | State |
 |---|---|---|
-| **IC-Design** | [Digital-Design / BIST-MBIST](IC-Design/Digital-Design/BIST-MBIST/) | 5 trainings — the furthest along |
+| **IC-Design** | [Digital-Design / BIST-MBIST](IC-Design/Digital-Design/BIST-MBIST/) | 6 trainings — the furthest along |
 | | [Digital-Design / Memories](IC-Design/Digital-Design/Memories/) | 1 training |
 | | [Digital-Design / Interfaces / AMBA](IC-Design/Digital-Design/Interfaces/AMBA/) | ready for content |
 | | [Digital-Design / FPGA](IC-Design/Digital-Design/FPGA/) · [Verification](IC-Design/Digital-Design/Verification/) · [DFT](IC-Design/Digital-Design/DFT/) · [Timing](IC-Design/Digital-Design/Timing/) · [CPU](IC-Design/Digital-Design/CPU/) · [IPs](IC-Design/Digital-Design/IPs/) | planned |
@@ -44,7 +44,7 @@ It is generated — run `python3 tools/inventory.py` after adding anything.
 
 | Package | Id | For | Status |
 |---|---|---|---|
-| [BIST and MBIST](Packages/bist-mbist/pack-spec.json) | `org.semitec.bist-mbist` | bachelor students; 5 BIST trainings over 10 weeks, *Memory Fundamentals* as prerequisite | 1.0.0, signed |
+| [BIST and MBIST](Packages/bist-mbist/pack-spec.json) | `org.semitec.bist-mbist` | bachelor students; five BIST and MBIST trainings plus *Memory Fundamentals* over 10 weeks | 1.1.0, signed · Academy 2.1.0+ |
 
 More in [`docs/PACKAGES.md`](docs/PACKAGES.md).
 
