@@ -14,12 +14,12 @@ https://semitecfoundation.github.io/semitec-academy-materials/catalog/catalog.js
 Do not use the repository home page or a GitHub file-view page. The Academy app needs the direct HTTPS URL to
 `catalog.json`.
 
-The current package is signed by SemiTec Foundation. Foundation public keys are already included in Academy;
-other publishers distribute their `.pub.pem` public key separately and recipients decide whether to trust it.
+Anyone can share a package or catalog. Learners choose their sources; the publisher name and catalog
+checksum do not authenticate the package's origin.
 
 ## Update procedure
 
-1. Build and sign a new `.stlp` from a package specification. Keep it in that package's `dist/` folder.
+1. Build a new `.stlp` from a package specification. Keep it in that package's `dist/` folder.
 2. Regenerate the catalog from this repository root:
 
    ```bash

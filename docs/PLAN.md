@@ -3,7 +3,7 @@
 What this repository is for, what goes in it, how material is classified, and in what order it gets
 built. This is the planning document; [`README.md`](../README.md) is the index of what exists today.
 
-Status: **published reference repository.** It serves standalone learning materials and a signed Academy catalog through GitHub Pages.
+Status: **published reference repository.** It serves standalone learning materials and an Academy catalog through GitHub Pages.
 
 ## 1. Why a separate repository
 
@@ -38,7 +38,7 @@ Planned fourth repository: **hackathon projects** (§7).
 | Project | brief (PDF) + app project (`project.json`, weekly plan, milestones, rubric) | Academy Templates — project-brief skill |
 | Video | `.mp4` (H.264 + AAC) / `.webm`, or a list of links | — |
 | Files | starter projects, constraints, datasheets, report templates | — |
-| **Package** | a signed `.stlp` combining any of the above, with a study plan | Academy Templates — package skill |
+| **Package** | a `.stlp` combining any of the above, with a study plan | Academy Templates — package skill |
 
 A material lives in exactly one topic and may appear in many packages.
 
@@ -79,21 +79,21 @@ without one is treated as Foundation-made, released, English — and `tools/inve
 |---|---|---|
 | `audience` | `bachelor` · `master` · `professional` · `school` | who the material is pitched at; a package usually keeps one audience |
 | `language` | `en` · `hy` · `ru` … | one material per language, suffixed folder (`…-hy`) |
-| `status` | `draft` · `review` · `released` | drafts are packaged `--unsigned` for review; only released material is signed |
+| `status` | `draft` · `review` · `released` | drafts are tested locally; released material may be published |
 | `origin` | `foundation` · `partner` · `community` | who made it: us, a company, or students / individual researchers |
 | `partner` | key into [`PARTNERS.md`](PARTNERS.md) | credit, logo, and the permission under which we publish |
 | `license` | SPDX id, or `proprietary` | what a reader may do with it |
 | `contributors` | names and roles | credit on the material and the certificate |
 
 **Why `origin` matters.** Partner material arrives under a specific permission and must carry the right
-credit and licence; community material needs review before it is signed. Mixing them silently would
+credit and licence; community material needs review before Foundation publication. Mixing them silently would
 make both impossible to audit — so the field is required for anything that is not Foundation-made.
 
 ## 5. How material reaches students
 
 1. **Create** a material in its topic folder with the matching skill.
 2. **Package** it: `Packages/<name>/pack-spec.json` lists materials from any topic, adds the study plan.
-3. **Sign** with the production key (`semitec-academy/docs/KEYS.md`) — the app trusts only that key.
+3. **Check** the package metadata and materials with the package builder.
 4. **Publish** the `.stlp` in the package's `dist/` folder, then regenerate [`catalog/catalog.json`](../catalog/catalog.json) with `python3 tools/build_catalog.py`. The catalog only indexes the canonical package files, and GitHub Pages serves its direct URL. Sources and the
    released package are committed here so the catalog has a stable, reviewable history.
 
@@ -104,7 +104,7 @@ index, `meta.json` convention, `PARTNERS.md`, the first package and the GitHub P
 
 **Phase 1 — first complete topic.** BIST-MBIST is the furthest along (5 trainings, 1 package). Finish it
 as the reference example of what "done" looks like: lectures, a lab, a project, a study plan, released
-and signed. Everything after copies its shape.
+and published. Everything after copies its shape.
 
 **Phase 2 — first public catalog (complete).** The first package is available through GitHub Pages and
 its direct catalog URL can be added to Academy. The next contribution will prove the author workflow.
@@ -116,7 +116,7 @@ Prefer one finished topic over five half-built ones.
 credit and licence, published package. `PARTNERS.md` becomes real.
 
 **Phase 5 — community.** Accept student and individual-researcher material under `origin: community`,
-with review before signing.
+with review before publication.
 
 ## 7. Planned: hackathon projects
 
@@ -125,7 +125,7 @@ ASIC, Backend/Physical design, EDA algorithms — contributed by companies, stud
 researchers.
 
 It is kept apart from this repository on purpose: the material here is **taught** (curriculum, reviewed,
-signed into packages), while a hackathon project is an **event artefact** (submitted, judged, archived
+included in packages), while a hackathon project is an **event artefact** (submitted, judged, archived
 with its results). Mixing them would blur both the review rules and the licensing.
 
 Open questions before it starts: per-sphere folders or per-event folders; what a submission must contain

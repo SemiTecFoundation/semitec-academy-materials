@@ -86,7 +86,6 @@ def catalog_entry(archive):
             counts[item_type] = counts.get(item_type, 0) + 1
 
     package_dir = archive.parents[1]
-    signature = read_json_from_pack(archive, 'signature.json')
     entry = {
         'id': manifest['id'],
         'version': manifest['version'],
@@ -109,8 +108,6 @@ def catalog_entry(archive):
         }),
         'hasSchedule': bool((manifest.get('schedule') or {}).get('entries')),
         'created': manifest.get('created'),
-        'signed': bool(signature),
-        'signedBy': manifest.get('publisher', '') if signature else '',
         'url': Path(os.path.relpath(archive, CATALOG_PATH.parent)).as_posix(),
         'size': archive.stat().st_size,
         'sha256': sha256(archive),

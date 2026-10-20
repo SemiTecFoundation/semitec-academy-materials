@@ -44,7 +44,7 @@ It is generated — run `python3 tools/inventory.py` after adding anything.
 
 | Package | Id | For | Status |
 |---|---|---|---|
-| [BIST and MBIST](Packages/bist-mbist/pack-spec.json) | `org.semitec.bist-mbist` | bachelor students; five BIST and MBIST trainings plus *Memory Fundamentals* over 10 weeks | 1.1.0, signed · Academy 2.1.0+ |
+| [BIST and MBIST](Packages/bist-mbist/pack-spec.json) | `org.semitec.bist-mbist` | bachelor students; five BIST and MBIST trainings plus *Memory Fundamentals* over 10 weeks | 1.1.0 · Academy 2.1.0+ |
 
 More in [`docs/PACKAGES.md`](docs/PACKAGES.md).
 
@@ -108,7 +108,7 @@ Material made **with a company** sets `"origin": "partner"` and a `"partner"` ke
 3. **Package** — in `Packages/<package-name>/pack-spec.json` list the materials from any topics (an FPGA
    course can take a training from Verification and an interface lab from Interfaces), add the study plan
    (`schedule`), attach files to their labs (`"for"`), then [Academy Templates package skill](https://github.com/SemiTecFoundation/semitec-academy-skills/tree/main/skills/package) checks and builds
-   the signed `.stlp`.
+   the `.stlp`.
 4. **Share** — keep the release archive in its package's `dist/` folder, then run
    `python3 tools/build_catalog.py`; students install it from the app's Catalog.
 5. **Keep track** — `python3 tools/inventory.py` updates every topic's *Inventory* (and `docs/INVENTORY.md`)
@@ -126,5 +126,4 @@ Material made **with a company** sets `"origin": "partner"` and a `"partner"` ke
   `fpga-vivado-flow-hy` (Armenian).
 - **Sources stay here, builds go out.** LaTeX sources, training JSON and lab files live here; generated
   files (`.stlp`, single-file HTML trainings) go to `Packages/<name>/dist/` or the skill's `dist/`.
-- **Status.** Draft materials can be packaged unsigned (`--unsigned`) for review in the app with
-  Developer mode; release packages are signed with the production key.
+- **Status.** Draft packages can be tested locally. Publish only materials intended for release.

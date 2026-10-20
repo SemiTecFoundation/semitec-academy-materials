@@ -14,18 +14,10 @@ No partners registered yet — the table below is the shape to fill in.
 
 A `meta.json` referring to a key that is not in this table is an error — `tools/inventory.py` reports it.
 
-## Package publisher keys
+## Independent publishers
 
-This table concerns material the Foundation publishes in this repository. A company may publish its own
-standalone materials and packages elsewhere without being registered here. It creates and protects its
-own private signing key, then distributes only its package, public key, public metadata and fingerprint;
-recipients can add that public key in Academy's *Trusted publishers* settings.
-
-The Foundation may separately decide to include a confirmed partner **public** key in a future Academy
-release so it is trusted by default. This is a deliberate app-distribution decision, not a transfer of the
-private key and not a statement that every package or certificate from the publisher is
-Foundation-approved. The complete process is in
-[Academy's signing-key guide](https://github.com/SemiTecFoundation/semitec-academy/blob/main/docs/KEYS.md#optional-foundation-default-trust-for-a-partner).
+Companies can publish their own materials, packages and catalogs without registering here or obtaining
+Foundation approval. Users choose which catalogs or local files to add in Academy.
 
 ### What we need before publishing partner material
 
@@ -35,7 +27,7 @@ Foundation-approved. The complete process is in
 3. **How they want to be credited** — the exact wording and, if there is one, a logo (SVG, on a
    transparent background).
 4. **Review**: the material has to pass the same checks as ours (`validate.py`, `check_lab.py`,
-   `stlp check`) before it is signed into a package.
+   `stlp check`) before it is included in a package.
 
 ## Community contributions
 
@@ -43,9 +35,8 @@ Foundation-approved. The complete process is in
 |---|---|---|---|---|
 | | | student / researcher / lecturer | | |
 
-Community material is reviewed before it is signed. Until it is, it stays `status: draft` and is packaged
-`--unsigned`, which the app installs only with *Developer mode* on — so a draft can be tried without
-being published as Foundation-approved.
+Community contributions intended for this Foundation repository are reviewed before publication. Drafts
+can be tested locally without being published as Foundation material.
 
 ## Trademarks
 

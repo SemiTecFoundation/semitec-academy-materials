@@ -2,7 +2,7 @@
   "specVersion": 1,
   "pack": {
     "id": "org.semitec.bist-mbist",
-    "version": "1.1.0",
+    "version": "1.1.1",
     "title": "BIST and MBIST",
     "description": "How chips test themselves: LFSRs and signatures, memory fault models, March tests, MBIST architecture, and test access with JTAG, IEEE 1500 and IJTAG.",
     "language": "en",
